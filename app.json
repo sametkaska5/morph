@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "Remory",
+    "slug": "remory",
+    "scheme": "remory",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0A0A08",
+    "plugins": [
+      "expo-router",
+      "expo-status-bar"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.remory.app"
+    },
+    "android": {
+      "package": "com.remory.app"
+    }
+  }
+}

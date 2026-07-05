@@ -1,6 +1,7 @@
 import { View, Text, ScrollView, ImageBackground, Pressable } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
+import Feather from "@expo/vector-icons/Feather";
 import { supabase } from "@/lib/supabase";
 import { getPhotoUrl } from "@/lib/storage";
 
@@ -68,6 +69,9 @@ export default function AnaEkran() {
     <View className="flex-1 bg-bg">
       <View className="flex-row justify-between items-center px-4 pt-14 pb-3">
         <Text className="text-text text-[15px] font-semibold tracking-wide">remory</Text>
+        <Pressable onPress={() => router.push("/compare/pick")}>
+          <Feather name="repeat" size={19} color="#8B8A82" />
+        </Pressable>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} onScrollEndDrag={() => refetch()}>

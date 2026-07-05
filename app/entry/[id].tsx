@@ -1,8 +1,11 @@
-import { View, Text, Image, ScrollView, Pressable, ActivityIndicator } from "react-native";
+import { View, Text, Image, ScrollView, Pressable, ActivityIndicator, Dimensions } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { getPhotoUrl } from "@/lib/storage";
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const IMAGE_HEIGHT = SCREEN_WIDTH * 1.25; 
 
 function useEntryDetail(entryId: string) {
   return useQuery({
@@ -29,49 +32,97 @@ export default function EntryDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data, isLoading, error } = useEntryDetail(id);
 
-  return (
-    <ScrollView className="flex-1 bg-bg" contentContainerStyle={{ padding: 18, paddingTop: 60 }}>
-      <View className="flex-row justify-between items-center mb-4">
-        <Pressable onPress={() => router.back()}>
-          <Text className="text-text text-lg">←</Text>
+  if (isLoading) {
+    return (
+      <View className="flex-1 bg-bg justify-center items-center">
+        <ActivityIndicator color="#8CE05A" size="large" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View className="flex-1 bg-bg justify-center items-center px-4">
+        <Text className="text-danger text-center">{(error as Error).message}</Text>
+        <Pressable onPress={() => router.back()} className="mt-4 p-2">
+          <Text className="text-text">Geri Dön</Text>
         </Pressable>
-        <Text className="text-text text-base font-semibold">
-          {data ? new Date(data.date).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" }) : ""}
-        </Text>
-        <View style={{ width: 20 }} />
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView className="flex-1 bg-bg" bounces={false} showsVerticalScrollIndicator={false}>
+      
+      {/* 1. TERTEMİZ GÖRSEL ALANI (Yazı ve karartma yok) */}
+      <View className="relative w-full" style={{ height: IMAGE_HEIGHT }}>
+        
+        {/* Yüzen Geri Butonu */}
+        <Pressable 
+          onPress={() => router.back()}
+          className="absolute top-14 left-4 z-10 w-10 h-10 bg-black/40 rounded-full items-center justify-center backdrop-blur-md"
+        >
+          <Text className="text-white text-xl font-bold leading-none -mt-1">←</Text>
+        </Pressable>
+
+        {data?.photoUrl ? (
+          <Image 
+            source={{ uri: data.photoUrl }} 
+            className="w-full h-full" 
+            resizeMode="cover" 
+          />
+        ) : (
+          <View className="w-full h-full bg-surface items-center justify-center">
+            <Text className="text-textMuted">Fotoğraf bulunamadı</Text>
+          </View>
+        )}
       </View>
 
-      {isLoading && <ActivityIndicator color="#8CE05A" />}
-      {error ? <Text className="text-danger text-xs">{(error as Error).message}</Text> : null}
+      {/* 2. İÇERİK ALANI */}
+      <View className="px-5 pt-6 pb-12">
+        
+        {/* Zarif Tarih Başlığı */}
+        {data && (
+          <View className="mb-8">
+            <Text className="text-textMuted text-[10px] font-bold tracking-widest uppercase mb-1">
+              Kayıt Tarihi
+            </Text>
+            <Text className="text-text text-3xl font-bold tracking-tight">
+              {new Date(data.date).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
+            </Text>
+          </View>
+        )}
+        
+        {/* Ölçümler */}
+        {(data as any)?.measurement_values?.length > 0 && (
+          <View className="bg-surface rounded-2xl p-4 mb-4">
+            <Text className="text-textFaint text-[10px] font-bold mb-3 tracking-widest uppercase">
+              Fiziksel Veriler
+            </Text>
+            {(data as any).measurement_values.map((mv: any, i: number) => (
+              <View key={i} className="flex-row items-center justify-between py-2 border-b border-border/50 last:border-0">
+                <Text className="text-textMuted text-sm">{mv.measurement_types.name}</Text>
+                <Text className="text-text text-base font-bold">
+                  {mv.value} <Text className="text-textMuted text-xs font-normal">{mv.measurement_types.unit}</Text>
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
 
-      {data?.photoUrl ? (
-        <Image source={{ uri: data.photoUrl }} className="w-full h-80 rounded-card mb-4" resizeMode="cover" />
-      ) : null}
-
-      {(data as any)?.measurement_values?.length > 0 ? (
-        <View className="bg-surface border border-border rounded-card p-3.5 mb-3">
-          <Text className="text-textMuted text-[11px] font-semibold mb-2 tracking-wide">ÖLÇÜMLER</Text>
-          {(data as any).measurement_values.map((mv: any, i: number) => (
-            <View key={i} className="flex-row items-center justify-between py-2">
-              <Text className="text-textMuted text-xs">{mv.measurement_types.name}</Text>
-              <Text className="text-text text-base font-semibold">
-                {mv.value} {mv.measurement_types.unit}
-              </Text>
-            </View>
-          ))}
-        </View>
-      ) : (
-        <Text className="text-textFaint text-xs mb-3">Bu kayıtta ölçüm yok.</Text>
-      )}
-
-      {data?.note ? (
-        <View className="bg-surface border border-border rounded-card p-3.5">
-          <Text className="text-textMuted text-[11px] font-semibold mb-2 tracking-wide">NOT</Text>
-          <Text className="text-text text-sm leading-5">{data.note}</Text>
-        </View>
-      ) : (
-        <Text className="text-textFaint text-xs">Bu kayıtta not yok.</Text>
-      )}
+        {/* Not */}
+        {data?.note && (
+          <View className="bg-surface rounded-2xl p-4">
+            <Text className="text-textFaint text-[10px] font-bold mb-2 tracking-widest uppercase">
+              Günlük Notu
+            </Text>
+            <Text className="text-text text-base leading-6">
+              {data.note}
+            </Text>
+          </View>
+        )}
+        
+      </View>
     </ScrollView>
   );
 }

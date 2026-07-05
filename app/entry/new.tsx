@@ -7,10 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
 import { uploadPhoto } from "@/lib/storage";
 import { useCaptureStore } from "@/lib/captureStore";
-
-function toDateKey(d: Date) {
-  return d.toISOString().slice(0, 10);
-}
+import { toLocalDateKey } from "@/lib/date";
 
 function useDefaultMeasurementTypes() {
   return useQuery({
@@ -44,7 +41,7 @@ export default function NewEntry() {
       if (!user) throw new Error("Giriş yapılmamış");
       if (!photo) throw new Error("Fotoğraf bulunamadı");
 
-      const today = toDateKey(date);
+      const today = toLocalDateKey(date);
 
       const { data: entry, error: entryError } = await supabase
         .from("entries")

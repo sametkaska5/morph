@@ -16,7 +16,10 @@ export default function RootLayout() {
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="entry/new" options={{ presentation: "modal" }} />
+          <Stack.Screen name="entry/off-day" options={{ presentation: "modal" }} />
           <Stack.Screen name="entry/[id]" />
+          <Stack.Screen name="compare/pick" options={{ presentation: "modal" }} />
+          <Stack.Screen name="compare" options={{ presentation: "modal" }} />
         </Stack>
       </QueryClientProvider>
     </GestureHandlerRootView>

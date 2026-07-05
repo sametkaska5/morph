@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { toLocalDateKey } from "./date";
 
 function computeStreaks(sortedDates: string[]) {
   if (sortedDates.length === 0) return { current: 0, longest: 0 };
@@ -21,9 +22,7 @@ function computeStreaks(sortedDates: string[]) {
 
   // Mevcut seri: son kayıttan geriye doğru, bugün ya da dün ile başlıyorsa say
   const lastDate = new Date(sortedDates[sortedDates.length - 1]);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  lastDate.setHours(0, 0, 0, 0);
+  const today = new Date(toLocalDateKey(new Date())); // string üzerinden parse, saat dilimi kaymasın
   const daysSinceLast = Math.round((today.getTime() - lastDate.getTime()) / 86400000);
 
   let current = 0;

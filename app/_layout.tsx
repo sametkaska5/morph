@@ -18,8 +18,10 @@ export default function RootLayout() {
           <Stack.Screen name="entry/new" options={{ presentation: "modal" }} />
           <Stack.Screen name="entry/off-day" options={{ presentation: "modal" }} />
           <Stack.Screen name="entry/[id]" />
+          <Stack.Screen name="entry/edit/[id]" options={{ presentation: "modal" }} />
           <Stack.Screen name="compare/pick" options={{ presentation: "modal" }} />
           <Stack.Screen name="compare" options={{ presentation: "modal" }} />
+          <Stack.Screen name="calendar-year" />
         </Stack>
       </QueryClientProvider>
     </GestureHandlerRootView>

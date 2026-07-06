@@ -1,250 +1,119 @@
-import { useState, useRef, useEffect, useCallback } from "react";
-import { View, Text, FlatList, Image, PanResponder, ActivityIndicator, Dimensions } from "react-native";
+import { View, Text, Image, FlatList, Dimensions, Pressable } from "react-native";
 import { useQuery } from "@tanstack/react-query";
+import { router } from "expo-router";
 import { supabase } from "@/lib/supabase";
-import { getPhotoUrl } from "@/lib/storage";
+import { getPhotoUrls } from "@/lib/storage";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const INDICATOR_HEIGHT = 40; 
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
-type EntryRow = {
+type CapsuleEntry = {
   id: string;
   date: string;
-  cover_photo_url: string | null;
+  note: string | null;
+  photoUrl: string | null;
 };
 
-function useTimeCapsuleEntries() {
+function useCapsuleEntries() {
   return useQuery({
-    queryKey: ["entries", "timecapsule"],
-    queryFn: async (): Promise<EntryRow[]> => {
+    queryKey: ["entries", "capsule"],
+    staleTime: 1000 * 60 * 30,
+    queryFn: async (): Promise<CapsuleEntry[]> => {
       const { data, error } = await supabase
         .from("entries")
-        .select("id, date, photos!entry_id(storage_path)")
+        .select("id, date, note, photos!cover_photo_id(storage_path)")
         .eq("type", "log")
         .order("date", { ascending: false });
 
       if (error) throw error;
 
-      return Promise.all(
-        (data ?? []).map(async (e: any) => {
-          const path = e.photos?.[0]?.storage_path;
-          return {
-            id: e.id,
-            date: e.date,
-            cover_photo_url: path ? await getPhotoUrl(path) : null,
-          };
-        })
-      );
+      const paths = (data ?? []).map((e: any) => e.photos?.storage_path).filter(Boolean) as string[];
+      const urlMap = await getPhotoUrls(paths);
+
+      return (data ?? []).map((e: any) => ({
+        id: e.id,
+        date: e.date,
+        note: e.note,
+        photoUrl: e.photos?.storage_path ? urlMap.get(e.photos.storage_path) ?? null : null,
+      }));
     },
   });
 }
 
-function formatIndicatorDate(dateString: string) {
-  const d = new Date(dateString);
-  const month = d.toLocaleDateString("tr-TR", { month: "short" }).toUpperCase();
-  const year = d.getFullYear();
-  return `${month} ${year}`;
+function CapsulePage({ entry, index, total }: { entry: CapsuleEntry; index: number; total: number }) {
+  return (
+    <Pressable
+      onPress={() => router.push(`/entry/${entry.id}`)}
+      style={{ height: SCREEN_HEIGHT, width: "100%" }}
+      className="bg-surface"
+    >
+      {entry.photoUrl ? (
+        <Image source={{ uri: entry.photoUrl }} style={{ flex: 1 }} resizeMode="cover" />
+      ) : (
+        <View className="flex-1 bg-surface" />
+      )}
+      <View className="absolute inset-0 bg-black/10" pointerEvents="none" />
+
+      <View className="absolute top-14 left-0 right-0 flex-row justify-between items-center px-4">
+        <Text className="text-text text-base font-semibold">Zaman Kapsülü</Text>
+        <View className="bg-black/50 rounded-pill px-2.5 py-1">
+          <Text className="text-text text-xs font-medium">
+            {index + 1}/{total}
+          </Text>
+        </View>
+      </View>
+
+      <View className="absolute bottom-24 left-4 right-4">
+        <Text className="text-text text-base font-semibold">
+          {new Date(entry.date).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
+        </Text>
+        {entry.note ? (
+          <Text className="text-textMuted text-xs mt-1" numberOfLines={2}>
+            {entry.note}
+          </Text>
+        ) : null}
+      </View>
+    </Pressable>
+  );
 }
 
 export default function ZamanKapsulu() {
-  const { data: entries, isLoading, error } = useTimeCapsuleEntries();
-  const flatListRef = useRef<FlatList>(null);
-
-  const [listHeight, setListHeight] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const [activeDate, setActiveDate] = useState<string | null>(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
-
-  // Verileri PanResponder (kaydırma çubuğu) içinde taze tutmak için Ref'ler
-  const entriesRef = useRef(entries);
-  const currentIndexRef = useRef(currentIndex);
-  const startIndexRef = useRef(0);
-  
-  // Sıfıra bölünme (Sonsuzluğa fırlama) hatasını engelleyen boyut hafızası
-  const dimensionsRef = useRef({ trackHeight: 0, trackTop: 0, maxIndicatorTop: 0 });
-
-  useEffect(() => {
-    entriesRef.current = entries;
-  }, [entries]);
-
-  const trackHeight = listHeight * 0.6; 
-  const trackTop = (listHeight - trackHeight) / 2;
-  const maxIndicatorTop = trackHeight > 0 ? trackHeight - INDICATOR_HEIGHT : 0;
-
-  // Her listHeight değiştiğinde (render olduğunda) matematiksel hafızayı güncelle
-  dimensionsRef.current = { trackHeight, trackTop, maxIndicatorTop };
-
-  const indicatorTop = (entries && entries.length > 1 && maxIndicatorTop > 0) 
-    ? (currentIndex / (entries.length - 1)) * maxIndicatorTop 
-    : 0;
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponderCapture: () => true,
-      onMoveShouldSetPanResponderCapture: () => true,
-      
-      onPanResponderGrant: (evt) => {
-        setIsDragging(true);
-        const currentEntries = entriesRef.current;
-        const { trackHeight } = dimensionsRef.current; // Taze yükseklik
-        
-        if (!currentEntries || currentEntries.length === 0 || trackHeight <= 0) return;
-
-        const locY = evt.nativeEvent.locationY;
-        let percentage = locY / trackHeight;
-        
-        if (percentage < 0 || isNaN(percentage)) percentage = 0;
-        if (percentage > 1) percentage = 1;
-
-        let newIndex = Math.floor(percentage * (currentEntries.length - 1));
-        
-        if (newIndex < 0) newIndex = 0;
-        if (newIndex >= currentEntries.length) newIndex = currentEntries.length - 1;
-
-        const targetEntry = currentEntries[newIndex];
-        if (!targetEntry) return;
-
-        currentIndexRef.current = newIndex;
-        setCurrentIndex(newIndex);
-        setActiveDate(formatIndicatorDate(targetEntry.date));
-        
-        try {
-          flatListRef.current?.scrollToIndex({ index: newIndex, animated: false });
-        } catch (err) {
-          console.log("Zıplama hatası:", err);
-        }
-
-        startIndexRef.current = newIndex;
-      },
-
-      onPanResponderMove: (evt, gestureState) => {
-        const currentEntries = entriesRef.current;
-        const { maxIndicatorTop } = dimensionsRef.current; // Taze sınır değeri
-        
-        // maxIndicatorTop 0'sa işlem yapma (Sonsuzluk hatasını engeller)
-        if (!currentEntries || currentEntries.length === 0 || maxIndicatorTop <= 0) return;
-
-        // dy (parmak hareketi) / maxIndicatorTop sayesinde milimetrik oran bulunur
-        const indexDelta = (gestureState.dy / maxIndicatorTop) * (currentEntries.length - 1);
-        let newIndex = Math.round(startIndexRef.current + indexDelta);
-
-        if (newIndex < 0 || isNaN(newIndex)) newIndex = 0;
-        if (newIndex >= currentEntries.length) newIndex = currentEntries.length - 1;
-
-        const targetEntry = currentEntries[newIndex];
-        if (!targetEntry) return;
-
-        if (currentIndexRef.current !== newIndex) {
-          currentIndexRef.current = newIndex;
-          setCurrentIndex(newIndex);
-          setActiveDate(formatIndicatorDate(targetEntry.date));
-          
-          try {
-            flatListRef.current?.scrollToIndex({ index: newIndex, animated: false });
-          } catch (err) {
-            console.log("Sürükleme hatası:", err);
-          }
-        }
-      },
-      onPanResponderRelease: () => setIsDragging(false),
-      onPanResponderTerminate: () => setIsDragging(false),
-    })
-  ).current;
-
-  const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
-    if (viewableItems.length > 0) {
-      const index = viewableItems[0].index;
-      const currentItem = viewableItems[0].item;
-      
-      if (!isDragging && index !== null) {
-        currentIndexRef.current = index;
-        setCurrentIndex(index);
-        setActiveDate(formatIndicatorDate(currentItem.date));
-      }
-    }
-  }, [isDragging]);
+  const { data: entries, isLoading, error } = useCapsuleEntries();
 
   if (isLoading) {
+    return <View className="flex-1 bg-bg" />;
+  }
+
+  if (error) {
     return (
-      <View className="flex-1 bg-black justify-center items-center">
-        <ActivityIndicator color="#ffffff" size="large" />
+      <View className="flex-1 bg-bg items-center justify-center px-6">
+        <Text className="text-danger text-xs text-center">{(error as Error).message}</Text>
       </View>
     );
   }
 
-  if (error || !entries) {
+  if (!entries || entries.length === 0) {
     return (
-      <View className="flex-1 bg-black justify-center items-center">
-        <Text className="text-white">Bir hata oluştu.</Text>
+      <View className="flex-1 bg-bg items-center justify-center px-6">
+        <Text className="text-textMuted text-sm text-center">
+          Henüz bir kaydın yok. İlk anını ekledikçe burada zaman içinde kayıp gidebileceksin.
+        </Text>
       </View>
     );
   }
 
   return (
-    <View 
-      className="flex-1 bg-black relative"
-      onLayout={(e) => setListHeight(e.nativeEvent.layout.height)}
-    >
-      {listHeight > 0 && (
-        <FlatList
-          ref={flatListRef}
-          data={entries}
-          keyExtractor={(item) => item.id}
-          pagingEnabled
-          showsVerticalScrollIndicator={false}
-          bounces={false}
-          onViewableItemsChanged={onViewableItemsChanged}
-          viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
-          getItemLayout={(data, index) => ({
-            length: listHeight,
-            offset: listHeight * index,
-            index,
-          })}
-          renderItem={({ item }) => (
-            <View style={{ width: SCREEN_WIDTH, height: listHeight }}>
-              {item.cover_photo_url ? (
-                <Image source={{ uri: item.cover_photo_url }} className="w-full h-full" resizeMode="cover" />
-              ) : (
-                <View className="w-full h-full bg-zinc-900" />
-              )}
-            </View>
-          )}
-        />
-      )}
-
-      {/* Dokunma Alanı (Track) */}
-      <View 
-        {...panResponder.panHandlers}
-        className="absolute right-0 z-30 w-12 justify-start items-end pr-3 bg-transparent"
-        style={{ 
-          height: trackHeight, 
-          top: trackTop 
-        }}
-      >
-        <View className="absolute right-3.5 top-0 bottom-0 w-0.5 bg-white/10 rounded-full" pointerEvents="none" />
-        
-        {/* Hareket Eden Beyaz Çubuk */}
-        <View 
-          className="w-1.5 rounded-full overflow-hidden absolute right-3"
-          pointerEvents="none" // Kendi üzerinde touch event başlatıp matematiği bozmasını engeller
-          style={{ 
-            height: INDICATOR_HEIGHT,
-            top: indicatorTop,
-            backgroundColor: isDragging ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)'
-          }}
-        />
-      </View>
-
-      {/* Tarih Baloncuğu */}
-      {isDragging && activeDate && (
-        <View className="absolute right-14 top-1/2 -translate-y-6 z-10 pointer-events-none">
-          <View className="bg-black/80 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 shadow-lg">
-            <Text className="text-white font-bold tracking-widest text-sm">
-              {activeDate}
-            </Text>
-          </View>
-        </View>
-      )}
+    <View className="flex-1 bg-bg">
+      <FlatList
+        data={entries}
+        keyExtractor={(item) => item.id}
+        pagingEnabled
+        showsVerticalScrollIndicator={false}
+        snapToInterval={SCREEN_HEIGHT}
+        decelerationRate="fast"
+        renderItem={({ item, index }) => (
+          <CapsulePage entry={item} index={index} total={entries.length} />
+        )}
+      />
     </View>
   );
 }

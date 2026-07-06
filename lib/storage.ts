@@ -1,15 +1,13 @@
 import { supabase } from "./supabase";
 import { decode } from "base64-arraybuffer";
 
-export async function uploadPhoto(userId: string, entryId: string, base64: string) {
-  // Gelen base64 verisinde "data:image/jpeg;base64," gibi bir ön ek varsa, 
-  // virgülden sonrasını (saf base64 verisini) alıyoruz.
-  const cleanBase64 = base64.includes(',') ? base64.split(',')[1] : base64;
+const SIGNED_URL_EXPIRY = 60 * 60 * 6; // 6 saat — sık sık yenilemeye gerek kalmasın
 
+export async function uploadPhoto(userId: string, entryId: string, base64: string) {
   const fileName = `${Date.now()}.jpg`;
   const path = `${userId}/${entryId}/${fileName}`;
 
-  const { error } = await supabase.storage.from("photos").upload(path, decode(cleanBase64), {
+  const { error } = await supabase.storage.from("photos").upload(path, decode(base64), {
     contentType: "image/jpeg",
   });
 
@@ -18,7 +16,27 @@ export async function uploadPhoto(userId: string, entryId: string, base64: strin
 }
 
 export async function getPhotoUrl(path: string) {
-  const { data, error } = await supabase.storage.from("photos").createSignedUrl(path, 3600); // 1 saat geçerli
+  const { data, error } = await supabase.storage.from("photos").createSignedUrl(path, SIGNED_URL_EXPIRY);
   if (error) throw error;
   return data.signedUrl;
 }
+
+/**
+ * Birden fazla fotoğrafın imzalı linkini TEK istekte üretir.
+ * Zaman Kapsülü / Ana Ekran gibi çok sayıda fotoğraf gösteren ekranlarda
+ * her biri için ayrı istek atmak yerine bunu kullan — büyük hız farkı yaratıyor.
+ */
+export async function getPhotoUrls(paths: string[]): Promise<Map<string, string>> {
+  const uniquePaths = [...new Set(paths)];
+  if (uniquePaths.length === 0) return new Map();
+
+  const { data, error } = await supabase.storage.from("photos").createSignedUrls(uniquePaths, SIGNED_URL_EXPIRY);
+  if (error) throw error;
+
+  const map = new Map<string, string>();
+  (data ?? []).forEach((d) => {
+    if (d.signedUrl && d.path) map.set(d.path, d.signedUrl);
+  });
+  return map;
+}
+

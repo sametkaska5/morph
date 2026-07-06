@@ -2,6 +2,7 @@ import { Tabs, Redirect, router } from "expo-router";
 import { View, Pressable, ActivityIndicator, ActionSheetIOS, Alert, Platform } from "react-native";
 import Feather from "@expo/vector-icons/Feather";
 import * as ImagePicker from "expo-image-picker";
+import * as ImageManipulator from "expo-image-manipulator";
 import { useAuth } from "@/lib/useAuth";
 import { useCaptureStore } from "@/lib/captureStore";
 
@@ -9,24 +10,34 @@ const ACCENT = "#8CE05A";
 const MUTED = "#6B6A62";
 const BG = "#0A0A08";
 
+const MAX_DIMENSION = 1280;
+const JPEG_QUALITY = 0.75;
+
+async function resizeAndCompress(uri: string) {
+  const result = await ImageManipulator.manipulateAsync(
+    uri,
+    [{ resize: { width: MAX_DIMENSION } }],
+    { compress: JPEG_QUALITY, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+  );
+  return { uri: result.uri, base64: result.base64! };
+}
+
 async function pickFromCamera() {
   const { status } = await ImagePicker.requestCameraPermissionsAsync();
   if (status !== "granted") return;
-  return ImagePicker.launchCameraAsync({ allowsEditing: false, quality: 0.6, base64: true });
+  return ImagePicker.launchCameraAsync({ allowsEditing: false, quality: 0.9 });
 }
 
 async function pickFromLibrary() {
   const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (status !== "granted") return;
-  return ImagePicker.launchImageLibraryAsync({ allowsEditing: false, quality: 0.6, base64: true });
+  return ImagePicker.launchImageLibraryAsync({ allowsEditing: false, quality: 0.9 });
 }
 
-function handleResult(result: ImagePicker.ImagePickerResult | undefined) {
-  if (result && !result.canceled && result.assets?.[0]?.base64) {
-    useCaptureStore.getState().setPhoto({
-      uri: result.assets[0].uri,
-      base64: result.assets[0].base64,
-    });
+async function handleResult(result: ImagePicker.ImagePickerResult | undefined) {
+  if (result && !result.canceled && result.assets?.[0]?.uri) {
+    const resized = await resizeAndCompress(result.assets[0].uri);
+    useCaptureStore.getState().setPhoto(resized);
     router.push("/entry/new");
   }
 }
@@ -34,19 +45,17 @@ function handleResult(result: ImagePicker.ImagePickerResult | undefined) {
 async function handleCapturePress() {
   if (Platform.OS === "ios") {
     ActionSheetIOS.showActionSheetWithOptions(
-      { options: ["İptal", "Fotoğraf çek", "Galeriden seç", "Off day işaretle"], cancelButtonIndex: 0 },
+      { options: ["İptal", "Fotoğraf çek", "Galeriden seç"], cancelButtonIndex: 0 },
       async (buttonIndex) => {
         if (buttonIndex === 1) handleResult(await pickFromCamera());
         if (buttonIndex === 2) handleResult(await pickFromLibrary());
-        if (buttonIndex === 3) router.push("/entry/off-day");
       }
     );
   } else {
-    Alert.alert("Anı ekle", "Ne yapmak istersin?", [
+    Alert.alert("Anı ekle", "Fotoğrafı nereden eklemek istersin?", [
       { text: "İptal", style: "cancel" },
       { text: "Fotoğraf çek", onPress: async () => handleResult(await pickFromCamera()) },
       { text: "Galeriden seç", onPress: async () => handleResult(await pickFromLibrary()) },
-      { text: "Off day işaretle", onPress: () => router.push("/entry/off-day") },
     ]);
   }
 }

@@ -6,7 +6,7 @@ import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
-import { toLocalDateKey } from "@/lib/date";
+import { toLocalDateKey, getMondayOfWeek, weekdayLetter } from "@/lib/date";
 
 const CHART_W = 300;
 const CHART_H = 110;
@@ -44,32 +44,40 @@ function useMeasurementSeries(userId: string | undefined, typeId: string | undef
   });
 }
 
-function useLast7Days(userId: string | undefined) {
+function useCurrentWeek(userId: string | undefined) {
   return useQuery({
-    queryKey: ["last7days", userId],
+    queryKey: ["currentWeek", userId],
     enabled: !!userId,
     queryFn: async () => {
-      const days: string[] = [];
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        days.push(toLocalDateKey(d));
+      const todayKey = toLocalDateKey(new Date());
+      const monday = getMondayOfWeek(new Date());
+
+      const days: { date: string; label: string; isFuture: boolean; isToday: boolean }[] = [];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        const dateKey = toLocalDateKey(d);
+        days.push({
+          date: dateKey,
+          label: weekdayLetter(d),
+          isFuture: dateKey > todayKey,
+          isToday: dateKey === todayKey,
+        });
       }
+
       const { data, error } = await supabase
         .from("entries")
         .select("id, date, type")
         .eq("user_id", userId)
-        .gte("date", days[0])
-        .lte("date", days[days.length - 1]);
+        .gte("date", days[0].date)
+        .lte("date", days[days.length - 1].date);
       if (error) throw error;
 
       const byDate = new Map((data ?? []).map((e) => [e.date, { id: e.id, type: e.type }]));
-      const todayKey = days[days.length - 1];
-      return days.map((date) => ({
-        date,
-        id: byDate.get(date)?.id ?? null,
-        type: byDate.get(date)?.type ?? null,
-        isToday: date === todayKey,
+      return days.map((d) => ({
+        ...d,
+        id: byDate.get(d.date)?.id ?? null,
+        type: byDate.get(d.date)?.type ?? null,
       }));
     },
   });
@@ -94,8 +102,6 @@ function buildChartPath(values: number[]) {
   return { line, area, lastPoint: points[points.length - 1] };
 }
 
-const DAY_LABELS = ["P", "S", "Ç", "P", "C", "C", "P"];
-
 export default function Istatistikler() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -117,10 +123,10 @@ export default function Istatistikler() {
       }
     },
     onMutate: async ({ date, currentType }) => {
-      await queryClient.cancelQueries({ queryKey: ["last7days", user?.id] });
-      const previous = queryClient.getQueryData<any[]>(["last7days", user?.id]);
+      await queryClient.cancelQueries({ queryKey: ["currentWeek", user?.id] });
+      const previous = queryClient.getQueryData<any[]>(["currentWeek", user?.id]);
 
-      queryClient.setQueryData<any[]>(["last7days", user?.id], (old) =>
+      queryClient.setQueryData<any[]>(["currentWeek", user?.id], (old) =>
         old?.map((d) =>
           d.date === date ? { ...d, type: currentType === "off_day" ? null : "off_day" } : d
         )
@@ -130,17 +136,18 @@ export default function Istatistikler() {
     },
     onError: (err, _vars, context) => {
       if (context?.previous) {
-        queryClient.setQueryData(["last7days", user?.id], context.previous);
+        queryClient.setQueryData(["currentWeek", user?.id], context.previous);
       }
       Alert.alert("Off day işlemi başarısız", (err as Error).message);
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["last7days"] });
+      queryClient.invalidateQueries({ queryKey: ["currentWeek"] });
       queryClient.invalidateQueries({ queryKey: ["profile"] });
     },
   });
 
-  function handleDayPress(day: { date: string; id: string | null; type: string | null }) {
+  function handleDayPress(day: { date: string; id: string | null; type: string | null; isFuture: boolean }) {
+    if (day.isFuture) return;
     if (day.type === "log" && day.id) {
       router.push(`/entry/${day.id}`);
     } else {
@@ -152,7 +159,7 @@ export default function Istatistikler() {
   const activeType = types?.find((t) => t.id === currentTypeId);
 
   const { data: series, isLoading: seriesLoading } = useMeasurementSeries(user?.id, currentTypeId);
-  const { data: last7, isLoading: last7Loading } = useLast7Days(user?.id);
+  const { data: week, isLoading: weekLoading } = useCurrentWeek(user?.id);
 
   const values = series?.map((s) => s.value) ?? [];
   const { line, area, lastPoint } = buildChartPath(values);
@@ -167,10 +174,11 @@ export default function Istatistikler() {
       : true;
 
   const currentStreak = (() => {
-    if (!last7) return 0;
+    if (!week) return 0;
     let streak = 0;
-    for (let i = last7.length - 1; i >= 0; i--) {
-      if (last7[i].type) streak++;
+    for (let i = week.length - 1; i >= 0; i--) {
+      if (week[i].isFuture) continue;
+      if (week[i].type) streak++;
       else break;
     }
     return streak;
@@ -228,25 +236,31 @@ export default function Istatistikler() {
       </View>
 
       <View className="mx-4 bg-surface border border-border rounded-card p-4">
-        <View className="flex-row items-center gap-2.5 mb-3">
-          <View className="w-8 h-8 rounded-lg bg-stamp/15 items-center justify-center">
-            <Feather name="zap" size={16} color="#FF7A3D" />
+        <View className="flex-row items-center justify-between mb-3">
+          <View className="flex-row items-center gap-2.5">
+            <View className="w-8 h-8 rounded-lg bg-stamp/15 items-center justify-center">
+              <Feather name="zap" size={16} color="#FF7A3D" />
+            </View>
+            <View>
+              <Text className="text-text text-sm font-semibold">{currentStreak} gün üst üste</Text>
+              <Text className="text-textFaint text-[11px]">bu hafta</Text>
+            </View>
           </View>
-          <View>
-            <Text className="text-text text-sm font-semibold">{currentStreak} gün üst üste</Text>
-            <Text className="text-textFaint text-[11px]">son 7 gün</Text>
-          </View>
+          <Pressable onPress={() => router.push("/calendar-year")} className="flex-row items-center gap-1">
+            <Text className="text-accent text-[11px] font-medium">Yıla göre gör</Text>
+            <Feather name="chevron-right" size={13} color="#8CE05A" />
+          </Pressable>
         </View>
 
-        {last7Loading ? (
+        {weekLoading ? (
           <ActivityIndicator color="#8CE05A" />
         ) : (
           <View className="flex-row justify-between">
-            {last7?.map((day, i) => (
+            {week?.map((day) => (
               <Pressable
                 key={day.date}
                 onPress={() => handleDayPress(day)}
-                disabled={toggleOffDayMutation.isPending}
+                disabled={toggleOffDayMutation.isPending || day.isFuture}
                 className="items-center gap-1"
               >
                 <View
@@ -255,6 +269,8 @@ export default function Istatistikler() {
                       ? "bg-accent"
                       : day.type === "off_day"
                       ? "bg-offDaySoft border border-offDay"
+                      : day.isFuture
+                      ? "bg-transparent"
                       : day.isToday
                       ? "bg-accentSoft border border-dashed border-accent"
                       : "bg-white/5 border border-dashed border-white/20"
@@ -266,7 +282,9 @@ export default function Istatistikler() {
                     <Feather name="moon" size={11} color="#B8C0E0" />
                   ) : null}
                 </View>
-                <Text className="text-textFaint text-[9px]">{DAY_LABELS[i]}</Text>
+                <Text className={`text-[9px] ${day.isFuture ? "text-textFaint/40" : "text-textFaint"}`}>
+                  {day.label}
+                </Text>
               </Pressable>
             ))}
           </View>

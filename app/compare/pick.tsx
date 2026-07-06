@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import Feather from "@expo/vector-icons/Feather";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
-import { getPhotoUrl } from "@/lib/storage";
+import { getPhotoUrls } from "@/lib/storage";
 
 const { width } = Dimensions.get("window");
 const THUMB_SIZE = (width - 18 * 2 - 8 * 2) / 3;
@@ -15,6 +15,7 @@ function usePickableEntries() {
   return useQuery({
     queryKey: ["entries", "pickable", user?.id],
     enabled: !!user,
+    staleTime: 1000 * 60 * 30,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("entries")
@@ -24,13 +25,14 @@ function usePickableEntries() {
         .order("date", { ascending: false });
       if (error) throw error;
 
-      return Promise.all(
-        (data ?? []).map(async (e: any) => ({
-          id: e.id,
-          date: e.date,
-          photoUrl: e.photos?.storage_path ? await getPhotoUrl(e.photos.storage_path) : null,
-        }))
-      );
+      const paths = (data ?? []).map((e: any) => e.photos?.storage_path).filter(Boolean) as string[];
+      const urlMap = await getPhotoUrls(paths);
+
+      return (data ?? []).map((e: any) => ({
+        id: e.id,
+        date: e.date,
+        photoUrl: e.photos?.storage_path ? urlMap.get(e.photos.storage_path) ?? null : null,
+      }));
     },
   });
 }

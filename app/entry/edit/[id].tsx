@@ -8,9 +8,10 @@ import {
   ScrollView,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as ImagePicker from "expo-image-picker";
+import Feather from "@expo/vector-icons/Feather";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
 import { uploadPhoto, getPhotoUrl } from "@/lib/storage";
@@ -68,6 +69,8 @@ export default function EditEntry() {
   // measurement_type_id -> girilen değer (string, boş olabilir)
   const [values, setValues] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState(false);
+  const inputRefs = useRef<Array<TextInput | null>>([]);
+  const noteRef = useRef<TextInput | null>(null);
 
   /* INIT */
   useEffect(() => {
@@ -202,22 +205,43 @@ export default function EditEntry() {
 
       <View className="bg-surface p-4 rounded-xl mb-6">
         <Text className="text-text font-bold mb-3">Ölçümler</Text>
-        {allTypes?.map((t) => (
+        {allTypes?.map((t, i) => (
           <View key={t.id} className="flex-row justify-between items-center mb-3">
             <Text className="text-textMuted">{t.name}</Text>
-            <TextInput
-              value={values[t.id] ?? ""}
-              onChangeText={(val) => setValues((prev) => ({ ...prev, [t.id]: val }))}
-              keyboardType="decimal-pad"
-              placeholder={`— ${t.unit}`}
-              placeholderTextColor="#5C5A50"
-              className="text-text bg-bg px-3 py-1 rounded w-20 text-right"
-            />
+            <View className="flex-row items-center gap-1.5">
+              <TextInput
+                ref={(el) => { inputRefs.current[i] = el; }}
+                value={values[t.id] ?? ""}
+                onChangeText={(val) => setValues((prev) => ({ ...prev, [t.id]: val }))}
+                keyboardType="decimal-pad"
+                placeholder={`— ${t.unit}`}
+                placeholderTextColor="#5C5A50"
+                returnKeyType="next"
+                blurOnSubmit={false}
+                onSubmitEditing={() => {
+                  const next = inputRefs.current[i + 1];
+                  if (next) next.focus();
+                  else noteRef.current?.focus();
+                }}
+                className="text-text bg-bg px-3 py-1 rounded w-20 text-right"
+              />
+              <Pressable
+                hitSlop={8}
+                onPress={() => {
+                  const next = inputRefs.current[i + 1];
+                  if (next) next.focus();
+                  else noteRef.current?.focus();
+                }}
+              >
+                <Feather name="chevron-right" size={16} color="#5C5A50" />
+              </Pressable>
+            </View>
           </View>
         ))}
       </View>
 
       <TextInput
+        ref={noteRef}
         value={note}
         onChangeText={setNote}
         placeholder="Not..."

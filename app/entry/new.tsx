@@ -1,8 +1,10 @@
-import { useState } from "react";
-import { View, Text, TextInput, Image, Pressable, ActivityIndicator, ScrollView, Platform } from "react-native";
+import { useState, useRef } from "react";
+import { View, Text, TextInput, Image, Pressable, ActivityIndicator, Platform } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { router } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import Feather from "@expo/vector-icons/Feather";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
 import { uploadPhoto } from "@/lib/storage";
@@ -35,6 +37,8 @@ export default function NewEntry() {
   const [values, setValues] = useState<Record<string, string>>({});
   const [date, setDate] = useState(new Date());
   const [showPicker, setShowPicker] = useState(false);
+  const inputRefs = useRef<Array<TextInput | null>>([]);
+  const noteRef = useRef<TextInput | null>(null);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -89,7 +93,13 @@ export default function NewEntry() {
   });
 
   return (
-    <ScrollView className="flex-1 bg-bg" contentContainerStyle={{ padding: 18, paddingTop: 60 }}>
+    <KeyboardAwareScrollView
+      className="flex-1 bg-bg"
+      contentContainerStyle={{ padding: 18, paddingTop: 60 }}
+      enableOnAndroid
+      extraScrollHeight={30}
+      keyboardShouldPersistTaps="handled"
+    >
       <View className="flex-row justify-between items-center mb-4">
         <Pressable onPress={() => router.back()}>
           <Text className="text-text text-lg">←</Text>
@@ -133,17 +143,37 @@ export default function NewEntry() {
 
       <View className="bg-surface border border-border rounded-card p-3.5 mb-3">
         <Text className="text-textMuted text-[11px] font-semibold mb-2 tracking-wide">ÖLÇÜMLER</Text>
-        {types?.map((t) => (
+        {types?.map((t, i) => (
           <View key={t.id} className="flex-row items-center justify-between py-2">
             <Text className="text-textMuted text-xs">{t.name}</Text>
-            <TextInput
-              value={values[t.id] ?? ""}
-              onChangeText={(v) => setValues((prev) => ({ ...prev, [t.id]: v }))}
-              keyboardType="decimal-pad"
-              placeholder={`— ${t.unit}`}
-              placeholderTextColor="#5C5A50"
-              className="text-text text-base font-semibold text-right w-24"
-            />
+            <View className="flex-row items-center gap-1.5">
+              <TextInput
+                ref={(el) => { inputRefs.current[i] = el; }}
+                value={values[t.id] ?? ""}
+                onChangeText={(v) => setValues((prev) => ({ ...prev, [t.id]: v }))}
+                keyboardType="decimal-pad"
+                placeholder={`— ${t.unit}`}
+                placeholderTextColor="#5C5A50"
+                returnKeyType="next"
+                blurOnSubmit={false}
+                onSubmitEditing={() => {
+                  const next = inputRefs.current[i + 1];
+                  if (next) next.focus();
+                  else noteRef.current?.focus();
+                }}
+                className="text-text text-base font-semibold text-right w-20"
+              />
+              <Pressable
+                hitSlop={8}
+                onPress={() => {
+                  const next = inputRefs.current[i + 1];
+                  if (next) next.focus();
+                  else noteRef.current?.focus();
+                }}
+              >
+                <Feather name="chevron-right" size={16} color="#5C5A50" />
+              </Pressable>
+            </View>
           </View>
         ))}
       </View>
@@ -151,6 +181,7 @@ export default function NewEntry() {
       <View className="bg-surface border border-border rounded-card p-3.5">
         <Text className="text-textMuted text-[11px] font-semibold mb-2 tracking-wide">NOT</Text>
         <TextInput
+          ref={noteRef}
           value={note}
           onChangeText={setNote}
           placeholder="birkaç kelime yaz..."
@@ -164,6 +195,6 @@ export default function NewEntry() {
       {saveMutation.isError ? (
         <Text className="text-danger text-xs mt-3">{(saveMutation.error as Error).message}</Text>
       ) : null}
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }

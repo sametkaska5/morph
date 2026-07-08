@@ -5,8 +5,8 @@ import {
   Pressable,
   ActivityIndicator,
   Image,
-  ScrollView,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useLocalSearchParams, router } from "expo-router";
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -184,7 +184,12 @@ export default function EditEntry() {
   }
 
   return (
-    <ScrollView className="flex-1 bg-bg px-5 pt-16">
+    <KeyboardAwareScrollView
+      className="flex-1 bg-bg px-5 pt-16"
+      enableOnAndroid
+      extraScrollHeight={30}
+      keyboardShouldPersistTaps="handled"
+    >
       <Text className="text-text text-xl font-bold mb-6">Düzenle</Text>
 
       <Pressable onPress={pickImage} className="mb-6 relative">
@@ -269,6 +274,6 @@ export default function EditEntry() {
       <Pressable onPress={() => router.back()} className="mt-4 items-center mb-8">
         <Text className="text-textMuted">İptal</Text>
       </Pressable>
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }

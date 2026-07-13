@@ -1,9 +1,11 @@
-import { View, Text, ScrollView, Pressable, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Platform, ActionSheetIOS, Alert } from "react-native";
 import { useQuery } from "@tanstack/react-query";
+import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
 import { useAuth } from "@/lib/useAuth";
 import { supabase } from "@/lib/supabase";
 import { fetchProfileStats } from "@/lib/profileStats";
+import { useUnitPreference, useSetUnitPreference, displayUnit, toDisplayValue } from "@/lib/units";
 
 function useProfileStats() {
   const { user } = useAuth();
@@ -43,9 +45,31 @@ function SettingsRow({ icon, label, value, danger, onPress }: any) {
 export default function Profil() {
   const { user } = useAuth();
   const { data: stats, isLoading } = useProfileStats();
+  const { data: unitPref = "metric" } = useUnitPreference(user?.id);
+  const setUnitMutation = useSetUnitPreference(user?.id);
+
+  const weightUnit = displayUnit("kg", unitPref);
+  const displayWeightDiff = stats?.weightDiff != null ? toDisplayValue(stats.weightDiff, "kg", unitPref) : null;
+  const unitsLabel = unitPref === "imperial" ? "lb, in" : "kg, cm";
 
   async function handleSignOut() {
     await supabase.auth.signOut();
+  }
+
+  function handleUnitsPress() {
+    const options = ["İptal", "Metrik (kg, cm)", "Emperyal (lb, in)"];
+    if (Platform.OS === "ios") {
+      ActionSheetIOS.showActionSheetWithOptions({ options, cancelButtonIndex: 0 }, (index) => {
+        if (index === 1) setUnitMutation.mutate("metric");
+        if (index === 2) setUnitMutation.mutate("imperial");
+      });
+    } else {
+      Alert.alert("Birimler", "Hangi birim sistemini kullanmak istersin?", [
+        { text: "İptal", style: "cancel" },
+        { text: "Metrik (kg, cm)", onPress: () => setUnitMutation.mutate("metric") },
+        { text: "Emperyal (lb, in)", onPress: () => setUnitMutation.mutate("imperial") },
+      ]);
+    }
   }
 
   return (
@@ -96,13 +120,13 @@ export default function Profil() {
               <Text className="text-accent text-[13px] font-semibold mb-2 leading-5">
                 gelecekteki kendin için anılar biriktiriyorsun.
               </Text>
-              {stats.weightDiff != null ? (
+              {displayWeightDiff != null ? (
                 <Text className="text-textMuted text-xs leading-5">
                   Bugün baktığında ilk fotoğrafından{" "}
                   <Text className="text-accent font-semibold">
-                    {stats.weightDiff <= 0
-                      ? `${Math.abs(stats.weightDiff)} kg daha hafifsin.`
-                      : `${stats.weightDiff} kg daha ağırsın.`}
+                    {displayWeightDiff <= 0
+                      ? `${Math.abs(displayWeightDiff)} ${weightUnit} daha hafifsin.`
+                      : `${displayWeightDiff} ${weightUnit} daha ağırsın.`}
                   </Text>
                 </Text>
               ) : null}
@@ -114,10 +138,14 @@ export default function Profil() {
       <View className="px-4 mb-1.5">
         <Text className="text-text text-sm font-semibold mb-2">Ayarlar</Text>
         <View className="bg-surface border border-border rounded-card overflow-hidden">
-          <SettingsRow icon="bell" label="Bildirimler" />
-          <SettingsRow icon="ruler" label="Takip edilen ölçümler" />
-          <SettingsRow icon="sliders" label="Birimler" value="kg, cm" />
-          <SettingsRow icon="help-circle" label="Yardım & Destek" />
+          <SettingsRow icon="bell" label="Bildirimler" onPress={() => router.push("/settings/notifications")} />
+          <SettingsRow
+            icon="activity"
+            label="Takip edilen ölçümler"
+            onPress={() => router.push("/settings/measurements")}
+          />
+          <SettingsRow icon="sliders" label="Birimler" value={unitsLabel} onPress={handleUnitsPress} />
+          <SettingsRow icon="help-circle" label="Yardım & Destek" onPress={() => router.push("/settings/help")} />
           <SettingsRow icon="log-out" label="Çıkış yap" danger onPress={handleSignOut} />
         </View>
       </View>

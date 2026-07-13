@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { View, Text, Image, FlatList, Pressable, ActivityIndicator, Dimensions } from "react-native";
+import { View, Text, FlatList, Pressable, ActivityIndicator, Dimensions } from "react-native";
+import { Image } from "expo-image";
 import { router } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import Feather from "@expo/vector-icons/Feather";
@@ -22,7 +23,8 @@ function usePickableEntries() {
         .select("id, date, photos!cover_photo_id(storage_path)")
         .eq("user_id", user!.id)
         .eq("type", "log")
-        .order("date", { ascending: false });
+        .order("date", { ascending: false })
+        .limit(60);
       if (error) throw error;
 
       const paths = (data ?? []).map((e: any) => e.photos?.storage_path).filter(Boolean) as string[];
@@ -32,6 +34,7 @@ function usePickableEntries() {
         id: e.id,
         date: e.date,
         photoUrl: e.photos?.storage_path ? urlMap.get(e.photos.storage_path) ?? null : null,
+        photoPath: e.photos?.storage_path ?? null,
       }));
     },
   });
@@ -84,7 +87,13 @@ export default function PickComparison() {
               <Pressable onPress={() => toggle(item.id)} style={{ width: THUMB_SIZE, height: THUMB_SIZE }}>
                 <View className="flex-1 rounded-lg overflow-hidden bg-surface relative">
                   {item.photoUrl ? (
-                    <Image source={{ uri: item.photoUrl }} style={{ flex: 1 }} resizeMode="cover" />
+                    <Image
+                      source={{ uri: item.photoUrl }}
+                      style={{ flex: 1 }}
+                      contentFit="cover"
+                      cachePolicy="disk"
+                      recyclingKey={item.photoPath ?? undefined}
+                    />
                   ) : null}
                   {isSelected ? (
                     <View className="absolute inset-0 bg-black/30 border-2 border-accent rounded-lg items-center justify-center">

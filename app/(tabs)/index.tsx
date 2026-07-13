@@ -1,4 +1,5 @@
-import { View, Text, Image, Pressable, FlatList, Dimensions } from "react-native";
+import { View, Text, Pressable, FlatList, Dimensions } from "react-native";
+import { Image } from "expo-image";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
@@ -12,11 +13,13 @@ const H_PADDING = 16;
 const THUMB_W = (width - H_PADDING * 2 - GAP * (COLUMNS - 1)) / COLUMNS;
 const THUMB_H = THUMB_W * 1.5; // poster oranı (2:3)
 
-type EntryRow = {
+export type EntryRow = {
   id: string;
   date: string;
   note: string | null;
   cover_photo_url: string | null;
+  cover_photo_path: string | null; // sabit cache anahtarı için — link değişse de bu değişmiyor
+  pending?: boolean; // offline'da eklenip henüz Supabase'e senkronize olmamış kayıt
 };
 
 function useTimelineEntries() {
@@ -45,6 +48,7 @@ function useTimelineEntries() {
           date: e.date,
           note: e.note,
           cover_photo_url: path ? urlMap.get(path) ?? null : null,
+          cover_photo_path: path ?? null,
         };
       });
     },
@@ -56,7 +60,20 @@ function PosterThumb({ entry }: { entry: EntryRow }) {
     <Pressable onPress={() => router.push(`/entry/${entry.id}`)} style={{ width: THUMB_W, marginBottom: 12 }}>
       <View style={{ width: THUMB_W, height: THUMB_H }} className="rounded-[4px] overflow-hidden bg-surface">
         {entry.cover_photo_url ? (
-          <Image source={{ uri: entry.cover_photo_url }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+          <Image
+            source={{ uri: entry.cover_photo_url }}
+            style={{ width: "100%", height: "100%" }}
+            contentFit="cover"
+            cachePolicy={entry.pending ? "none" : "disk"}
+            recyclingKey={entry.cover_photo_path ?? undefined}
+            transition={150}
+          />
+        ) : null}
+        {entry.pending ? (
+          <View className="absolute bottom-1.5 right-1.5 bg-black/60 rounded-full px-1.5 py-0.5 flex-row items-center gap-1">
+            <Feather name="clock" size={9} color="#F5F3EC" />
+            <Text className="text-text text-[8px] font-semibold">senkronize edilecek</Text>
+          </View>
         ) : null}
       </View>
       <Text className="text-textFaint text-[9px] mt-1" numberOfLines={1}>

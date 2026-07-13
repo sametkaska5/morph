@@ -1,10 +1,12 @@
 import { Tabs, Redirect, router } from "expo-router";
-import { View, Pressable, ActivityIndicator, ActionSheetIOS, Alert, Platform } from "react-native";
+import { View, Text, Pressable, ActivityIndicator, ActionSheetIOS, Alert, Platform } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Feather from "@expo/vector-icons/Feather";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { useAuth } from "@/lib/useAuth";
 import { useCaptureStore } from "@/lib/captureStore";
+import { useIsOnline } from "@/lib/useIsOnline";
 
 const ACCENT = "#8CE05A";
 const MUTED = "#6B6A62";
@@ -83,8 +85,20 @@ function CaptureButton() {
   );
 }
 
+function OfflineBanner() {
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={{ paddingTop: insets.top }} className="bg-danger">
+      <Text className="text-bg text-[10px] font-semibold text-center py-1">
+        Çevrimdışısın — yeni kayıtlar internet gelince senkronize edilecek
+      </Text>
+    </View>
+  );
+}
+
 export default function TabsLayout() {
   const { session, loading } = useAuth();
+  const isOnline = useIsOnline();
 
   if (loading) {
     return (
@@ -99,7 +113,9 @@ export default function TabsLayout() {
   }
 
   return (
-    <Tabs
+    <View style={{ flex: 1 }}>
+      {!isOnline ? <OfflineBanner /> : null}
+      <Tabs
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: ACCENT,
@@ -150,6 +166,7 @@ export default function TabsLayout() {
           tabBarIcon: ({ color }) => <Feather name="user" size={20} color={color} />,
         }}
       />
-    </Tabs>
+      </Tabs>
+    </View>
   );
 }

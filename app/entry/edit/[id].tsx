@@ -15,6 +15,8 @@ import Feather from "@expo/vector-icons/Feather";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
 import { uploadPhoto, getPhotoUrl } from "@/lib/storage";
+import { useMeasurementTypes } from "@/lib/measurementTypes";
+import { useUnitPreference, displayUnit, toDisplayValue, toMetricValue } from "@/lib/units";
 
 /* ---------------- FETCH ---------------- */
 
@@ -36,20 +38,6 @@ function useEntry(entryId: string) {
   });
 }
 
-function useAllMeasurementTypes() {
-  return useQuery({
-    queryKey: ["measurement_types", "all"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("measurement_types")
-        .select("id, name, unit")
-        .order("sort_order");
-      if (error) throw error;
-      return data;
-    },
-  });
-}
-
 /* ---------------- PAGE ---------------- */
 
 export default function EditEntry() {
@@ -59,7 +47,8 @@ export default function EditEntry() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { data, isLoading } = useEntry(id);
-  const { data: allTypes } = useAllMeasurementTypes();
+  const { data: allTypes } = useMeasurementTypes(user?.id);
+  const { data: unitPref = "metric" } = useUnitPreference(user?.id);
 
   const [note, setNote] = useState("");
   // storage'daki gerçek yol (DB'ye yazılacak olan)
@@ -85,11 +74,12 @@ export default function EditEntry() {
     if (data?.measurement_values) {
       const initial: Record<string, string> = {};
       for (const mv of data.measurement_values as any[]) {
-        initial[mv.measurement_type_id] = String(mv.value);
+        const baseUnit = mv.measurement_types?.unit ?? "";
+        initial[mv.measurement_type_id] = String(toDisplayValue(mv.value, baseUnit, unitPref));
       }
       setValues(initial);
     }
-  }, [data]);
+  }, [data, unitPref]);
 
   /* ---------------- PICK IMAGE (kırp / kırpmadan seç) ---------------- */
 
@@ -151,11 +141,15 @@ export default function EditEntry() {
 
       const measurementRows = Object.entries(values)
         .filter(([, v]) => v.trim() !== "")
-        .map(([typeId, v]) => ({
-          entry_id: id,
-          measurement_type_id: typeId,
-          value: parseFloat(v.replace(",", ".")),
-        }));
+        .map(([typeId, v]) => {
+          const baseUnit = allTypes?.find((t) => t.id === typeId)?.unit ?? "";
+          const num = parseFloat(v.replace(",", "."));
+          return {
+            entry_id: id,
+            measurement_type_id: typeId,
+            value: toMetricValue(num, baseUnit, unitPref),
+          };
+        });
 
       if (measurementRows.length > 0) {
         const { error: valuesError } = await supabase
@@ -219,7 +213,7 @@ export default function EditEntry() {
                 value={values[t.id] ?? ""}
                 onChangeText={(val) => setValues((prev) => ({ ...prev, [t.id]: val }))}
                 keyboardType="decimal-pad"
-                placeholder={`— ${t.unit}`}
+                placeholder={`— ${displayUnit(t.unit, unitPref)}`}
                 placeholderTextColor="#5C5A50"
                 returnKeyType="next"
                 blurOnSubmit={false}

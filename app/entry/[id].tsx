@@ -1,13 +1,13 @@
 import {
   View,
   Text,
-  Image,
   ScrollView,
   Pressable,
   ActivityIndicator,
   Dimensions,
   Alert,
 } from "react-native";
+import { Image } from "expo-image";
 import { useLocalSearchParams, router } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
@@ -36,7 +36,7 @@ function useEntryDetail(entryId: string) {
       const photoPath = (data as any)?.photos?.storage_path;
       const photoUrl = photoPath ? await getPhotoUrl(photoPath) : null;
 
-      return { ...data, photoUrl };
+      return { ...data, photoUrl, photoPath };
     },
   });
 }
@@ -155,7 +155,14 @@ export default function EntryDetail() {
         </Pressable>
 
         {data?.photoUrl ? (
-          <Image source={{ uri: data.photoUrl }} className="w-full h-full" resizeMode="cover" />
+          <Image
+            source={{ uri: data.photoUrl }}
+            style={{ width: "100%", height: "100%" }}
+            contentFit="cover"
+            cachePolicy="disk"
+            recyclingKey={(data as any).photoPath ?? undefined}
+            transition={150}
+          />
         ) : (
           <View className="w-full h-full bg-surface items-center justify-center">
             <Text className="text-textMuted">Fotoğraf yok</Text>

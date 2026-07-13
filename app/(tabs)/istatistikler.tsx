@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert } from "react-native";
 import Svg, { Path, Circle, Defs, LinearGradient, Stop } from "react-native-svg";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -7,24 +7,13 @@ import Feather from "@expo/vector-icons/Feather";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
 import { toLocalDateKey, getMondayOfWeek, weekdayLetter } from "@/lib/date";
+import { scheduleStreakRiskNotification } from "@/lib/notifications";
+import { useNotificationSettings } from "@/lib/notificationSettings";
+import { useMeasurementTypes } from "@/lib/measurementTypes";
+import { useUnitPreference, displayUnit, toDisplayValue } from "@/lib/units";
 
 const CHART_W = 300;
 const CHART_H = 110;
-
-function useMeasurementTypes() {
-  return useQuery({
-    queryKey: ["measurement_types", "defaults"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("measurement_types")
-        .select("id, name, unit, target_direction")
-        .eq("is_default", true)
-        .order("sort_order");
-      if (error) throw error;
-      return data;
-    },
-  });
-}
 
 function useMeasurementSeries(userId: string | undefined, typeId: string | undefined) {
   return useQuery({
@@ -105,7 +94,7 @@ function buildChartPath(values: number[]) {
 export default function Istatistikler() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { data: types } = useMeasurementTypes();
+  const { data: types } = useMeasurementTypes(user?.id);
   const [activeTypeId, setActiveTypeId] = useState<string | null>(null);
 
   const toggleOffDayMutation = useMutation({
@@ -160,8 +149,11 @@ export default function Istatistikler() {
 
   const { data: series, isLoading: seriesLoading } = useMeasurementSeries(user?.id, currentTypeId);
   const { data: week, isLoading: weekLoading } = useCurrentWeek(user?.id);
+  const { data: unitPref = "metric" } = useUnitPreference(user?.id);
 
-  const values = series?.map((s) => s.value) ?? [];
+  const values = activeType
+    ? (series?.map((s) => toDisplayValue(s.value, activeType.unit, unitPref)) ?? [])
+    : series?.map((s) => s.value) ?? [];
   const { line, area, lastPoint } = buildChartPath(values);
   const currentValue = values[values.length - 1];
   const previousValue = values[values.length - 2];
@@ -183,6 +175,14 @@ export default function Istatistikler() {
     }
     return streak;
   })();
+
+  const { data: notifSettings } = useNotificationSettings(user?.id);
+
+  useEffect(() => {
+    if (!week || !notifSettings?.streak_enabled) return;
+    const today = week.find((d) => d.isToday);
+    scheduleStreakRiskNotification(currentStreak, !!today?.type);
+  }, [week, currentStreak, notifSettings?.streak_enabled]);
 
   return (
     <ScrollView className="flex-1 bg-bg" contentContainerStyle={{ paddingTop: 56, paddingBottom: 30 }}>
@@ -211,11 +211,15 @@ export default function Istatistikler() {
           <>
             <View className="flex-row items-baseline gap-2 mb-2.5">
               <Text className="text-text text-2xl font-bold">
-                {currentValue} <Text className="text-sm font-medium text-textMuted">{activeType?.unit}</Text>
+                {currentValue}{" "}
+                <Text className="text-sm font-medium text-textMuted">
+                  {activeType ? displayUnit(activeType.unit, unitPref) : ""}
+                </Text>
               </Text>
               {delta != null ? (
                 <Text className={`text-xs font-semibold ${isGoodDelta ? "text-accent" : "text-danger"}`}>
-                  {delta > 0 ? "↑" : delta < 0 ? "↓" : "•"} {Math.abs(delta)} {activeType?.unit}
+                  {delta > 0 ? "↑" : delta < 0 ? "↓" : "•"} {Math.abs(delta)}{" "}
+                  {activeType ? displayUnit(activeType.unit, unitPref) : ""}
                 </Text>
               ) : null}
             </View>

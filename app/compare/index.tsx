@@ -1,8 +1,25 @@
-import { View, Text, Image, ScrollView, Pressable, ActivityIndicator } from "react-native";
+import { useRef, useState } from "react";
+import { View, Text, Image, ScrollView, Pressable, ActivityIndicator, Alert } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import Feather from "@expo/vector-icons/Feather";
+import { captureRef } from "react-native-view-shot";
+import type * as MediaLibraryType from "expo-media-library";
+import * as Sharing from "expo-sharing";
 import { fetchComparisonBetween } from "@/lib/comparison";
+import { useAuth } from "@/lib/useAuth";
+import { useUnitPreference, displayUnit, toDisplayValue } from "@/lib/units";
+
+// Expo Go'nun bazı derlemelerinde expo-media-library'nin native modülü mevcut değil;
+// paket import edilir edilmez throw ediyor. Statik import Babel tarafından her koşulda
+// çalıştırıldığı için, modülü try/catch'li require ile yüklüyoruz — eksikse "Kaydet"
+// özelliği sessizce devre dışı kalıyor, "Paylaş" (expo-sharing, ayrı native modül) etkilenmiyor.
+let MediaLibrary: typeof MediaLibraryType | null = null;
+try {
+  MediaLibrary = require("expo-media-library");
+} catch {
+  MediaLibrary = null;
+}
 
 function useComparison(a: string | undefined, b: string | undefined) {
   return useQuery({
@@ -59,22 +76,75 @@ export default function Compare() {
 
 function ComparisonBody({ data }: { data: NonNullable<Awaited<ReturnType<typeof fetchComparisonBetween>>> }) {
   const { start, end, daysBetween, types } = data;
+  const photoBlockRef = useRef<View>(null);
+  const [pendingAction, setPendingAction] = useState<"save" | "share" | null>(null);
+
+  async function capturePhotoBlock() {
+    return captureRef(photoBlockRef, { format: "png", quality: 1 });
+  }
+
+  async function handleSave() {
+    if (!MediaLibrary) {
+      Alert.alert(
+        "Bu özellik Expo Go'da desteklenmiyor",
+        "Galeriye kaydetmek için development build gerekiyor. Bu arada 'Paylaş' ile görseli doğrudan gönderebilirsin."
+      );
+      return;
+    }
+    setPendingAction("save");
+    try {
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("İzin gerekli", "Galeriye kaydetmek için fotoğraf erişim izni vermelisin.");
+        return;
+      }
+      const uri = await capturePhotoBlock();
+      await MediaLibrary.saveToLibraryAsync(uri);
+      Alert.alert("Kaydedildi", "Karşılaştırma görseli galerine kaydedildi.");
+    } catch (err) {
+      Alert.alert("Kaydetme başarısız", (err as Error).message);
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
+  async function handleShare() {
+    setPendingAction("share");
+    try {
+      const uri = await capturePhotoBlock();
+      const available = await Sharing.isAvailableAsync();
+      if (!available) {
+        Alert.alert("Paylaşım desteklenmiyor", "Bu cihazda paylaşım özelliği kullanılamıyor.");
+        return;
+      }
+      await Sharing.shareAsync(uri, { mimeType: "image/png" });
+    } catch (err) {
+      Alert.alert("Paylaşım başarısız", (err as Error).message);
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
+  const { user } = useAuth();
+  const { data: unitPref = "metric" } = useUnitPreference(user?.id);
 
   const rows = types
     .map((t) => {
-      const startVal = start.measurements[t.id];
-      const endVal = end.measurements[t.id];
-      if (startVal == null && endVal == null) return null;
+      const rawStart = start.measurements[t.id];
+      const rawEnd = end.measurements[t.id];
+      if (rawStart == null && rawEnd == null) return null;
+      const startVal = rawStart != null ? toDisplayValue(rawStart, t.unit, unitPref) : null;
+      const endVal = rawEnd != null ? toDisplayValue(rawEnd, t.unit, unitPref) : null;
       const delta = startVal != null && endVal != null ? Number((endVal - startVal).toFixed(1)) : null;
       const isGood =
         delta == null ? true : t.targetDirection === "decrease_is_good" ? delta <= 0 : delta >= 0;
-      return { ...t, startVal, endVal, delta, isGood };
+      return { ...t, unit: displayUnit(t.unit, unitPref), startVal, endVal, delta, isGood };
     })
     .filter(Boolean) as any[];
 
   return (
     <View className="mt-3">
-      <View className="mx-4 rounded-card overflow-hidden flex-row h-72 mb-3.5">
+      <View ref={photoBlockRef} collapsable={false} className="mx-4 rounded-card overflow-hidden flex-row h-72 mb-3.5">
         <View className="flex-1 bg-surface relative">
           {start.photoUrl ? (
             <Image source={{ uri: start.photoUrl }} style={{ flex: 1 }} resizeMode="cover" />
@@ -92,6 +162,37 @@ function ComparisonBody({ data }: { data: NonNullable<Awaited<ReturnType<typeof 
             <Text className="text-text text-[10px] font-semibold">{fmtDate(end.date)}</Text>
           </View>
         </View>
+      </View>
+
+      <View className="mx-4 mb-3.5 flex-row gap-2.5">
+        <Pressable
+          onPress={handleSave}
+          disabled={pendingAction !== null}
+          className="flex-1 flex-row items-center justify-center gap-1.5 border border-border rounded-card py-2.5 bg-surface"
+        >
+          {pendingAction === "save" ? (
+            <ActivityIndicator size="small" color="#F5F3EC" />
+          ) : (
+            <>
+              <Feather name="download" size={14} color="#F5F3EC" />
+              <Text className="text-text text-xs font-semibold">Kaydet</Text>
+            </>
+          )}
+        </Pressable>
+        <Pressable
+          onPress={handleShare}
+          disabled={pendingAction !== null}
+          className="flex-1 flex-row items-center justify-center gap-1.5 border border-accent rounded-card py-2.5 bg-accentSoft"
+        >
+          {pendingAction === "share" ? (
+            <ActivityIndicator size="small" color="#8CE05A" />
+          ) : (
+            <>
+              <Feather name="share-2" size={14} color="#8CE05A" />
+              <Text className="text-accent text-xs font-semibold">Paylaş</Text>
+            </>
+          )}
+        </Pressable>
       </View>
 
       {rows.length > 0 ? (

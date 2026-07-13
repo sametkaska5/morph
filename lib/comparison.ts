@@ -53,10 +53,11 @@ export async function fetchDefaultComparison(userId: string): Promise<Comparison
 
   if (!firstEntry || !lastEntry || firstEntry.id === lastEntry.id) return null;
 
+  // is_default filtresi yok — RLS ("user_id is null or auth.uid() = user_id")
+  // zaten sistem varsayılanları + kullanıcının kendi özel tiplerini döndürüyor.
   const { data: types } = await supabase
     .from("measurement_types")
     .select("id, name, unit, target_direction")
-    .eq("is_default", true)
     .order("sort_order");
 
   const start = await loadSide(firstEntry);
@@ -84,10 +85,11 @@ export async function fetchComparisonBetween(entryIdA: string, entryIdB: string)
 
   const [firstEntry, lastEntry] = new Date(a.date) <= new Date(b.date) ? [a, b] : [b, a];
 
+  // is_default filtresi yok — RLS ("user_id is null or auth.uid() = user_id")
+  // zaten sistem varsayılanları + kullanıcının kendi özel tiplerini döndürüyor.
   const { data: types } = await supabase
     .from("measurement_types")
     .select("id, name, unit, target_direction")
-    .eq("is_default", true)
     .order("sort_order");
 
   const start = await loadSide(firstEntry);

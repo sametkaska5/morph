@@ -1,36 +1,24 @@
 import { useState, useRef } from "react";
-import { View, Text, TextInput, Image, Pressable, ActivityIndicator, Platform } from "react-native";
+import { View, Text, TextInput, Image, Pressable, Platform, Alert } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { router } from "expo-router";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Feather from "@expo/vector-icons/Feather";
-import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
-import { uploadPhoto } from "@/lib/storage";
 import { useCaptureStore } from "@/lib/captureStore";
 import { toLocalDateKey } from "@/lib/date";
-
-function useDefaultMeasurementTypes() {
-  return useQuery({
-    queryKey: ["measurement_types", "defaults"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("measurement_types")
-        .select("id, name, unit")
-        .eq("is_default", true)
-        .order("sort_order");
-      if (error) throw error;
-      return data;
-    },
-  });
-}
+import { saveEntry, SAVE_ENTRY_MUTATION_KEY, type SaveEntryPayload } from "@/lib/entryMutations";
+import { useMeasurementTypes } from "@/lib/measurementTypes";
+import { useUnitPreference, displayUnit, toMetricValue } from "@/lib/units";
+import type { EntryRow } from "@/app/(tabs)/index";
 
 export default function NewEntry() {
   const photo = useCaptureStore((s) => s.photo);
   const clearPhoto = useCaptureStore((s) => s.clear);
   const { user } = useAuth();
-  const { data: types } = useDefaultMeasurementTypes();
+  const { data: types } = useMeasurementTypes(user?.id);
+  const { data: unitPref = "metric" } = useUnitPreference(user?.id);
   const queryClient = useQueryClient();
 
   const [note, setNote] = useState("");
@@ -40,57 +28,75 @@ export default function NewEntry() {
   const inputRefs = useRef<Array<TextInput | null>>([]);
   const noteRef = useRef<TextInput | null>(null);
 
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      if (!user) throw new Error("Giriş yapılmamış");
-      if (!photo) throw new Error("Fotoğraf bulunamadı");
+  const saveMutation = useMutation<
+    Awaited<ReturnType<typeof saveEntry>>,
+    Error,
+    SaveEntryPayload,
+    { previous?: EntryRow[] }
+  >({
+    mutationKey: SAVE_ENTRY_MUTATION_KEY,
+    mutationFn: saveEntry,
+    onMutate: async (payload) => {
+      // Offline'da bile kaydı hemen Ana Ekran'da görebilmek için timeline cache'ine
+      // "senkronize edilecek" işaretli bir kayıt ekliyoruz — gerçek satır Supabase'e
+      // yazılınca (online olduğunda) invalidate ile yerini gerçek veriye bırakıyor.
+      await queryClient.cancelQueries({ queryKey: ["entries", "timeline"] });
+      const previous = queryClient.getQueryData<EntryRow[]>(["entries", "timeline"]);
 
-      const today = toLocalDateKey(date);
+      const optimisticEntry: EntryRow = {
+        id: `pending-${payload.date}`,
+        date: payload.date,
+        note: payload.note,
+        cover_photo_url: `data:image/jpeg;base64,${payload.photoBase64}`,
+        cover_photo_path: `pending-${payload.date}`,
+        pending: true,
+      };
 
-      const { data: entry, error: entryError } = await supabase
-        .from("entries")
-        .upsert(
-          { user_id: user.id, date: today, type: "log", note: note || null },
-          { onConflict: "user_id,date" }
-        )
-        .select()
-        .single();
-      if (entryError) throw entryError;
+      queryClient.setQueryData<EntryRow[]>(["entries", "timeline"], (old) => {
+        const rest = (old ?? []).filter((e) => e.date !== payload.date);
+        return [optimisticEntry, ...rest].sort((a, b) => (a.date < b.date ? 1 : -1));
+      });
 
-      const storagePath = await uploadPhoto(user.id, entry.id, photo.base64);
-
-      const { data: photoRow, error: photoError } = await supabase
-        .from("photos")
-        .insert({ entry_id: entry.id, storage_path: storagePath, order_index: 0 })
-        .select()
-        .single();
-      if (photoError) throw photoError;
-
-      await supabase.from("entries").update({ cover_photo_id: photoRow.id }).eq("id", entry.id);
-
-      const measurementRows = Object.entries(values)
-        .filter(([, v]) => v.trim() !== "")
-        .map(([typeId, v]) => ({
-          entry_id: entry.id,
-          measurement_type_id: typeId,
-          value: parseFloat(v.replace(",", ".")),
-        }));
-
-      if (measurementRows.length > 0) {
-        const { error: valuesError } = await supabase
-          .from("measurement_values")
-          .upsert(measurementRows, { onConflict: "entry_id,measurement_type_id" });
-        if (valuesError) throw valuesError;
-      }
-
-      return entry;
+      return { previous };
     },
-    onSuccess: () => {
-      clearPhoto();
-      queryClient.invalidateQueries({ queryKey: ["entries", "timeline"] });
-      router.replace("/(tabs)");
+    onError: (err, _payload, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["entries", "timeline"], context.previous);
+      }
+      Alert.alert("Kayıt başarısız", (err as Error).message);
     },
   });
+
+  function handleSave() {
+    if (!user) return;
+    if (!photo) {
+      Alert.alert("Fotoğraf bulunamadı", "Kaydetmeden önce bir fotoğraf çekmen/seçmen gerekiyor.");
+      return;
+    }
+    // Kullanıcı imperial tercih ettiyse girdiği değerler lb/inch cinsinden — DB'ye
+    // her zaman metrik yazıldığı için kaydetmeden önce kg/cm'ye çeviriyoruz.
+    const metricValues: Record<string, string> = {};
+    for (const [typeId, raw] of Object.entries(values)) {
+      if (raw.trim() === "") continue;
+      const type = types?.find((t) => t.id === typeId);
+      const num = parseFloat(raw.replace(",", "."));
+      if (!type || Number.isNaN(num)) continue;
+      metricValues[typeId] = String(toMetricValue(num, type.unit, unitPref));
+    }
+
+    // İnternet olsun olmasın kayıt anında Ana Ekran'a dönüyoruz — foto zaten optimistic
+    // olarak timeline'da görünüyor (onMutate), gerçek senkronizasyon arka planda
+    // (online olunca) tamamlanıyor. Kullanıcı offline'da spinner'da beklemek zorunda kalmasın.
+    saveMutation.mutate({
+      userId: user.id,
+      date: toLocalDateKey(date),
+      note: note || null,
+      values: metricValues,
+      photoBase64: photo.base64,
+    });
+    clearPhoto();
+    router.replace("/(tabs)");
+  }
 
   return (
     <KeyboardAwareScrollView
@@ -105,12 +111,8 @@ export default function NewEntry() {
           <Text className="text-text text-lg">←</Text>
         </Pressable>
         <Text className="text-text text-base font-semibold">Yeni Kayıt</Text>
-        <Pressable onPress={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
-          {saveMutation.isPending ? (
-            <ActivityIndicator color="#8CE05A" size="small" />
-          ) : (
-            <Text className="text-accent text-sm font-semibold">kaydet</Text>
-          )}
+        <Pressable onPress={handleSave}>
+          <Text className="text-accent text-sm font-semibold">kaydet</Text>
         </Pressable>
       </View>
 
@@ -152,7 +154,7 @@ export default function NewEntry() {
                 value={values[t.id] ?? ""}
                 onChangeText={(v) => setValues((prev) => ({ ...prev, [t.id]: v }))}
                 keyboardType="decimal-pad"
-                placeholder={`— ${t.unit}`}
+                placeholder={`— ${displayUnit(t.unit, unitPref)}`}
                 placeholderTextColor="#5C5A50"
                 returnKeyType="next"
                 blurOnSubmit={false}
@@ -191,10 +193,6 @@ export default function NewEntry() {
           maxLength={300}
         />
       </View>
-
-      {saveMutation.isError ? (
-        <Text className="text-danger text-xs mt-3">{(saveMutation.error as Error).message}</Text>
-      ) : null}
     </KeyboardAwareScrollView>
   );
 }

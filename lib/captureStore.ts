@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-type CapturedPhoto = { uri: string; base64: string } | null;
+type CapturedPhoto = { uri: string; base64: string; takenAt?: string } | null;
 
 interface CaptureStore {
   photo: CapturedPhoto;

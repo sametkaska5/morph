@@ -1,9 +1,6 @@
-import { View, Text } from "react-native";
-
+// Bu route hiç render edilmez: _layout.tsx'teki tabBarButton, basılınca doğrudan
+// kamera/galeri seçimini açıp navigasyonu engelliyor. Dosya sadece Tabs.Screen
+// name="capture" eşleşmesi için var.
 export default function Screen() {
-  return (
-    <View className="flex-1 bg-bg items-center justify-center">
-      <Text className="text-textMuted text-sm">capture — yakında</Text>
-    </View>
-  );
+  return null;
 }

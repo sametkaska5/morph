@@ -33,13 +33,29 @@ async function pickFromCamera() {
 async function pickFromLibrary() {
   const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (status !== "granted") return;
-  return ImagePicker.launchImageLibraryAsync({ allowsEditing: false, quality: 0.9 });
+  return ImagePicker.launchImageLibraryAsync({ allowsEditing: false, quality: 0.9, exif: true });
+}
+
+// EXIF "DateTimeOriginal"/"DateTime" formatı "YYYY:MM:DD HH:MM:SS" — ISO'ya çevirip
+// döndürüyoruz ki galeriden seçilen eski bir fotoğrafta kayıt tarihi elle seçilmek
+// zorunda kalınmadan çekildiği güne otomatik ayarlanabilsin. Konum (iOS: düz alanlar,
+// Android: aynı şekilde düz) veya EXIF hiç yoksa (ekran görüntüsü, düzenlenmiş foto) undefined döner.
+function parseExifDateTime(exif: Record<string, any> | undefined | null): string | undefined {
+  const raw: unknown = exif?.DateTimeOriginal ?? exif?.DateTime ?? exif?.["{TIFF}"]?.DateTime;
+  if (typeof raw !== "string") return undefined;
+  const match = raw.match(/^(\d{4}):(\d{2}):(\d{2})\s+(\d{2}):(\d{2}):(\d{2})/);
+  if (!match) return undefined;
+  const [, y, mo, d, h, mi, s] = match;
+  const iso = `${y}-${mo}-${d}T${h}:${mi}:${s}`;
+  return Number.isNaN(new Date(iso).getTime()) ? undefined : iso;
 }
 
 async function handleResult(result: ImagePicker.ImagePickerResult | undefined) {
   if (result && !result.canceled && result.assets?.[0]?.uri) {
-    const resized = await resizeAndCompress(result.assets[0].uri);
-    useCaptureStore.getState().setPhoto(resized);
+    const asset = result.assets[0];
+    const resized = await resizeAndCompress(asset.uri);
+    const takenAt = parseExifDateTime(asset.exif);
+    useCaptureStore.getState().setPhoto({ ...resized, takenAt });
     router.push("/entry/new");
   }
 }

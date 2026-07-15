@@ -65,7 +65,8 @@ export function registerEntryMutationDefaults(queryClient: QueryClient) {
   queryClient.setMutationDefaults(SAVE_ENTRY_MUTATION_KEY, {
     mutationFn: saveEntry,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["entries", "timeline"] });
+      queryClient.invalidateQueries({ queryKey: ["entries"] });
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
     },
     onError: (err) => {
       console.error("saveEntry mutation başarısız:", err);

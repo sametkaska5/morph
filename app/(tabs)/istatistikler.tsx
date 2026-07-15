@@ -96,13 +96,27 @@ export default function Istatistikler() {
   const queryClient = useQueryClient();
   const { data: types } = useMeasurementTypes(user?.id);
   const [activeTypeId, setActiveTypeId] = useState<string | null>(null);
+  // Hangi günlerin şu an sunucuya yazılmakta olduğunu izler. toggleOffDayMutation.isPending
+  // TEK bir mutation nesnesine ait olduğu için tüm haftayı birden kilitlerdi — biri
+  // işlemdeyken başka bir güne basmak sessizce yok sayılıyordu. Bunun yerine sadece
+  // işlemdeki günü kilitliyoruz, diğer günlere aynı anda basılabilsin.
+  const [pendingDates, setPendingDates] = useState<Set<string>>(new Set());
 
   const toggleOffDayMutation = useMutation({
-    mutationFn: async ({ date, currentType, entryId }: { date: string; currentType: string | null; entryId: string | null }) => {
+    mutationFn: async ({ date, currentType }: { date: string; currentType: string | null }) => {
       if (!user) throw new Error("Giriş yapılmamış");
 
-      if (currentType === "off_day" && entryId) {
-        const { error } = await supabase.from("entries").delete().eq("id", entryId);
+      if (currentType === "off_day") {
+        // entryId'ye göre değil (user_id, date) eşleşmesine göre siliyoruz: optimistic
+        // güncelleme gerçek id'yi cache'e henüz yazmadan (refetch tamamlanmadan) kullanıcı
+        // tekrar basarsa entryId hâlâ null oluyordu ve id'ye bağlı silme sessizce
+        // hiçbir şey yapmıyordu — off day sunucudan değişmeden geri geliyordu.
+        const { error } = await supabase
+          .from("entries")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("date", date)
+          .eq("type", "off_day");
         if (error) throw error;
       } else if (!currentType) {
         const { error } = await supabase
@@ -113,25 +127,36 @@ export default function Istatistikler() {
     },
     onMutate: async ({ date, currentType }) => {
       await queryClient.cancelQueries({ queryKey: ["currentWeek", user?.id] });
-      const previous = queryClient.getQueryData<any[]>(["currentWeek", user?.id]);
-
       queryClient.setQueryData<any[]>(["currentWeek", user?.id], (old) =>
         old?.map((d) =>
           d.date === date ? { ...d, type: currentType === "off_day" ? null : "off_day" } : d
         )
       );
-
-      return { previous };
     },
-    onError: (err, _vars, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(["currentWeek", user?.id], context.previous);
-      }
+    onError: (err, variables) => {
+      // Sadece hata veren günü eski haline döndürüyoruz — tüm haftanın eski kopyasını
+      // geri yüklemek, aynı anda başarıyla işlenmiş BAŞKA bir günün optimistic
+      // güncellemesini de silip yanlış günün değişmiş gibi görünmesine yol açıyordu.
+      queryClient.setQueryData<any[]>(["currentWeek", user?.id], (old) =>
+        old?.map((d) => (d.date === variables.date ? { ...d, type: variables.currentType } : d))
+      );
       Alert.alert("Off day işlemi başarısız", (err as Error).message);
     },
-    onSettled: () => {
+    onSettled: (_data, _error, variables) => {
+      // toggleOffDayMutation tüm günler arasında TEK bir useMutation örneği —
+      // kilidi burada (hook seviyesi onSettled) açıyoruz çünkü bu callback her
+      // mutate() çağrısı için variables ile birlikte güvenilir şekilde çalışır.
+      // .mutate(vars, { onSettled }) şeklinde per-call verilen callback'ler ise
+      // React Query içinde aynı mutation nesnesinde üzerine yazılıyor — art arda
+      // farklı günlere hızlı basılınca önceki günün kilidi hiç açılmıyor, o gün
+      // sonsuza kadar kilitli kalıyordu.
       queryClient.invalidateQueries({ queryKey: ["currentWeek"] });
       queryClient.invalidateQueries({ queryKey: ["profile"] });
+      setPendingDates((prev) => {
+        const next = new Set(prev);
+        next.delete(variables.date);
+        return next;
+      });
     },
   });
 
@@ -139,9 +164,11 @@ export default function Istatistikler() {
     if (day.isFuture) return;
     if (day.type === "log" && day.id) {
       router.push(`/entry/${day.id}`);
-    } else {
-      toggleOffDayMutation.mutate({ date: day.date, currentType: day.type, entryId: day.id });
+      return;
     }
+    if (pendingDates.has(day.date)) return; // aynı güne art arda basmayı engelle
+    setPendingDates((prev) => new Set(prev).add(day.date));
+    toggleOffDayMutation.mutate({ date: day.date, currentType: day.type });
   }
 
   const currentTypeId = activeTypeId ?? types?.[0]?.id;
@@ -264,7 +291,7 @@ export default function Istatistikler() {
               <Pressable
                 key={day.date}
                 onPress={() => handleDayPress(day)}
-                disabled={toggleOffDayMutation.isPending || day.isFuture}
+                disabled={pendingDates.has(day.date) || day.isFuture}
                 className="items-center gap-1"
               >
                 <View

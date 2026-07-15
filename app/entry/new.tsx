@@ -23,7 +23,9 @@ export default function NewEntry() {
 
   const [note, setNote] = useState("");
   const [values, setValues] = useState<Record<string, string>>({});
-  const [date, setDate] = useState(new Date());
+  // Galeriden seçilen eski fotoğrafın EXIF çekim tarihi varsa (bkz. (tabs)/_layout.tsx
+  // parseExifDateTime) tarihi otomatik ona ayarlıyoruz — kullanıcı tekrar elle seçmesin.
+  const [date, setDate] = useState(() => (photo?.takenAt ? new Date(photo.takenAt) : new Date()));
   const [showPicker, setShowPicker] = useState(false);
   const inputRefs = useRef<Array<TextInput | null>>([]);
   const noteRef = useRef<TextInput | null>(null);

@@ -15,6 +15,23 @@ export async function uploadPhoto(userId: string, entryId: string, base64: strin
   return path;
 }
 
+/**
+ * Profil fotoğrafını "photos" bucket'ında {user_id}/avatar/ altına yükler — entry
+ * fotoğraflarıyla aynı bucket'ı ve aynı storage politikalarını (0003_storage_policies.sql)
+ * paylaşıyor, sadece yol öneki farklı; ayrı bir politika/bucket gerekmiyor.
+ */
+export async function uploadAvatar(userId: string, base64: string) {
+  const fileName = `avatar-${Date.now()}.jpg`;
+  const path = `${userId}/avatar/${fileName}`;
+
+  const { error } = await supabase.storage.from("photos").upload(path, decode(base64), {
+    contentType: "image/jpeg",
+  });
+
+  if (error) throw error;
+  return path;
+}
+
 export async function getPhotoUrl(path: string) {
   const { data, error } = await supabase.storage.from("photos").createSignedUrl(path, SIGNED_URL_EXPIRY);
   if (error) throw error;

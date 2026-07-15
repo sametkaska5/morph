@@ -1,10 +1,13 @@
-import { View, Text, ScrollView, Pressable, ActivityIndicator, Platform, ActionSheetIOS, Alert } from "react-native";
+import { useState } from "react";
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Modal } from "react-native";
+import { Image } from "expo-image";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
 import { useAuth } from "@/lib/useAuth";
 import { supabase } from "@/lib/supabase";
 import { fetchProfileStats } from "@/lib/profileStats";
+import { useProfile } from "@/lib/profile";
 import { useUnitPreference, useSetUnitPreference, displayUnit, toDisplayValue } from "@/lib/units";
 
 function useProfileStats() {
@@ -43,11 +46,43 @@ function SettingsRow({ icon, label, value, danger, onPress }: any) {
   );
 }
 
+function UnitOption({
+  label,
+  sublabel,
+  selected,
+  onPress,
+}: {
+  label: string;
+  sublabel: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+      className={`flex-row items-center justify-between px-4 py-4 rounded-button border ${
+        selected ? "bg-accentSoft border-accent" : "bg-surface border-border"
+      }`}
+    >
+      <View>
+        <Text className={`text-base font-semibold ${selected ? "text-accent" : "text-text"}`}>{label}</Text>
+        <Text className="text-textMuted text-xs mt-0.5">{sublabel}</Text>
+      </View>
+      {selected ? <Feather name="check" size={18} color="#8CE05A" /> : null}
+    </Pressable>
+  );
+}
+
 export default function Profil() {
   const { user } = useAuth();
   const { data: stats, isLoading } = useProfileStats();
+  const { data: profile } = useProfile(user?.id);
   const { data: unitPref = "metric" } = useUnitPreference(user?.id);
   const setUnitMutation = useSetUnitPreference(user?.id);
+  const [showUnitSheet, setShowUnitSheet] = useState(false);
+
+  const displayName = profile?.name || user?.email?.split("@")[0] || "Kullanıcı";
 
   const weightUnit = displayUnit("kg", unitPref);
   const displayWeightDiff = stats?.weightDiff != null ? toDisplayValue(stats.weightDiff, "kg", unitPref) : null;
@@ -57,39 +92,32 @@ export default function Profil() {
     await supabase.auth.signOut();
   }
 
-  function handleUnitsPress() {
-    const options = ["İptal", "Metrik (kg, cm)", "Emperyal (lb, in)"];
-    if (Platform.OS === "ios") {
-      ActionSheetIOS.showActionSheetWithOptions({ options, cancelButtonIndex: 0 }, (index) => {
-        if (index === 1) setUnitMutation.mutate("metric");
-        if (index === 2) setUnitMutation.mutate("imperial");
-      });
-    } else {
-      Alert.alert("Birimler", "Hangi birim sistemini kullanmak istersin?", [
-        { text: "İptal", style: "cancel" },
-        { text: "Metrik (kg, cm)", onPress: () => setUnitMutation.mutate("metric") },
-        { text: "Emperyal (lb, in)", onPress: () => setUnitMutation.mutate("imperial") },
-      ]);
-    }
+  function handleSelectUnit(pref: "metric" | "imperial") {
+    setUnitMutation.mutate(pref);
+    setShowUnitSheet(false);
   }
 
   return (
+    <>
     <ScrollView className="flex-1 bg-bg" contentContainerStyle={{ paddingTop: 56, paddingBottom: 32 }}>
       <Text className="text-text text-3xl font-bold px-4 pb-4">Profil</Text>
 
-      <View className="px-4 pb-4 flex-row items-center gap-4">
-        <View className="w-16 h-16 rounded-full bg-surface border-[1.5px] border-accent items-center justify-center">
-          <Feather name="user" size={24} color="#8CE05A" />
+      <Pressable onPress={() => router.push("/profile/edit")} className="px-4 pb-5 items-center">
+        <View className="w-24 h-24 rounded-full bg-surface border-2 border-accent items-center justify-center overflow-hidden mb-3">
+          {profile?.avatarUrl ? (
+            <Image source={{ uri: profile.avatarUrl }} style={{ width: "100%", height: "100%" }} contentFit="cover" />
+          ) : (
+            <Feather name="user" size={34} color="#8CE05A" />
+          )}
         </View>
-        <View>
-          <Text className="text-text text-base font-semibold">{user?.email?.split("@")[0] ?? "Kullanıcı"}</Text>
-          <Text className="text-textMuted text-xs mt-0.5">
-            {stats?.firstDate
-              ? `${new Date(stats.firstDate).toLocaleDateString("tr-TR", { month: "long", year: "numeric" })}'den beri remory'de`
-              : "Henüz ilk anını eklemedin"}
+        <Text className="text-text text-xl font-semibold">{displayName}</Text>
+        {profile?.createdAt ? (
+          <Text className="text-textMuted text-xs mt-1">
+            {new Date(profile.createdAt).toLocaleDateString("tr-TR", { month: "long", year: "numeric" })}'den beri
+            remory'de
           </Text>
-        </View>
-      </View>
+        ) : null}
+      </Pressable>
 
       {isLoading ? (
         <ActivityIndicator color="#8CE05A" className="mt-2" />
@@ -142,11 +170,42 @@ export default function Profil() {
             label="Takip edilen ölçümler"
             onPress={() => router.push("/settings/measurements")}
           />
-          <SettingsRow icon="sliders" label="Birimler" value={unitsLabel} onPress={handleUnitsPress} />
+          <SettingsRow icon="sliders" label="Birimler" value={unitsLabel} onPress={() => setShowUnitSheet(true)} />
           <SettingsRow icon="help-circle" label="Yardım & Destek" onPress={() => router.push("/settings/help")} />
           <SettingsRow icon="log-out" label="Çıkış yap" danger onPress={handleSignOut} />
         </View>
       </View>
     </ScrollView>
+
+    <Modal visible={showUnitSheet} transparent animationType="fade" onRequestClose={() => setShowUnitSheet(false)}>
+      <Pressable
+        onPress={() => setShowUnitSheet(false)}
+        className="flex-1 bg-black/60 justify-end"
+      >
+        <Pressable
+          onPress={() => {}}
+          className="bg-bg border-t border-border rounded-t-[24px] px-5 pt-5 pb-10"
+        >
+          <View className="w-10 h-1 rounded-full bg-white/20 self-center mb-5" />
+          <Text className="text-text text-xl font-bold mb-1">Birimler</Text>
+          <Text className="text-textMuted text-sm mb-5">Hangi birim sistemini kullanmak istersin?</Text>
+          <View className="gap-3">
+            <UnitOption
+              label="Metrik"
+              sublabel="kg, cm"
+              selected={unitPref === "metric"}
+              onPress={() => handleSelectUnit("metric")}
+            />
+            <UnitOption
+              label="Emperyal"
+              sublabel="lb, in"
+              selected={unitPref === "imperial"}
+              onPress={() => handleSelectUnit("imperial")}
+            />
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
+    </>
   );
 }

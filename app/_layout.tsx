@@ -17,6 +17,7 @@ import {
 } from "@expo-google-fonts/inter";
 import { AuthProvider } from "@/lib/useAuth";
 import { registerEntryMutationDefaults } from "@/lib/entryMutations";
+import { CaptureOptionsSheet } from "@/components/CaptureOptionsSheet";
 
 // Uygulamadaki HER Text/TextInput varsayılan olarak Inter kullansın — font-* sınıfı
 // (font-semibold, font-bold vb.) olmayan yerler bile Inter Regular'a düşsün, sistem
@@ -90,10 +91,12 @@ export default function RootLayout() {
             <Stack.Screen name="compare/pick" options={{ presentation: "modal" }} />
             <Stack.Screen name="compare" options={{ presentation: "modal" }} />
             <Stack.Screen name="calendar-year" />
+            <Stack.Screen name="profile/edit" options={{ presentation: "modal" }} />
             <Stack.Screen name="settings/notifications" options={{ presentation: "modal" }} />
             <Stack.Screen name="settings/measurements" options={{ presentation: "modal" }} />
             <Stack.Screen name="settings/help" options={{ presentation: "modal" }} />
           </Stack>
+          <CaptureOptionsSheet />
         </AuthProvider>
       </PersistQueryClientProvider>
     </GestureHandlerRootView>

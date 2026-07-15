@@ -1,8 +1,8 @@
-import { Platform, ActionSheetIOS, Alert } from "react-native";
 import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { useCaptureStore } from "@/lib/captureStore";
+import { useCaptureSheetStore } from "@/lib/captureSheetStore";
 
 const MAX_DIMENSION = 1280;
 const JPEG_QUALITY = 0.75;
@@ -53,24 +53,24 @@ async function handleResult(result: ImagePicker.ImagePickerResult | undefined) {
 }
 
 /**
- * Fotoğraf çek / galeriden seç seçeneklerini platforma uygun şekilde (iOS: ActionSheet,
- * Android: Alert) sunar. Tab bar'daki + butonu ve Ana Ekran'ın boş-durum CTA'sı aynı
+ * Fotoğraf çek / galeriden seç seçeneklerini uygulamanın kendi temalı sheet'inde
+ * (CaptureOptionsSheet, app/_layout.tsx'te global olarak render edilir) sunar —
+ * native ActionSheet/Alert cihazın kendi (genelde açık) temasını kullanıp remory'nin
+ * koyu temasıyla uyuşmuyordu. Tab bar'daki + butonu ve boş-durum CTA'ları aynı
  * akışı kullanır — kod tekrarı olmasın diye burada tek yerde tanımlı.
  */
 export async function openCapturePicker() {
-  if (Platform.OS === "ios") {
-    ActionSheetIOS.showActionSheetWithOptions(
-      { options: ["İptal", "Fotoğraf çek", "Galeriden seç"], cancelButtonIndex: 0 },
-      async (buttonIndex) => {
-        if (buttonIndex === 1) handleResult(await pickFromCamera());
-        if (buttonIndex === 2) handleResult(await pickFromLibrary());
-      }
-    );
-  } else {
-    Alert.alert("Anı ekle", "Fotoğrafı nereden eklemek istersin?", [
-      { text: "İptal", style: "cancel" },
-      { text: "Fotoğraf çek", onPress: async () => handleResult(await pickFromCamera()) },
-      { text: "Galeriden seç", onPress: async () => handleResult(await pickFromLibrary()) },
-    ]);
-  }
+  useCaptureSheetStore.getState().show();
+}
+
+/** CaptureOptionsSheet'teki "Fotoğraf çek" seçeneği bunu çağırır. */
+export async function captureFromCamera() {
+  useCaptureSheetStore.getState().hide();
+  handleResult(await pickFromCamera());
+}
+
+/** CaptureOptionsSheet'teki "Galeriden seç" seçeneği bunu çağırır. */
+export async function captureFromLibrary() {
+  useCaptureSheetStore.getState().hide();
+  handleResult(await pickFromLibrary());
 }

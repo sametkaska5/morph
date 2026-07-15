@@ -182,12 +182,11 @@ function CapsulePage({
             e.stopPropagation();
             router.push(`/entry/${entry.id}`);
           }}
-          style={({ pressed }) => ({
+          style={{
             position: "absolute",
             bottom: TAB_BAR_HEIGHT + insets.bottom - 24,
             right: 20,
-            opacity: pressed ? 0.7 : 1,
-          })}
+          }}
           className="w-14 h-14 rounded-full bg-surface border border-border items-center justify-center"
         >
           <Feather name="maximize-2" size={24} color="#8CE05A" />

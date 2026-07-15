@@ -18,7 +18,8 @@
           "photosPermission": "Karşılaştırma görsellerini galerine kaydedebilmek için fotoğraflarına erişim gerekiyor.",
           "savePhotosPermission": "Karşılaştırma görsellerini galerine kaydedebilmek için fotoğraflarına erişim gerekiyor."
         }
-      ]
+      ],
+      "expo-font"
     ],
     "ios": {
       "supportsTablet": false,

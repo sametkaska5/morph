@@ -1,4 +1,5 @@
 import "../global.css";
+import { View, Text, TextInput } from "react-native";
 import { Stack } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { QueryClient, onlineManager } from "@tanstack/react-query";
@@ -7,8 +8,22 @@ import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persi
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import NetInfo from "@react-native-community/netinfo";
 import { StatusBar } from "expo-status-bar";
+import {
+  useFonts,
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+} from "@expo-google-fonts/inter";
 import { AuthProvider } from "@/lib/useAuth";
 import { registerEntryMutationDefaults } from "@/lib/entryMutations";
+
+// Uygulamadaki HER Text/TextInput varsayılan olarak Inter kullansın — font-* sınıfı
+// (font-semibold, font-bold vb.) olmayan yerler bile Inter Regular'a düşsün, sistem
+// fontuna (SF Pro/Roboto) geri dönmesin. Ağırlık sınıfları (font-bold vb.) zaten
+// tailwind.config.js'teki custom plugin ile doğru Inter dosyasına eşleniyor.
+(Text as any).defaultProps = { ...(Text as any).defaultProps, style: [{ fontFamily: "Inter_400Regular" }, (Text as any).defaultProps?.style] };
+(TextInput as any).defaultProps = { ...(TextInput as any).defaultProps, style: [{ fontFamily: "Inter_400Regular" }, (TextInput as any).defaultProps?.style] };
 
 // React Native'de `navigator.onLine` yok — React Query varsayılan olarak her zaman
 // online sanır. NetInfo'ya bağlamazsak offline'da mutation'lar hiç duraklamaz/kuyruğa
@@ -38,6 +53,19 @@ const persister = createAsyncStoragePersister({
 const PERSIST_CACHE_BUSTER = "2";
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+  });
+
+  // Fontlar yüklenmeden render edilirse metinler bir an sistem fontuyla (SF Pro/Roboto)
+  // görünüp Inter yüklenince değişir (göz kırpması) — o yüzden yüklenene kadar bekletiyoruz.
+  if (!fontsLoaded) {
+    return <View style={{ flex: 1, backgroundColor: "#0A0A08" }} />;
+  }
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <PersistQueryClientProvider

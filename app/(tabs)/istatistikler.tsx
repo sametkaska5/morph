@@ -91,6 +91,15 @@ function buildChartPath(values: number[]) {
   return { line, area, lastPoint: points[points.length - 1] };
 }
 
+// Gün kutusuna basınca dönen 3 durumlu döngü: boş → off day (bilinçli dinlenme) →
+// antrenman (spor yapıldı ama foto çekilmedi — off day sayılmasın istendi) → boş.
+// "log" (fotoğraflı gerçek kayıt) bu döngünün dışında, ayrı bir akıştan (kayıt ekranı) gelir.
+function nextOffDayState(current: string | null): "off_day" | "workout" | null {
+  if (current === "off_day") return "workout";
+  if (current === "workout") return null;
+  return "off_day";
+}
+
 export default function Istatistikler() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -105,8 +114,9 @@ export default function Istatistikler() {
   const toggleOffDayMutation = useMutation({
     mutationFn: async ({ date, currentType }: { date: string; currentType: string | null }) => {
       if (!user) throw new Error("Giriş yapılmamış");
+      const next = nextOffDayState(currentType);
 
-      if (currentType === "off_day") {
+      if (next === null) {
         // entryId'ye göre değil (user_id, date) eşleşmesine göre siliyoruz: optimistic
         // güncelleme gerçek id'yi cache'e henüz yazmadan (refetch tamamlanmadan) kullanıcı
         // tekrar basarsa entryId hâlâ null oluyordu ve id'ye bağlı silme sessizce
@@ -116,21 +126,20 @@ export default function Istatistikler() {
           .delete()
           .eq("user_id", user.id)
           .eq("date", date)
-          .eq("type", "off_day");
+          .in("type", ["off_day", "workout"]);
         if (error) throw error;
-      } else if (!currentType) {
+      } else {
         const { error } = await supabase
           .from("entries")
-          .upsert({ user_id: user.id, date, type: "off_day", note: null }, { onConflict: "user_id,date" });
+          .upsert({ user_id: user.id, date, type: next, note: null }, { onConflict: "user_id,date" });
         if (error) throw error;
       }
     },
     onMutate: async ({ date, currentType }) => {
       await queryClient.cancelQueries({ queryKey: ["currentWeek", user?.id] });
+      const next = nextOffDayState(currentType);
       queryClient.setQueryData<any[]>(["currentWeek", user?.id], (old) =>
-        old?.map((d) =>
-          d.date === date ? { ...d, type: currentType === "off_day" ? null : "off_day" } : d
-        )
+        old?.map((d) => (d.date === date ? { ...d, type: next } : d))
       );
     },
     onError: (err, variables) => {
@@ -140,7 +149,7 @@ export default function Istatistikler() {
       queryClient.setQueryData<any[]>(["currentWeek", user?.id], (old) =>
         old?.map((d) => (d.date === variables.date ? { ...d, type: variables.currentType } : d))
       );
-      Alert.alert("Off day işlemi başarısız", (err as Error).message);
+      Alert.alert("İşlem başarısız", (err as Error).message);
     },
     onSettled: (_data, _error, variables) => {
       // toggleOffDayMutation tüm günler arasında TEK bir useMutation örneği —
@@ -212,39 +221,40 @@ export default function Istatistikler() {
   }, [week, currentStreak, notifSettings?.streak_enabled]);
 
   return (
-    <ScrollView className="flex-1 bg-bg" contentContainerStyle={{ paddingTop: 56, paddingBottom: 30 }}>
-      <Text className="text-text text-lg font-semibold px-4 mb-4">İstatistikler</Text>
+    <ScrollView className="flex-1 bg-bg" contentContainerStyle={{ paddingTop: 56, paddingBottom: 32 }}>
+      <Text className="text-text text-3xl font-bold px-4 mb-4">İstatistikler</Text>
 
-      <View className="flex-row gap-2 px-4 mb-3.5">
+      <View className="flex-row gap-2 px-4 mb-4">
         {types?.map((t) => (
           <Pressable
             key={t.id}
             onPress={() => setActiveTypeId(t.id)}
-            className={`px-3.5 py-1.5 rounded-pill ${t.id === currentTypeId ? "bg-accent" : "bg-surface"}`}
+            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+            className={`px-4 py-3 rounded-pill ${t.id === currentTypeId ? "bg-accent" : "bg-surface"}`}
           >
-            <Text className={`text-xs font-semibold ${t.id === currentTypeId ? "text-bg" : "text-textMuted"}`}>
+            <Text className={`text-sm font-semibold capitalize ${t.id === currentTypeId ? "text-bg" : "text-textMuted"}`}>
               {t.name}
             </Text>
           </Pressable>
         ))}
       </View>
 
-      <View className="mx-4 mb-3.5 bg-surface border border-border rounded-card p-4">
+      <View className="mx-4 mb-4 bg-surface border border-border rounded-card p-4">
         {seriesLoading ? (
           <ActivityIndicator color="#8CE05A" />
         ) : values.length === 0 ? (
-          <Text className="text-textMuted text-xs">Bu ölçüm için henüz veri yok.</Text>
+          <Text className="text-textMuted text-base">Bu ölçüm için henüz veri yok.</Text>
         ) : (
           <>
-            <View className="flex-row items-baseline gap-2 mb-2.5">
-              <Text className="text-text text-2xl font-bold">
+            <View className="flex-row items-baseline gap-2 mb-3">
+              <Text className="text-text text-3xl font-bold">
                 {currentValue}{" "}
-                <Text className="text-sm font-medium text-textMuted">
+                <Text className="text-base font-medium text-textMuted">
                   {activeType ? displayUnit(activeType.unit, unitPref) : ""}
                 </Text>
               </Text>
               {delta != null ? (
-                <Text className={`text-xs font-semibold ${isGoodDelta ? "text-accent" : "text-danger"}`}>
+                <Text className={`text-sm font-semibold ${isGoodDelta ? "text-accent" : "text-danger"}`}>
                   {delta > 0 ? "↑" : delta < 0 ? "↓" : "•"} {Math.abs(delta)}{" "}
                   {activeType ? displayUnit(activeType.unit, unitPref) : ""}
                 </Text>
@@ -268,18 +278,23 @@ export default function Istatistikler() {
 
       <View className="mx-4 bg-surface border border-border rounded-card p-4">
         <View className="flex-row items-center justify-between mb-3">
-          <View className="flex-row items-center gap-2.5">
-            <View className="w-8 h-8 rounded-lg bg-stamp/15 items-center justify-center">
-              <Feather name="zap" size={16} color="#FF7A3D" />
+          <View className="flex-row items-center gap-3">
+            <View className="w-9 h-9 rounded-lg bg-stamp/15 items-center justify-center">
+              <Feather name="zap" size={18} color="#FF7A3D" />
             </View>
             <View>
-              <Text className="text-text text-sm font-semibold">{currentStreak} gün üst üste</Text>
-              <Text className="text-textFaint text-[11px]">bu hafta</Text>
+              <Text className="text-text text-base font-semibold">{currentStreak} gün üst üste</Text>
+              <Text className="text-textFaint text-xs capitalize">bu hafta</Text>
             </View>
           </View>
-          <Pressable onPress={() => router.push("/calendar-year")} className="flex-row items-center gap-1">
-            <Text className="text-accent text-[11px] font-medium">Yıla göre gör</Text>
-            <Feather name="chevron-right" size={13} color="#8CE05A" />
+          <Pressable
+            onPress={() => router.push("/calendar-year")}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+            className="flex-row items-center gap-1 py-2 px-2"
+          >
+            <Text className="text-accent text-sm font-medium capitalize">Yıla göre gör</Text>
+            <Feather name="chevron-right" size={15} color="#8CE05A" />
           </Pressable>
         </View>
 
@@ -287,37 +302,50 @@ export default function Istatistikler() {
           <ActivityIndicator color="#8CE05A" />
         ) : (
           <View className="flex-row justify-between">
-            {week?.map((day) => (
-              <Pressable
-                key={day.date}
-                onPress={() => handleDayPress(day)}
-                disabled={pendingDates.has(day.date) || day.isFuture}
-                className="items-center gap-1"
-              >
-                <View
-                  className={`w-6 h-6 rounded-md items-center justify-center ${
-                    day.type === "log"
-                      ? "bg-accent"
-                      : day.type === "off_day"
-                      ? "bg-offDaySoft border border-offDay"
-                      : day.isFuture
-                      ? "bg-transparent"
-                      : day.isToday
-                      ? "bg-accentSoft border border-dashed border-accent"
-                      : "bg-white/5 border border-dashed border-white/20"
-                  }`}
+            {week?.map((day) => {
+              const isPending = pendingDates.has(day.date);
+              return (
+                <Pressable
+                  key={day.date}
+                  onPress={() => handleDayPress(day)}
+                  disabled={isPending || day.isFuture}
+                  hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+                  style={({ pressed }) => ({ opacity: pressed && !day.isFuture ? 0.7 : 1 })}
+                  className="items-center gap-1"
                 >
-                  {day.type === "log" ? (
-                    <Feather name="zap" size={11} color="#0B0D0A" />
-                  ) : day.type === "off_day" ? (
-                    <Feather name="moon" size={11} color="#B8C0E0" />
-                  ) : null}
-                </View>
-                <Text className={`text-[9px] ${day.isFuture ? "text-textFaint/40" : "text-textFaint"}`}>
-                  {day.label}
-                </Text>
-              </Pressable>
-            ))}
+                  <View
+                    className={`w-8 h-8 rounded-md items-center justify-center ${
+                      isPending
+                        ? "bg-white/5 border border-border"
+                        : day.type === "log"
+                        ? "bg-accent"
+                        : day.type === "off_day"
+                        ? "bg-offDaySoft border border-offDay"
+                        : day.type === "workout"
+                        ? "bg-accentSoft border border-accent"
+                        : day.isFuture
+                        ? "bg-transparent"
+                        : day.isToday
+                        ? "bg-accentSoft border border-dashed border-accent"
+                        : "bg-white/5 border border-dashed border-white/20"
+                    }`}
+                  >
+                    {isPending ? (
+                      <ActivityIndicator size="small" color="#8CE05A" />
+                    ) : day.type === "log" ? (
+                      <Feather name="zap" size={14} color="#0B0D0A" />
+                    ) : day.type === "off_day" ? (
+                      <Feather name="moon" size={14} color="#B8C0E0" />
+                    ) : day.type === "workout" ? (
+                      <Feather name="check" size={14} color="#8CE05A" />
+                    ) : null}
+                  </View>
+                  <Text className={`text-xs ${day.isFuture ? "text-textFaint/40" : "text-textFaint"}`}>
+                    {day.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
         )}
       </View>

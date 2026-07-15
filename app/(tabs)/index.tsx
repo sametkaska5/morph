@@ -1,10 +1,11 @@
-import { View, Text, Pressable, FlatList, Dimensions } from "react-native";
+import { View, Text, Pressable, FlatList, Dimensions, RefreshControl, ActivityIndicator } from "react-native";
 import { Image } from "expo-image";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
 import { supabase } from "@/lib/supabase";
 import { getPhotoUrls } from "@/lib/storage";
+import { openCapturePicker } from "@/lib/capture";
 
 const { width } = Dimensions.get("window");
 const GAP = 4;
@@ -57,8 +58,19 @@ function useTimelineEntries() {
 
 function PosterThumb({ entry }: { entry: EntryRow }) {
   return (
-    <Pressable onPress={() => router.push(`/entry/${entry.id}`)} style={{ width: THUMB_W, marginBottom: 12 }}>
-      <View style={{ width: THUMB_W, height: THUMB_H }} className="rounded-[4px] overflow-hidden bg-surface">
+    <Pressable
+      onPress={() => router.push(`/entry/${entry.id}`)}
+      style={({ pressed }) => ({
+        width: THUMB_W,
+        marginBottom: 12,
+        opacity: pressed ? 0.85 : 1,
+        transform: [{ scale: pressed ? 0.97 : 1 }],
+      })}
+    >
+      <View
+        style={{ width: THUMB_W, height: THUMB_H }}
+        className="rounded-[10px] overflow-hidden bg-surface border border-border"
+      >
         {entry.cover_photo_url ? (
           <Image
             source={{ uri: entry.cover_photo_url }}
@@ -71,52 +83,100 @@ function PosterThumb({ entry }: { entry: EntryRow }) {
         ) : null}
         {entry.pending ? (
           <View className="absolute bottom-1.5 right-1.5 bg-black/60 rounded-full px-1.5 py-0.5 flex-row items-center gap-1">
-            <Feather name="clock" size={9} color="#F5F3EC" />
-            <Text className="text-text text-[8px] font-semibold">senkronize edilecek</Text>
+            <Feather name="clock" size={11} color="#F5F3EC" />
+            <Text className="text-text text-[10px] font-semibold">senkronize edilecek</Text>
           </View>
         ) : null}
       </View>
-      <Text className="text-textFaint text-[9px] mt-1" numberOfLines={1}>
+      <Text className="text-textFaint text-xs mt-1" numberOfLines={1}>
         {new Date(entry.date).toLocaleDateString("tr-TR", { day: "numeric", month: "short" })}
       </Text>
     </Pressable>
   );
 }
 
+function EmptyState() {
+  return (
+    <View className="flex-1 items-center justify-center px-8" style={{ marginTop: -40 }}>
+      <View className="w-16 h-16 rounded-full bg-accentSoft border border-accent items-center justify-center mb-4">
+        <Feather name="camera" size={26} color="#8CE05A" />
+      </View>
+      <Text className="text-text text-xl font-semibold mb-2 text-center">Henüz bir kaydın yok</Text>
+      <Text className="text-textMuted text-base text-center leading-6 mb-5 max-w-[260px]">
+        İlk anını ekle, gelecekteki kendin bugüne baktığında sana teşekkür edecek.
+      </Text>
+      <Pressable
+        onPress={openCapturePicker}
+        style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+        className="bg-accent rounded-button px-5 py-4 flex-row items-center gap-2"
+      >
+        <Feather name="plus" size={18} color="#0B0D0A" />
+        <Text className="text-bg text-base font-semibold">İlk anını ekle</Text>
+      </Pressable>
+    </View>
+  );
+}
+
 export default function AnaEkran() {
-  const { data: entries, isLoading, error, refetch } = useTimelineEntries();
+  const { data: entries, isLoading, isRefetching, error, refetch } = useTimelineEntries();
+  const isEmpty = entries?.length === 0;
+
+  const todayLabel = new Date().toLocaleDateString("tr-TR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
 
   return (
     <View className="flex-1 bg-bg">
-      <View className="flex-row justify-between items-center px-4 pt-14 pb-3">
-        <Text className="text-text text-[15px] font-semibold tracking-wide">remory</Text>
-        <Pressable onPress={() => router.push("/compare/pick")}>
-          <Feather name="repeat" size={19} color="#8B8A82" />
+      <View className="flex-row justify-between items-center px-4 pt-14 pb-4">
+        <View>
+          <Text className="text-text text-3xl font-bold tracking-wide uppercase">remory</Text>
+          <Text className="text-textFaint text-xs mt-1 capitalize">{todayLabel}</Text>
+        </View>
+        <Pressable
+          onPress={() => router.push("/compare/pick")}
+          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          className="w-11 h-11 rounded-full bg-surface border border-border items-center justify-center"
+        >
+          <Feather name="repeat" size={20} color="#8B8A82" />
         </Pressable>
       </View>
 
-      <Text className="text-textFaint text-xs font-semibold px-4 mb-2 uppercase tracking-wide">
-        Son Kayıtlar
-      </Text>
+      {!isEmpty ? (
+        <View className="flex-row items-center justify-between px-4 mb-3">
+          <Text className="text-textFaint text-xs font-semibold uppercase tracking-wide">Son Kayıtlar</Text>
+          {entries?.length ? <Text className="text-textFaint text-xs">{entries.length} kayıt</Text> : null}
+        </View>
+      ) : null}
 
-      {isLoading && <Text className="text-textMuted text-xs px-4">Yükleniyor...</Text>}
-      {error && <Text className="text-danger text-xs px-4 mb-2">{(error as Error).message}</Text>}
-      {entries?.length === 0 && (
-        <Text className="text-textMuted text-xs px-4">
-          Henüz bir kaydın yok. Alttaki + butonuyla ilk anını ekle.
-        </Text>
+      {isLoading ? (
+        <View className="flex-1 items-center justify-center" style={{ marginTop: -40 }}>
+          <ActivityIndicator color="#8CE05A" />
+        </View>
+      ) : error ? (
+        <Text className="text-danger text-sm px-4 mb-2">{(error as Error).message}</Text>
+      ) : isEmpty ? (
+        <EmptyState />
+      ) : (
+        <FlatList
+          data={entries}
+          keyExtractor={(item) => item.id}
+          numColumns={COLUMNS}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={() => refetch()}
+              tintColor="#8CE05A"
+              colors={["#8CE05A"]}
+            />
+          }
+          contentContainerStyle={{ paddingHorizontal: H_PADDING, paddingBottom: 24 }}
+          columnWrapperStyle={{ gap: GAP }}
+          renderItem={({ item }) => <PosterThumb entry={item} />}
+        />
       )}
-
-      <FlatList
-        data={entries}
-        keyExtractor={(item) => item.id}
-        numColumns={COLUMNS}
-        showsVerticalScrollIndicator={false}
-        onScrollEndDrag={() => refetch()}
-        contentContainerStyle={{ paddingHorizontal: H_PADDING, paddingBottom: 24 }}
-        columnWrapperStyle={{ gap: GAP }}
-        renderItem={({ item }) => <PosterThumb entry={item} />}
-      />
     </View>
   );
 }

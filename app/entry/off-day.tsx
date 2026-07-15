@@ -38,18 +38,19 @@ export default function OffDayScreen() {
         <View className="w-16 h-16 rounded-full bg-offDaySoft border border-offDay items-center justify-center mb-4">
           <Feather name="moon" size={26} color="#B8C0E0" />
         </View>
-        <Text className="text-text text-lg font-semibold">Off day işaretle</Text>
-        <Text className="text-textMuted text-xs text-center mt-2 max-w-[240px]">
+        <Text className="text-text text-xl font-semibold">Off day işaretle</Text>
+        <Text className="text-textMuted text-base text-center mt-2 max-w-[260px]">
           Bilinçli dinlenme günleri de serinin bir parçası — streak'in bozulmaz.
         </Text>
       </View>
 
       <Pressable
         onPress={() => setShowPicker(true)}
-        className="bg-surface border border-border rounded-card px-4 py-3.5 mb-4 flex-row items-center justify-between"
+        style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+        className="bg-surface border border-border rounded-button px-4 py-4 mb-4 flex-row items-center justify-between"
       >
         <Text className="text-textMuted text-xs">tarih</Text>
-        <Text className="text-text text-sm font-semibold">
+        <Text className="text-text text-base font-semibold">
           {date.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
         </Text>
       </Pressable>
@@ -68,23 +69,29 @@ export default function OffDayScreen() {
       )}
 
       {saveMutation.isError ? (
-        <Text className="text-danger text-xs mb-3">{(saveMutation.error as Error).message}</Text>
+        <Text className="text-danger text-sm mb-3">{(saveMutation.error as Error).message}</Text>
       ) : null}
 
       <Pressable
         onPress={() => saveMutation.mutate()}
         disabled={saveMutation.isPending}
-        className="bg-offDay rounded-card py-4 items-center mb-3"
+        style={({ pressed }) => ({ opacity: pressed ? 0.85 : saveMutation.isPending ? 0.7 : 1 })}
+        className="bg-offDay rounded-button py-4 items-center mb-3"
       >
         {saveMutation.isPending ? (
           <ActivityIndicator color="#0B0D0A" />
         ) : (
-          <Text className="text-bg text-sm font-semibold">Off day olarak işaretle</Text>
+          <Text className="text-bg text-base font-semibold">Off day olarak işaretle</Text>
         )}
       </Pressable>
 
-      <Pressable onPress={() => router.back()} className="items-center py-2">
-        <Text className="text-textMuted text-xs">vazgeç</Text>
+      <Pressable
+        onPress={() => router.back()}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+        className="items-center py-2"
+      >
+        <Text className="text-textMuted text-sm">vazgeç</Text>
       </Pressable>
     </View>
   );

@@ -52,6 +52,6 @@ supabase/migrations/
 
 ## Sırada
 
-- Zaman Kapsülü, Çekim, İstatistik, Profil ekranlarının implementasyonu
+- Anı Akışı, Çekim, İstatistik, Profil ekranlarının implementasyonu
 - Kart çevirme animasyonu (react-native-reanimated ile)
 - Onboarding akışının kalan 4 ekranı

@@ -18,11 +18,11 @@ function useProfileStats() {
 
 function StatChip({ icon, label, value }: { icon: any; label: string; value: string }) {
   return (
-    <View className="flex-row items-center gap-1.5">
-      <Feather name={icon} size={13} color="#8CE05A" />
+    <View className="flex-row items-center gap-2">
+      <Feather name={icon} size={15} color="#8CE05A" />
       <View>
-        <Text className="text-textFaint text-[9px]">{label}</Text>
-        <Text className="text-text text-xs font-semibold">{value}</Text>
+        <Text className="text-textFaint text-xs">{label}</Text>
+        <Text className="text-text text-sm font-semibold">{value}</Text>
       </View>
     </View>
   );
@@ -32,11 +32,12 @@ function SettingsRow({ icon, label, value, danger, onPress }: any) {
   return (
     <Pressable
       onPress={onPress}
-      className="flex-row items-center gap-3 px-3.5 py-3 border-b border-border last:border-b-0"
+      style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+      className="flex-row items-center gap-3 px-4 py-3 border-b border-border last:border-b-0"
     >
       <Feather name={icon} size={16} color={danger ? "#D9705A" : "#8CE05A"} />
-      <Text className={`flex-1 text-sm ${danger ? "text-danger" : "text-text"}`}>{label}</Text>
-      {value ? <Text className="text-textMuted text-xs mr-1">{value}</Text> : null}
+      <Text className={`flex-1 text-base ${danger ? "text-danger" : "text-text"}`}>{label}</Text>
+      {value ? <Text className="text-textMuted text-sm mr-1">{value}</Text> : null}
       {!danger && <Feather name="chevron-right" size={15} color="#5C5A50" />}
     </Pressable>
   );
@@ -73,15 +74,12 @@ export default function Profil() {
   }
 
   return (
-    <ScrollView className="flex-1 bg-bg" contentContainerStyle={{ paddingTop: 56, paddingBottom: 30 }}>
-      <View className="flex-row justify-between items-center px-4 pb-3.5">
-        <Text className="text-text text-lg font-semibold">Profil</Text>
-        <Feather name="settings" size={19} color="#8CE05A" />
-      </View>
+    <ScrollView className="flex-1 bg-bg" contentContainerStyle={{ paddingTop: 56, paddingBottom: 32 }}>
+      <Text className="text-text text-3xl font-bold px-4 pb-4">Profil</Text>
 
-      <View className="px-4 pb-3.5 flex-row items-center gap-3.5">
-        <View className="w-14 h-14 rounded-full bg-surface border-[1.5px] border-accent items-center justify-center">
-          <Feather name="user" size={22} color="#8CE05A" />
+      <View className="px-4 pb-4 flex-row items-center gap-4">
+        <View className="w-16 h-16 rounded-full bg-surface border-[1.5px] border-accent items-center justify-center">
+          <Feather name="user" size={24} color="#8CE05A" />
         </View>
         <View>
           <Text className="text-text text-base font-semibold">{user?.email?.split("@")[0] ?? "Kullanıcı"}</Text>
@@ -117,7 +115,7 @@ export default function Profil() {
                     : `${stats.monthsSinceFirst} aydır`}
                 </Text>
               </View>
-              <Text className="text-accent text-[13px] font-semibold mb-2 leading-5">
+              <Text className="text-accent text-sm font-semibold mb-2 leading-5">
                 gelecekteki kendin için anılar biriktiriyorsun.
               </Text>
               {displayWeightDiff != null ? (
@@ -135,8 +133,8 @@ export default function Profil() {
         </>
       )}
 
-      <View className="px-4 mb-1.5">
-        <Text className="text-text text-sm font-semibold mb-2">Ayarlar</Text>
+      <View className="px-4 mb-2">
+        <Text className="text-textFaint text-xs font-semibold uppercase tracking-wide mb-2">Ayarlar</Text>
         <View className="bg-surface border border-border rounded-card overflow-hidden">
           <SettingsRow icon="bell" label="Bildirimler" onPress={() => router.push("/settings/notifications")} />
           <SettingsRow

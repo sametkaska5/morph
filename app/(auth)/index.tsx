@@ -45,14 +45,14 @@ export default function AuthScreen() {
       className="flex-1 bg-bg"
     >
       <View className="flex-1 justify-center px-6">
-        <Text className="text-text text-2xl font-semibold mb-1">
+        <Text className="text-text text-3xl font-bold mb-1">
           {mode === "login" ? "Tekrar hoş geldin" : "Hesap oluştur"}
         </Text>
         <Text className="text-textMuted text-sm mb-8">
           {mode === "login" ? "Anılarına devam et." : "Anılarını kaydetmeye başla."}
         </Text>
 
-        <Text className="text-textMuted text-xs mb-1.5">E-posta</Text>
+        <Text className="text-textMuted text-xs mb-2">E-posta</Text>
         <TextInput
           value={email}
           onChangeText={setEmail}
@@ -60,25 +60,28 @@ export default function AuthScreen() {
           keyboardType="email-address"
           placeholder="sen@ornek.com"
           placeholderTextColor="#5C5A50"
-          className="bg-surface border border-border rounded-card px-4 py-3.5 text-text mb-4"
+          style={{ height: 52, textAlignVertical: "center" }}
+          className="bg-surface border border-border rounded-button px-4 text-text text-base mb-4"
         />
 
-        <Text className="text-textMuted text-xs mb-1.5">Şifre</Text>
+        <Text className="text-textMuted text-xs mb-2">Şifre</Text>
         <TextInput
           value={password}
           onChangeText={setPassword}
           secureTextEntry
           placeholder="••••••••"
           placeholderTextColor="#5C5A50"
-          className="bg-surface border border-border rounded-card px-4 py-3.5 text-text mb-2"
+          style={{ height: 52, textAlignVertical: "center" }}
+          className="bg-surface border border-border rounded-button px-4 text-text text-base mb-2"
         />
 
-        {errorMsg ? <Text className="text-danger text-xs mb-2">{errorMsg}</Text> : null}
+        {errorMsg ? <Text className="text-danger text-sm mb-2">{errorMsg}</Text> : null}
 
         <Pressable
           onPress={handleSubmit}
           disabled={loading}
-          className="bg-accent rounded-card py-4 items-center mt-4"
+          style={({ pressed }) => ({ opacity: pressed ? 0.85 : loading ? 0.7 : 1 })}
+          className="bg-accent rounded-button py-4 items-center mt-4"
         >
           {loading ? (
             <ActivityIndicator color="#0B0D0A" />
@@ -91,9 +94,11 @@ export default function AuthScreen() {
 
         <Pressable
           onPress={() => setMode(mode === "login" ? "signup" : "login")}
-          className="mt-5 items-center"
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          className="mt-5 items-center py-2"
         >
-          <Text className="text-textMuted text-xs">
+          <Text className="text-textMuted text-sm">
             {mode === "login" ? "Hesabın yok mu? " : "Zaten hesabın var mı? "}
             <Text className="text-accent font-medium">
               {mode === "login" ? "Kayıt ol" : "Giriş yap"}

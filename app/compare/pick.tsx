@@ -9,7 +9,7 @@ import { useAuth } from "@/lib/useAuth";
 import { getPhotoUrls } from "@/lib/storage";
 
 const { width } = Dimensions.get("window");
-const THUMB_SIZE = (width - 18 * 2 - 8 * 2) / 3;
+const THUMB_SIZE = (width - 20 * 2 - 8 * 2) / 3;
 
 function usePickableEntries() {
   const { user } = useAuth();
@@ -61,10 +61,14 @@ export default function PickComparison() {
   return (
     <View className="flex-1 bg-bg" style={{ paddingTop: 56 }}>
       <View className="flex-row items-center justify-between px-4 mb-1">
-        <Pressable onPress={() => router.back()}>
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+        >
           <Feather name="chevron-left" size={22} color="#F5F3EC" />
         </Pressable>
-        <Text className="text-text text-base font-bold">İki Fotoğraf Seç</Text>
+        <Text className="text-text text-xl font-bold">İki Fotoğraf Seç</Text>
         <View style={{ width: 22 }} />
       </View>
       <Text className="text-textFaint text-xs text-center mb-4">
@@ -78,7 +82,7 @@ export default function PickComparison() {
           data={entries}
           keyExtractor={(item) => item.id}
           numColumns={3}
-          contentContainerStyle={{ paddingHorizontal: 18, gap: 8 }}
+          contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
           columnWrapperStyle={{ gap: 8 }}
           renderItem={({ item }) => {
             const isSelected = selected.includes(item.id);
@@ -103,7 +107,7 @@ export default function PickComparison() {
                     </View>
                   ) : null}
                   <View className="absolute bottom-1 left-1 bg-black/55 rounded px-1.5 py-0.5">
-                    <Text className="text-text text-[9px]">
+                    <Text className="text-text text-[10px]">
                       {new Date(item.date).toLocaleDateString("tr-TR", { day: "numeric", month: "short" })}
                     </Text>
                   </View>
@@ -118,9 +122,10 @@ export default function PickComparison() {
         <Pressable
           onPress={handleContinue}
           disabled={selected.length !== 2}
-          className={`rounded-card py-4 items-center ${selected.length === 2 ? "bg-accent" : "bg-surface"}`}
+          style={({ pressed }) => ({ opacity: pressed && selected.length === 2 ? 0.85 : 1 })}
+          className={`rounded-button py-4 items-center ${selected.length === 2 ? "bg-accent" : "bg-surface"}`}
         >
-          <Text className={`text-sm font-semibold ${selected.length === 2 ? "text-bg" : "text-textFaint"}`}>
+          <Text className={`text-base font-semibold ${selected.length === 2 ? "text-bg" : "text-textFaint"}`}>
             Karşılaştır
           </Text>
         </Pressable>

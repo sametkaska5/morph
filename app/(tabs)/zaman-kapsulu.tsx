@@ -4,14 +4,20 @@ import { Image } from "expo-image";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Feather from "@expo/vector-icons/Feather";
 import { supabase } from "@/lib/supabase";
 import { getPhotoUrls } from "@/lib/storage";
 import { useAuth } from "@/lib/useAuth";
 import { useUnitPreference, displayUnit, toDisplayValue, type UnitPref } from "@/lib/units";
+import { openCapturePicker } from "@/lib/capture";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 const PAGE_SIZE = 20;
+// (tabs)/_layout.tsx'teki tabBarStyle.height ile eşleşmeli — sayfa yüksekliği tam ekran
+// (SCREEN_HEIGHT) olduğu için tab bar'ın kapladığı alan hesaba katılmazsa "bottom"a
+// göre konumlanan elemanlar (genişletme butonu gibi) tab bar'ın arkasında kalıyordu.
+const TAB_BAR_HEIGHT = 84;
 
 type MeasurementEntry = { name: string; unit: string; value: number };
 
@@ -77,6 +83,7 @@ function CapsulePage({
 }) {
   const [flipped, setFlipped] = useState(false);
   const flip = useSharedValue(0);
+  const insets = useSafeAreaInsets();
 
   function toggleFlip() {
     const next = !flipped;
@@ -123,10 +130,14 @@ function CapsulePage({
           <View className="flex-1 bg-surface" />
         )}
         <View className="absolute inset-0 bg-black/10" pointerEvents="none" />
+        {/* Alt yazı bloğunun arkasına ayrı bir koyu gölge: textFaint rengi koyu arkaplan
+            için tasarlandığından, fotoğrafın kendisi açık renkliyse metin neredeyse
+            görünmez oluyordu. */}
+        <View className="absolute bottom-0 left-0 right-0 h-40 bg-black/45" pointerEvents="none" />
 
         <View className="absolute bottom-24 left-4 right-4">
           <Text className="text-text text-base font-semibold">{formattedDate}</Text>
-          <Text className="text-textFaint text-[11px] mt-1">Değerleri görmek için dokun</Text>
+          <Text className="text-text/70 text-xs mt-1">Değerleri görmek için dokun</Text>
         </View>
       </Animated.View>
 
@@ -136,32 +147,32 @@ function CapsulePage({
         className="bg-bg px-5"
       >
         <View className="flex-1 justify-center">
-          <Text className="text-text text-lg font-bold mb-4">{formattedDate}</Text>
+          <Text className="text-text text-xl font-bold mb-4">{formattedDate}</Text>
 
           {(entry.measurements ?? []).length > 0 ? (
             <View className="bg-surface border border-border rounded-card p-4 mb-4">
               {entry.measurements.map((m, i) => (
                 <View
                   key={m.name + i}
-                  className={`flex-row items-center justify-between py-2 ${
+                  className={`flex-row items-center py-2 ${
                     i < entry.measurements.length - 1 ? "border-b border-border" : ""
                   }`}
                 >
-                  <Text className="text-textMuted text-sm">{m.name}</Text>
-                  <Text className="text-text text-sm font-semibold">
+                  <Text className="text-textMuted text-sm capitalize flex-1">{m.name}</Text>
+                  <Text className="text-text text-sm font-semibold w-24 text-center">
                     {toDisplayValue(m.value, m.unit, unitPref)} {displayUnit(m.unit, unitPref)}
                   </Text>
                 </View>
               ))}
             </View>
           ) : (
-            <Text className="text-textMuted text-xs mb-4">Bu gün için ölçüm girilmemiş.</Text>
+            <Text className="text-textMuted text-sm mb-4">Bu gün için ölçüm girilmemiş.</Text>
           )}
 
           {entry.note ? (
             <View className="bg-surface border border-border rounded-card p-4">
-              <Text className="text-textFaint text-[11px] font-semibold mb-1.5 tracking-wide">NOT</Text>
-              <Text className="text-text text-sm leading-5">{entry.note}</Text>
+              <Text className="text-textFaint text-xs font-semibold mb-1.5 tracking-wide">NOT</Text>
+              <Text className="text-text text-base leading-6">{entry.note}</Text>
             </View>
           ) : null}
         </View>
@@ -171,15 +182,21 @@ function CapsulePage({
             e.stopPropagation();
             router.push(`/entry/${entry.id}`);
           }}
-          className="absolute bottom-10 right-5 w-11 h-11 rounded-full bg-surface border border-border items-center justify-center"
+          style={({ pressed }) => ({
+            position: "absolute",
+            bottom: TAB_BAR_HEIGHT + insets.bottom - 24,
+            right: 20,
+            opacity: pressed ? 0.7 : 1,
+          })}
+          className="w-14 h-14 rounded-full bg-surface border border-border items-center justify-center"
         >
-          <Feather name="maximize-2" size={16} color="#8CE05A" />
+          <Feather name="maximize-2" size={24} color="#8CE05A" />
         </Pressable>
       </Animated.View>
 
       <View className="absolute top-14 left-0 right-0 flex-row justify-between items-center px-4">
-        <Text className="text-text text-base font-semibold">Zaman Kapsülü</Text>
-        <View className="bg-black/50 rounded-pill px-2.5 py-1">
+        <Text className="text-text text-xl font-semibold">Anı Akışı</Text>
+        <View className="bg-black/50 rounded-pill px-3 py-1">
           <Text className="text-text text-xs font-medium">
             {index + 1}/{total}
           </Text>
@@ -202,17 +219,29 @@ export default function ZamanKapsulu() {
   if (error) {
     return (
       <View className="flex-1 bg-bg items-center justify-center px-6">
-        <Text className="text-danger text-xs text-center">{(error as Error).message}</Text>
+        <Text className="text-danger text-sm text-center">{(error as Error).message}</Text>
       </View>
     );
   }
 
   if (!entries || entries.length === 0) {
     return (
-      <View className="flex-1 bg-bg items-center justify-center px-6">
-        <Text className="text-textMuted text-sm text-center">
-          Henüz bir kaydın yok. İlk anını ekledikçe burada zaman içinde kayıp gidebileceksin.
+      <View className="flex-1 bg-bg items-center justify-center px-8">
+        <View className="w-16 h-16 rounded-full bg-accentSoft border border-accent items-center justify-center mb-4">
+          <Feather name="calendar" size={26} color="#8CE05A" />
+        </View>
+        <Text className="text-text text-xl font-semibold mb-2 text-center">Henüz bir kaydın yok</Text>
+        <Text className="text-textMuted text-base text-center leading-6 mb-5 max-w-[260px]">
+          İlk anını ekledikçe burada zaman içinde kayıp gidebileceksin.
         </Text>
+        <Pressable
+          onPress={openCapturePicker}
+          style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+          className="bg-accent rounded-button px-5 py-4 flex-row items-center gap-2"
+        >
+          <Feather name="plus" size={18} color="#0B0D0A" />
+          <Text className="text-bg text-base font-semibold">İlk anını ekle</Text>
+        </Pressable>
       </View>
     );
   }

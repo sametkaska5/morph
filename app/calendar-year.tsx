@@ -42,14 +42,20 @@ function useYearEntries(userId: string | undefined, year: number) {
         .lte("date", `${year}-12-31`);
       if (error) throw error;
 
-      const map = new Map<string, string>();
-      (data ?? []).forEach((e) => map.set(e.date, e.type));
+      // Map yerine düz obje: sorgu sonucu AsyncStorage'a JSON olarak kalıcı
+      // hale getiriliyor (bkz. app/_layout.tsx PersistQueryClientProvider) — Map
+      // JSON'a çevrilemediği için geri yüklendiğinde düz {} objesine dönüşüyor
+      // ve .get() çağrısı "undefined is not a function" ile patlıyordu.
+      const map: Record<string, string> = {};
+      (data ?? []).forEach((e) => {
+        map[e.date] = e.type;
+      });
       return map;
     },
   });
 }
 
-function MonthCalendar({ year, monthIndex, statusMap }: { year: number; monthIndex: number; statusMap: Map<string, string> }) {
+function MonthCalendar({ year, monthIndex, statusMap }: { year: number; monthIndex: number; statusMap: Record<string, string> }) {
   const weeks = getMonthGrid(year, monthIndex);
   const todayKey = toLocalDateKey(new Date());
 
@@ -60,7 +66,7 @@ function MonthCalendar({ year, monthIndex, statusMap }: { year: number; monthInd
         <View key={wi} className="flex-row gap-1 mb-1">
           {week.map((dateKey, di) => {
             if (!dateKey) return <View key={di} style={{ width: 15, height: 15 }} />;
-            const status = statusMap.get(dateKey);
+            const status = statusMap[dateKey];
             const isFuture = dateKey > todayKey;
             const isToday = dateKey === todayKey;
             return (
@@ -72,6 +78,8 @@ function MonthCalendar({ year, monthIndex, statusMap }: { year: number; monthInd
                     ? "bg-accent"
                     : status === "off_day"
                     ? "bg-offDaySoft border border-offDay"
+                    : status === "workout"
+                    ? "bg-accentSoft border border-accent"
                     : isToday
                     ? "border border-dashed border-accent"
                     : isFuture
@@ -93,31 +101,48 @@ export default function CalendarYear() {
   const { data: statusMap, isLoading } = useYearEntries(user?.id, year);
 
   return (
-    <ScrollView className="flex-1 bg-bg" contentContainerStyle={{ paddingTop: 56, paddingBottom: 30, paddingHorizontal: 18 }}>
+    <ScrollView className="flex-1 bg-bg" contentContainerStyle={{ paddingTop: 56, paddingBottom: 32, paddingHorizontal: 20 }}>
       <View className="flex-row items-center justify-between mb-1">
-        <Pressable onPress={() => router.back()}>
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+        >
           <Feather name="chevron-left" size={22} color="#F5F3EC" />
         </Pressable>
         <View className="flex-row items-center gap-4">
-          <Pressable onPress={() => setYear((y) => y - 1)}>
-            <Feather name="chevron-left" size={16} color="#8B8A82" />
+          <Pressable
+            onPress={() => setYear((y) => y - 1)}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+          >
+            <Feather name="chevron-left" size={18} color="#8B8A82" />
           </Pressable>
-          <Text className="text-text text-base font-bold">{year}</Text>
-          <Pressable onPress={() => setYear((y) => y + 1)} disabled={year >= new Date().getFullYear()}>
-            <Feather name="chevron-right" size={16} color={year >= new Date().getFullYear() ? "#3A3A34" : "#8B8A82"} />
+          <Text className="text-text text-xl font-bold">{year}</Text>
+          <Pressable
+            onPress={() => setYear((y) => y + 1)}
+            disabled={year >= new Date().getFullYear()}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+          >
+            <Feather name="chevron-right" size={18} color={year >= new Date().getFullYear() ? "#3A3A34" : "#8B8A82"} />
           </Pressable>
         </View>
         <View style={{ width: 22 }} />
       </View>
 
       <View className="flex-row gap-3 mt-5 mb-4">
-        <View className="flex-row items-center gap-1.5">
-          <View className="w-2.5 h-2.5 rounded-[2px] bg-accent" />
-          <Text className="text-textFaint text-[10px]">kayıt</Text>
+        <View className="flex-row items-center gap-2">
+          <View className="w-3 h-3 rounded-[2px] bg-accent" />
+          <Text className="text-textFaint text-xs">kayıt</Text>
         </View>
-        <View className="flex-row items-center gap-1.5">
-          <View className="w-2.5 h-2.5 rounded-[2px] bg-offDaySoft border border-offDay" />
-          <Text className="text-textFaint text-[10px]">off day</Text>
+        <View className="flex-row items-center gap-2">
+          <View className="w-3 h-3 rounded-[2px] bg-accentSoft border border-accent" />
+          <Text className="text-textFaint text-xs">antrenman</Text>
+        </View>
+        <View className="flex-row items-center gap-2">
+          <View className="w-3 h-3 rounded-[2px] bg-offDaySoft border border-offDay" />
+          <Text className="text-textFaint text-xs">off day</Text>
         </View>
       </View>
 
@@ -127,7 +152,7 @@ export default function CalendarYear() {
         <View className="flex-row flex-wrap justify-between">
           {Array.from({ length: 12 }).map((_, i) => (
             <View key={i} style={{ width: "48%" }}>
-              <MonthCalendar year={year} monthIndex={i} statusMap={statusMap ?? new Map()} />
+              <MonthCalendar year={year} monthIndex={i} statusMap={statusMap ?? {}} />
             </View>
           ))}
         </View>

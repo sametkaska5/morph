@@ -42,10 +42,10 @@ function SettingSwitch({
   disabled?: boolean;
 }) {
   return (
-    <View className="flex-row items-center justify-between px-3.5 py-3 border-b border-border last:border-b-0">
+    <View className="flex-row items-center justify-between px-4 py-3 border-b border-border last:border-b-0">
       <View className="flex-1 pr-3">
-        <Text className="text-text text-sm font-semibold">{label}</Text>
-        <Text className="text-textFaint text-[11px] mt-0.5">{description}</Text>
+        <Text className="text-text text-base font-semibold">{label}</Text>
+        <Text className="text-textFaint text-xs mt-0.5">{description}</Text>
       </View>
       <Switch
         value={value}
@@ -121,18 +121,22 @@ export default function NotificationSettingsScreen() {
   }
 
   return (
-    <View className="flex-1 bg-bg pt-16 px-4">
+    <View className="flex-1 bg-bg pt-14 px-4">
       <View className="flex-row items-center gap-3 mb-6">
-        <Pressable onPress={() => router.back()} hitSlop={8}>
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+        >
           <Feather name="chevron-left" size={22} color="#F5F3EC" />
         </Pressable>
-        <Text className="text-text text-lg font-bold">Bildirimler</Text>
+        <Text className="text-text text-xl font-bold">Bildirimler</Text>
       </View>
 
       {!NOTIFICATIONS_AVAILABLE ? (
-        <View className="bg-surface border border-border rounded-card px-3.5 py-3 mb-4 flex-row items-start gap-2.5">
+        <View className="bg-surface border border-border rounded-button px-4 py-3 mb-4 flex-row items-start gap-3">
           <Feather name="info" size={15} color="#8B8A82" style={{ marginTop: 1 }} />
-          <Text className="text-textMuted text-[11px] flex-1 leading-4">
+          <Text className="text-textMuted text-xs flex-1 leading-4">
             Expo Go'da yerel bildirimler desteklenmiyor. Tercihlerini kaydedebilirsin, ancak bildirimlerin
             fiilen gelmesi için development build gerekiyor.
           </Text>
@@ -166,10 +170,11 @@ export default function NotificationSettingsScreen() {
 
           <Pressable
             onPress={() => setShowPicker(true)}
-            className="bg-surface border border-border rounded-card px-4 py-3.5 flex-row items-center justify-between"
+            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+            className="bg-surface border border-border rounded-button px-4 py-4 flex-row items-center justify-between"
           >
             <Text className="text-textMuted text-xs">Hatırlatma saati</Text>
-            <Text className="text-text text-sm font-semibold">
+            <Text className="text-text text-base font-semibold">
               {settings.reminder_time.slice(0, 5)}
             </Text>
           </Pressable>

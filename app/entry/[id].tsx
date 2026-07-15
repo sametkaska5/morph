@@ -11,6 +11,7 @@ import { Image } from "expo-image";
 import { useLocalSearchParams, router } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
+import Feather from "@expo/vector-icons/Feather";
 import { supabase } from "@/lib/supabase";
 import { getPhotoUrl } from "@/lib/storage";
 
@@ -104,10 +105,14 @@ export default function EntryDetail() {
 
   if (error) {
     return (
-      <View className="flex-1 bg-bg justify-center items-center px-4">
-        <Text className="text-danger text-center">{(error as Error).message}</Text>
-        <Pressable onPress={() => router.back()} className="mt-4">
-          <Text className="text-text">Geri Dön</Text>
+      <View className="flex-1 bg-bg justify-center items-center px-6">
+        <Text className="text-danger text-sm text-center mb-4">{(error as Error).message}</Text>
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+        >
+          <Text className="text-text text-base font-semibold">Geri Dön</Text>
         </Pressable>
       </View>
     );
@@ -142,16 +147,20 @@ export default function EntryDetail() {
       <View className="relative w-full" style={{ height: IMAGE_HEIGHT }}>
         <Pressable
           onPress={() => router.back()}
-          className="absolute top-14 left-4 z-10 w-10 h-10 bg-black/40 rounded-full items-center justify-center"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          className="absolute top-14 left-4 z-10 w-11 h-11 bg-black/40 rounded-full items-center justify-center"
         >
-          <Text className="text-white">←</Text>
+          <Feather name="chevron-left" size={22} color="#fff" />
         </Pressable>
 
         <Pressable
           onPress={onPressMenu}
-          className="absolute top-14 right-4 z-10 w-10 h-10 bg-black/40 rounded-full items-center justify-center"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          className="absolute top-14 right-4 z-10 w-11 h-11 bg-black/40 rounded-full items-center justify-center"
         >
-          <Text className="text-white text-lg">⋮</Text>
+          <Feather name="more-vertical" size={20} color="#fff" />
         </Pressable>
 
         {data?.photoUrl ? (
@@ -165,7 +174,7 @@ export default function EntryDetail() {
           />
         ) : (
           <View className="w-full h-full bg-surface items-center justify-center">
-            <Text className="text-textMuted">Fotoğraf yok</Text>
+            <Text className="text-textMuted text-sm">Fotoğraf yok</Text>
           </View>
         )}
 
@@ -182,11 +191,11 @@ export default function EntryDetail() {
         </Text>
 
         {(data as any)?.measurement_values?.length > 0 && (
-          <View className="bg-surface rounded-2xl p-4 mb-4">
+          <View className="bg-surface border border-border rounded-card p-4 mb-4">
             {(data as any).measurement_values.map((mv: any, i: number) => (
               <View key={i} className="flex-row justify-between py-2">
-                <Text className="text-textMuted">{mv.measurement_types.name}</Text>
-                <Text className="text-text font-bold">
+                <Text className="text-textMuted text-sm capitalize">{mv.measurement_types.name}</Text>
+                <Text className="text-text text-base font-bold">
                   {mv.value} {mv.measurement_types.unit}
                 </Text>
               </View>
@@ -195,8 +204,8 @@ export default function EntryDetail() {
         )}
 
         {data?.note && (
-          <View className="bg-surface rounded-2xl p-4">
-            <Text className="text-text">{data.note}</Text>
+          <View className="bg-surface border border-border rounded-card p-4">
+            <Text className="text-text text-base leading-6">{data.note}</Text>
           </View>
         )}
       </View>

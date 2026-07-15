@@ -179,35 +179,39 @@ export default function EditEntry() {
 
   return (
     <KeyboardAwareScrollView
-      className="flex-1 bg-bg px-5 pt-16"
+      className="flex-1 bg-bg px-5 pt-14"
       enableOnAndroid
       extraScrollHeight={30}
       keyboardShouldPersistTaps="handled"
     >
       <Text className="text-text text-xl font-bold mb-6">Düzenle</Text>
 
-      <Pressable onPress={pickImage} className="mb-6 relative">
+      <Pressable
+        onPress={pickImage}
+        style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+        className="mb-6 relative"
+      >
         {displayUri ? (
-          <Image source={{ uri: displayUri }} className="w-full h-64 rounded-xl" resizeMode="cover" />
+          <Image source={{ uri: displayUri }} className="w-full h-64 rounded-card" resizeMode="cover" />
         ) : (
-          <View className="w-full h-64 bg-surface rounded-xl items-center justify-center">
-            <Text className="text-textMuted">Fotoğraf seç</Text>
+          <View className="w-full h-64 bg-surface rounded-card items-center justify-center">
+            <Text className="text-textMuted text-sm">Fotoğraf seç</Text>
           </View>
         )}
 
         {uploading && (
-          <View className="absolute inset-0 bg-black/40 items-center justify-center rounded-xl">
+          <View className="absolute inset-0 bg-black/40 items-center justify-center rounded-card">
             <ActivityIndicator color="#fff" />
           </View>
         )}
       </Pressable>
 
-      <View className="bg-surface p-4 rounded-xl mb-6">
-        <Text className="text-text font-bold mb-3">Ölçümler</Text>
+      <View className="bg-surface border border-border p-4 rounded-card mb-6">
+        <Text className="text-textFaint text-xs font-semibold uppercase tracking-wide mb-3">Ölçümler</Text>
         {allTypes?.map((t, i) => (
           <View key={t.id} className="flex-row justify-between items-center mb-3">
-            <Text className="text-textMuted">{t.name}</Text>
-            <View className="flex-row items-center gap-1.5">
+            <Text className="text-textMuted text-sm capitalize">{t.name}</Text>
+            <View className="flex-row items-center gap-2">
               <TextInput
                 ref={(el) => { inputRefs.current[i] = el; }}
                 value={values[t.id] ?? ""}
@@ -222,10 +226,11 @@ export default function EditEntry() {
                   if (next) next.focus();
                   else noteRef.current?.focus();
                 }}
-                className="text-text bg-bg px-3 py-1 rounded w-20 text-right"
+                className="text-text text-base font-semibold text-right w-20"
               />
               <Pressable
                 hitSlop={8}
+                style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
                 onPress={() => {
                   const next = inputRefs.current[i + 1];
                   if (next) next.focus();
@@ -245,28 +250,34 @@ export default function EditEntry() {
         onChangeText={setNote}
         placeholder="Not..."
         placeholderTextColor="#888"
-        className="bg-surface text-text p-4 rounded-xl h-28 mb-6"
+        className="bg-surface border border-border text-text text-base p-4 rounded-card h-28 mb-6"
         multiline
       />
 
       {updateMutation.isError ? (
-        <Text className="text-danger text-xs mb-3">{(updateMutation.error as Error).message}</Text>
+        <Text className="text-danger text-sm mb-3">{(updateMutation.error as Error).message}</Text>
       ) : null}
 
       <Pressable
         onPress={() => updateMutation.mutate()}
         disabled={updateMutation.isPending || uploading}
-        className="bg-accent p-4 rounded-xl items-center"
+        style={({ pressed }) => ({ opacity: pressed ? 0.85 : updateMutation.isPending || uploading ? 0.7 : 1 })}
+        className="bg-accent p-4 rounded-button items-center"
       >
         {updateMutation.isPending ? (
           <ActivityIndicator color="#0B0D0A" />
         ) : (
-          <Text className="text-bg font-bold">Kaydet</Text>
+          <Text className="text-bg text-base font-bold">Kaydet</Text>
         )}
       </Pressable>
 
-      <Pressable onPress={() => router.back()} className="mt-4 items-center mb-8">
-        <Text className="text-textMuted">İptal</Text>
+      <Pressable
+        onPress={() => router.back()}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+        className="mt-4 items-center mb-8"
+      >
+        <Text className="text-textMuted text-sm">İptal</Text>
       </Pressable>
     </KeyboardAwareScrollView>
   );

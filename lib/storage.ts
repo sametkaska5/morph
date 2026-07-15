@@ -23,7 +23,7 @@ export async function getPhotoUrl(path: string) {
 
 /**
  * Birden fazla fotoğrafın imzalı linkini TEK istekte üretir.
- * Zaman Kapsülü / Ana Ekran gibi çok sayıda fotoğraf gösteren ekranlarda
+ * Anı Akışı / Ana Ekran gibi çok sayıda fotoğraf gösteren ekranlarda
  * her biri için ayrı istek atmak yerine bunu kullan — büyük hız farkı yaratıyor.
  */
 export async function getPhotoUrls(paths: string[]): Promise<Map<string, string>> {

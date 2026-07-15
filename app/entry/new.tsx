@@ -103,18 +103,26 @@ export default function NewEntry() {
   return (
     <KeyboardAwareScrollView
       className="flex-1 bg-bg"
-      contentContainerStyle={{ padding: 18, paddingTop: 60 }}
+      contentContainerStyle={{ padding: 20, paddingTop: 56 }}
       enableOnAndroid
       extraScrollHeight={30}
       keyboardShouldPersistTaps="handled"
     >
       <View className="flex-row justify-between items-center mb-4">
-        <Pressable onPress={() => router.back()}>
-          <Text className="text-text text-lg">←</Text>
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+        >
+          <Feather name="chevron-left" size={22} color="#F5F3EC" />
         </Pressable>
-        <Text className="text-text text-base font-semibold">Yeni Kayıt</Text>
-        <Pressable onPress={handleSave}>
-          <Text className="text-accent text-sm font-semibold">kaydet</Text>
+        <Text className="text-text text-xl font-bold">Yeni Kayıt</Text>
+        <Pressable
+          onPress={handleSave}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+        >
+          <Text className="text-accent text-base font-semibold">Kaydet</Text>
         </Pressable>
       </View>
 
@@ -124,10 +132,11 @@ export default function NewEntry() {
 
       <Pressable
         onPress={() => setShowPicker(true)}
-        className="bg-surface border border-border rounded-card px-4 py-3 mb-3 flex-row items-center justify-between"
+        style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+        className="bg-surface border border-border rounded-button px-4 py-4 mb-3 flex-row items-center justify-between"
       >
         <Text className="text-textMuted text-xs">tarih</Text>
-        <Text className="text-text text-sm font-semibold">
+        <Text className="text-text text-base font-semibold">
           {date.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
         </Text>
       </Pressable>
@@ -145,12 +154,12 @@ export default function NewEntry() {
         />
       )}
 
-      <View className="bg-surface border border-border rounded-card p-3.5 mb-3">
-        <Text className="text-textMuted text-[11px] font-semibold mb-2 tracking-wide">ÖLÇÜMLER</Text>
+      <View className="bg-surface border border-border rounded-card p-4 mb-3">
+        <Text className="text-textFaint text-xs font-semibold mb-2 tracking-wide">ÖLÇÜMLER</Text>
         {types?.map((t, i) => (
           <View key={t.id} className="flex-row items-center justify-between py-2">
-            <Text className="text-textMuted text-xs">{t.name}</Text>
-            <View className="flex-row items-center gap-1.5">
+            <Text className="text-textMuted text-sm capitalize">{t.name}</Text>
+            <View className="flex-row items-center gap-2">
               <TextInput
                 ref={(el) => { inputRefs.current[i] = el; }}
                 value={values[t.id] ?? ""}
@@ -169,6 +178,7 @@ export default function NewEntry() {
               />
               <Pressable
                 hitSlop={8}
+                style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
                 onPress={() => {
                   const next = inputRefs.current[i + 1];
                   if (next) next.focus();
@@ -182,8 +192,8 @@ export default function NewEntry() {
         ))}
       </View>
 
-      <View className="bg-surface border border-border rounded-card p-3.5">
-        <Text className="text-textMuted text-[11px] font-semibold mb-2 tracking-wide">NOT</Text>
+      <View className="bg-surface border border-border rounded-card p-4">
+        <Text className="text-textFaint text-xs font-semibold mb-2 tracking-wide">NOT</Text>
         <TextInput
           ref={noteRef}
           value={note}
@@ -191,7 +201,7 @@ export default function NewEntry() {
           placeholder="birkaç kelime yaz..."
           placeholderTextColor="#5C5A50"
           multiline
-          className="text-text text-sm min-h-[60px]"
+          className="text-text text-base min-h-[64px]"
           maxLength={300}
         />
       </View>

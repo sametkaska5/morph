@@ -40,12 +40,16 @@ export default function Compare() {
   return (
     <ScrollView className="flex-1 bg-bg" contentContainerStyle={{ paddingTop: 56, paddingBottom: 30 }}>
       <View className="flex-row items-center justify-between px-4 mb-1">
-        <Pressable onPress={() => router.back()}>
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+        >
           <Feather name="chevron-left" size={22} color="#F5F3EC" />
         </Pressable>
         <View className="items-center">
-          <Text className="text-text text-base font-bold">Karşılaştırma</Text>
-          <Text className="text-textFaint text-[11px]">Değişimini gör</Text>
+          <Text className="text-text text-xl font-bold">Karşılaştırma</Text>
+          <Text className="text-textFaint text-xs">Değişimini gör</Text>
         </View>
         <View style={{ width: 22 }} />
       </View>
@@ -53,9 +57,9 @@ export default function Compare() {
       {isLoading ? (
         <ActivityIndicator color="#8CE05A" className="mt-10" />
       ) : error ? (
-        <Text className="text-danger text-xs text-center mt-6 px-6">{(error as Error).message}</Text>
+        <Text className="text-danger text-sm text-center mt-6 px-6">{(error as Error).message}</Text>
       ) : !data ? (
-        <Text className="text-textMuted text-sm text-center mt-10 px-8">
+        <Text className="text-textMuted text-base text-center mt-10 px-8">
           Karşılaştırma yüklenemedi.
         </Text>
       ) : (
@@ -65,9 +69,10 @@ export default function Compare() {
       <View className="px-4 mt-2">
         <Pressable
           onPress={() => router.replace("/compare/pick")}
-          className="border border-accent rounded-card py-3.5 items-center"
+          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          className="border border-accent rounded-[14px] py-3 items-center"
         >
-          <Text className="text-accent text-sm font-semibold">Başka Fotoğraf Seç</Text>
+          <Text className="text-accent text-base font-semibold">Başka Fotoğraf Seç</Text>
         </Pressable>
       </View>
     </ScrollView>
@@ -144,13 +149,13 @@ function ComparisonBody({ data }: { data: NonNullable<Awaited<ReturnType<typeof 
 
   return (
     <View className="mt-3">
-      <View ref={photoBlockRef} collapsable={false} className="mx-4 rounded-card overflow-hidden flex-row h-72 mb-3.5">
+      <View ref={photoBlockRef} collapsable={false} className="mx-4 rounded-card overflow-hidden flex-row h-72 mb-4">
         <View className="flex-1 bg-surface relative">
           {start.photoUrl ? (
             <Image source={{ uri: start.photoUrl }} style={{ flex: 1 }} resizeMode="cover" />
           ) : null}
           <View className="absolute top-2.5 left-2.5 bg-black/55 rounded-md px-2 py-1">
-            <Text className="text-text text-[10px] font-semibold">{fmtDate(start.date)}</Text>
+            <Text className="text-text text-xs font-semibold">{fmtDate(start.date)}</Text>
           </View>
         </View>
         <View style={{ width: 1 }} className="bg-white/15" />
@@ -159,44 +164,46 @@ function ComparisonBody({ data }: { data: NonNullable<Awaited<ReturnType<typeof 
             <Image source={{ uri: end.photoUrl }} style={{ flex: 1 }} resizeMode="cover" />
           ) : null}
           <View className="absolute top-2.5 right-2.5 bg-accentSoft border border-accent rounded-md px-2 py-1">
-            <Text className="text-text text-[10px] font-semibold">{fmtDate(end.date)}</Text>
+            <Text className="text-text text-xs font-semibold">{fmtDate(end.date)}</Text>
           </View>
         </View>
       </View>
 
-      <View className="mx-4 mb-3.5 flex-row gap-2.5">
+      <View className="mx-4 mb-4 flex-row gap-2">
         <Pressable
           onPress={handleSave}
           disabled={pendingAction !== null}
-          className="flex-1 flex-row items-center justify-center gap-1.5 border border-border rounded-card py-2.5 bg-surface"
+          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          className="flex-1 flex-row items-center justify-center gap-2 border border-border rounded-[12px] py-3 bg-surface"
         >
           {pendingAction === "save" ? (
             <ActivityIndicator size="small" color="#F5F3EC" />
           ) : (
             <>
-              <Feather name="download" size={14} color="#F5F3EC" />
-              <Text className="text-text text-xs font-semibold">Kaydet</Text>
+              <Feather name="download" size={16} color="#F5F3EC" />
+              <Text className="text-text text-sm font-semibold">Kaydet</Text>
             </>
           )}
         </Pressable>
         <Pressable
           onPress={handleShare}
           disabled={pendingAction !== null}
-          className="flex-1 flex-row items-center justify-center gap-1.5 border border-accent rounded-card py-2.5 bg-accentSoft"
+          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          className="flex-1 flex-row items-center justify-center gap-2 border border-accent rounded-[12px] py-3 bg-accentSoft"
         >
           {pendingAction === "share" ? (
             <ActivityIndicator size="small" color="#8CE05A" />
           ) : (
             <>
-              <Feather name="share-2" size={14} color="#8CE05A" />
-              <Text className="text-accent text-xs font-semibold">Paylaş</Text>
+              <Feather name="share-2" size={16} color="#8CE05A" />
+              <Text className="text-accent text-sm font-semibold">Paylaş</Text>
             </>
           )}
         </Pressable>
       </View>
 
       {rows.length > 0 ? (
-        <View className="mx-4 mb-3.5 bg-surface border border-border rounded-card p-4">
+        <View className="mx-4 mb-4 bg-surface border border-border rounded-card p-4">
           <View className="flex-row items-center gap-2 mb-3">
             <Feather name="trending-up" size={15} color="#8CE05A" />
             <Text className="text-text text-sm font-semibold">Değişim Özeti</Text>
@@ -208,13 +215,13 @@ function ComparisonBody({ data }: { data: NonNullable<Awaited<ReturnType<typeof 
                 i < rows.length - 1 ? "border-b border-border" : ""
               }`}
             >
-              <Text className="text-textMuted text-xs">{r.name}</Text>
-              <View className="flex-row items-center gap-2.5">
-                <Text className="text-textMuted text-xs">{r.startVal ?? "—"}</Text>
-                <Text className="text-text text-xs font-semibold">{r.endVal ?? "—"}</Text>
+              <Text className="text-textMuted text-sm capitalize">{r.name}</Text>
+              <View className="flex-row items-center gap-3">
+                <Text className="text-textMuted text-sm">{r.startVal ?? "—"}</Text>
+                <Text className="text-text text-sm font-semibold">{r.endVal ?? "—"}</Text>
                 {r.delta != null ? (
                   <Text
-                    className={`text-[11px] font-semibold w-16 text-right ${
+                    className={`text-xs font-semibold w-16 text-right ${
                       r.isGood ? "text-accent" : "text-danger"
                     }`}
                   >
@@ -228,7 +235,7 @@ function ComparisonBody({ data }: { data: NonNullable<Awaited<ReturnType<typeof 
       ) : null}
 
       <View className="mx-4 bg-surface border border-border rounded-card p-4">
-        <View className="flex-row items-center justify-between mb-2.5">
+        <View className="flex-row items-center justify-between mb-3">
           <View className="flex-row items-center gap-2">
             <Feather name="calendar" size={15} color="#8CE05A" />
             <Text className="text-text text-sm font-semibold">Zaman Aralığı</Text>
@@ -239,8 +246,8 @@ function ComparisonBody({ data }: { data: NonNullable<Awaited<ReturnType<typeof 
           <View className="h-1 bg-accent rounded-full" style={{ width: "100%" }} />
         </View>
         <View className="flex-row justify-between">
-          <Text className="text-textFaint text-[10px]">{fmtDate(start.date)}</Text>
-          <Text className="text-textFaint text-[10px]">{fmtDate(end.date)}</Text>
+          <Text className="text-textFaint text-xs">{fmtDate(start.date)}</Text>
+          <Text className="text-textFaint text-xs">{fmtDate(end.date)}</Text>
         </View>
       </View>
     </View>

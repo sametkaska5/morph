@@ -2,6 +2,14 @@
 module.exports = {
   content: ["./app/**/*.{js,jsx,ts,tsx}", "./components/**/*.{js,jsx,ts,tsx}"],
   presets: [require("nativewind/preset")],
+  // React Native özel fontlarda numeric font-weight'i yok sayıp her ağırlık için ayrı
+  // yüklenmiş bir fontFamily bekliyor — bu yüzden Tailwind'in yerleşik fontWeight
+  // core plugin'ini kapatıp font-normal/medium/semibold/bold sınıflarını kendi Inter
+  // fontFamily eşlemelerimizle yeniden tanımlıyoruz. Uygulamadaki mevcut font-bold vb.
+  // kullanımların hiçbirini değiştirmeye gerek kalmıyor, otomatik doğru dosyaya düşüyor.
+  corePlugins: {
+    fontWeight: false,
+  },
   theme: {
     extend: {
       colors: {
@@ -35,10 +43,23 @@ module.exports = {
         paperInk: "#3A3324",
       },
       borderRadius: {
-        card: "16px",
+        card: "20px",
+        button: "16px",
         pill: "20px",
+      },
+      fontFamily: {
+        sans: ["Inter_400Regular"],
       },
     },
   },
-  plugins: [],
+  plugins: [
+    ({ addUtilities }) => {
+      addUtilities({
+        ".font-normal": { fontFamily: "Inter_400Regular" },
+        ".font-medium": { fontFamily: "Inter_500Medium" },
+        ".font-semibold": { fontFamily: "Inter_600SemiBold" },
+        ".font-bold": { fontFamily: "Inter_700Bold" },
+      });
+    },
+  ],
 };

@@ -38,7 +38,7 @@ function OfflineBanner() {
   const insets = useSafeAreaInsets();
   return (
     <View style={{ paddingTop: insets.top }} className="bg-danger">
-      <Text className="text-bg text-xs font-semibold text-center py-2">
+      <Text className="text-bg text-sm font-semibold text-center py-2">
         Çevrimdışısın — yeni kayıtlar internet gelince senkronize edilecek
       </Text>
     </View>

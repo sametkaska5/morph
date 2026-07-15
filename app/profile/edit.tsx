@@ -117,7 +117,7 @@ export default function EditProfileScreen() {
             )}
           </View>
         </Pressable>
-        <Text className="text-textFaint text-xs mt-3">Fotoğrafı değiştirmek için dokun</Text>
+        <Text className="text-textFaint text-sm mt-3">Fotoğrafı değiştirmek için dokun</Text>
       </View>
 
       <Text className="text-textFaint text-xs font-semibold mb-2 tracking-wide">İSİM</Text>

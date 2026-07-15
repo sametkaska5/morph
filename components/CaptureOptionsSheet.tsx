@@ -45,7 +45,7 @@ export function CaptureOptionsSheet() {
         >
           <View className="w-10 h-1 rounded-full bg-white/20 self-center mb-5" />
           <Text className="text-text text-xl font-bold mb-1">Anı ekle</Text>
-          <Text className="text-textMuted text-sm mb-5">Fotoğrafı nereden eklemek istersin?</Text>
+          <Text className="text-textMuted text-base mb-5">Fotoğrafı nereden eklemek istersin?</Text>
           <View className="gap-3">
             <CaptureOption icon="camera" label="Fotoğraf çek" onPress={captureFromCamera} />
             <CaptureOption icon="image" label="Galeriden seç" onPress={captureFromLibrary} />

@@ -155,7 +155,7 @@ export default function AnaEkran() {
           <ActivityIndicator color="#8CE05A" />
         </View>
       ) : error ? (
-        <Text className="text-danger text-sm px-4 mb-2">{(error as Error).message}</Text>
+        <Text className="text-danger text-base px-4 mb-2">{(error as Error).message}</Text>
       ) : isEmpty ? (
         <EmptyState />
       ) : (

@@ -49,7 +49,7 @@ export default function OffDayScreen() {
         style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
         className="bg-surface border border-border rounded-button px-4 py-4 mb-4 flex-row items-center justify-between"
       >
-        <Text className="text-textMuted text-xs">tarih</Text>
+        <Text className="text-textMuted text-sm">Tarih</Text>
         <Text className="text-text text-base font-semibold">
           {date.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
         </Text>
@@ -69,7 +69,7 @@ export default function OffDayScreen() {
       )}
 
       {saveMutation.isError ? (
-        <Text className="text-danger text-sm mb-3">{(saveMutation.error as Error).message}</Text>
+        <Text className="text-danger text-base mb-3">{(saveMutation.error as Error).message}</Text>
       ) : null}
 
       <Pressable

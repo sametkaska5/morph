@@ -61,19 +61,19 @@ function MonthCalendar({ year, monthIndex, statusMap }: { year: number; monthInd
 
   return (
     <View className="mb-5">
-      <Text className="text-text text-sm font-semibold mb-2">{MONTH_NAMES[monthIndex]}</Text>
+      <Text className="text-text text-base font-semibold mb-2">{MONTH_NAMES[monthIndex]}</Text>
       {weeks.map((week, wi) => (
         <View key={wi} className="flex-row gap-1 mb-1">
           {week.map((dateKey, di) => {
-            if (!dateKey) return <View key={di} style={{ width: 15, height: 15 }} />;
+            if (!dateKey) return <View key={di} style={{ width: 18, height: 18 }} />;
             const status = statusMap[dateKey];
             const isFuture = dateKey > todayKey;
             const isToday = dateKey === todayKey;
             return (
               <View
                 key={di}
-                style={{ width: 15, height: 15 }}
-                className={`rounded-[3px] items-center justify-center ${
+                style={{ width: 18, height: 18 }}
+                className={`rounded-[4px] items-center justify-center ${
                   status === "log"
                     ? "bg-accent"
                     : status === "off_day"
@@ -131,18 +131,18 @@ export default function CalendarYear() {
         <View style={{ width: 22 }} />
       </View>
 
-      <View className="flex-row gap-3 mt-5 mb-4">
+      <View className="flex-row gap-4 mt-5 mb-4">
         <View className="flex-row items-center gap-2">
-          <View className="w-3 h-3 rounded-[2px] bg-accent" />
-          <Text className="text-textFaint text-xs">kayıt</Text>
+          <View className="w-5 h-5 rounded-[5px] bg-accent" />
+          <Text className="text-textFaint text-sm capitalize">kayıt</Text>
         </View>
         <View className="flex-row items-center gap-2">
-          <View className="w-3 h-3 rounded-[2px] bg-accentSoft border border-accent" />
-          <Text className="text-textFaint text-xs">antrenman</Text>
+          <View className="w-5 h-5 rounded-[5px] bg-accentSoft border border-accent" />
+          <Text className="text-textFaint text-sm capitalize">antrenman</Text>
         </View>
         <View className="flex-row items-center gap-2">
-          <View className="w-3 h-3 rounded-[2px] bg-offDaySoft border border-offDay" />
-          <Text className="text-textFaint text-xs">off day</Text>
+          <View className="w-5 h-5 rounded-[5px] bg-offDaySoft border border-offDay" />
+          <Text className="text-textFaint text-sm capitalize">off day</Text>
         </View>
       </View>
 

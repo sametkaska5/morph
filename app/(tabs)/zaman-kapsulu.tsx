@@ -218,7 +218,7 @@ export default function ZamanKapsulu() {
   if (error) {
     return (
       <View className="flex-1 bg-bg items-center justify-center px-6">
-        <Text className="text-danger text-sm text-center">{(error as Error).message}</Text>
+        <Text className="text-danger text-base text-center">{(error as Error).message}</Text>
       </View>
     );
   }

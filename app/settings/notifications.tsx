@@ -45,7 +45,7 @@ function SettingSwitch({
     <View className="flex-row items-center justify-between px-4 py-3 border-b border-border last:border-b-0">
       <View className="flex-1 pr-3">
         <Text className="text-text text-base font-semibold">{label}</Text>
-        <Text className="text-textFaint text-xs mt-0.5">{description}</Text>
+        <Text className="text-textFaint text-sm mt-0.5">{description}</Text>
       </View>
       <Switch
         value={value}
@@ -136,7 +136,7 @@ export default function NotificationSettingsScreen() {
       {!NOTIFICATIONS_AVAILABLE ? (
         <View className="bg-surface border border-border rounded-button px-4 py-3 mb-4 flex-row items-start gap-3">
           <Feather name="info" size={15} color="#8B8A82" style={{ marginTop: 1 }} />
-          <Text className="text-textMuted text-xs flex-1 leading-4">
+          <Text className="text-textMuted text-sm flex-1 leading-5">
             Expo Go'da yerel bildirimler desteklenmiyor. Tercihlerini kaydedebilirsin, ancak bildirimlerin
             fiilen gelmesi için development build gerekiyor.
           </Text>
@@ -173,7 +173,7 @@ export default function NotificationSettingsScreen() {
             style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
             className="bg-surface border border-border rounded-button px-4 py-4 flex-row items-center justify-between"
           >
-            <Text className="text-textMuted text-xs">Hatırlatma saati</Text>
+            <Text className="text-textMuted text-sm">Hatırlatma saati</Text>
             <Text className="text-text text-base font-semibold">
               {settings.reminder_time.slice(0, 5)}
             </Text>

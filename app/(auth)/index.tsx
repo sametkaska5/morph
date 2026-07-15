@@ -48,11 +48,11 @@ export default function AuthScreen() {
         <Text className="text-text text-3xl font-bold mb-1">
           {mode === "login" ? "Tekrar hoş geldin" : "Hesap oluştur"}
         </Text>
-        <Text className="text-textMuted text-sm mb-8">
+        <Text className="text-textMuted text-base mb-8">
           {mode === "login" ? "Anılarına devam et." : "Anılarını kaydetmeye başla."}
         </Text>
 
-        <Text className="text-textMuted text-xs mb-2">E-posta</Text>
+        <Text className="text-textMuted text-sm mb-2">E-posta</Text>
         <TextInput
           value={email}
           onChangeText={setEmail}
@@ -64,7 +64,7 @@ export default function AuthScreen() {
           className="bg-surface border border-border rounded-button px-4 text-text text-base mb-4"
         />
 
-        <Text className="text-textMuted text-xs mb-2">Şifre</Text>
+        <Text className="text-textMuted text-sm mb-2">Şifre</Text>
         <TextInput
           value={password}
           onChangeText={setPassword}
@@ -75,7 +75,7 @@ export default function AuthScreen() {
           className="bg-surface border border-border rounded-button px-4 text-text text-base mb-2"
         />
 
-        {errorMsg ? <Text className="text-danger text-sm mb-2">{errorMsg}</Text> : null}
+        {errorMsg ? <Text className="text-danger text-base mb-2">{errorMsg}</Text> : null}
 
         <Pressable
           onPress={handleSubmit}

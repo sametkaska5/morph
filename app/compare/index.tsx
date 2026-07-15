@@ -57,7 +57,7 @@ export default function Compare() {
       {isLoading ? (
         <ActivityIndicator color="#8CE05A" className="mt-10" />
       ) : error ? (
-        <Text className="text-danger text-sm text-center mt-6 px-6">{(error as Error).message}</Text>
+        <Text className="text-danger text-base text-center mt-6 px-6">{(error as Error).message}</Text>
       ) : !data ? (
         <Text className="text-textMuted text-base text-center mt-10 px-8">
           Karşılaştırma yüklenemedi.

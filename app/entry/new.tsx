@@ -135,7 +135,7 @@ export default function NewEntry() {
         style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
         className="bg-surface border border-border rounded-button px-4 py-4 mb-3 flex-row items-center justify-between"
       >
-        <Text className="text-textMuted text-xs">tarih</Text>
+        <Text className="text-textMuted text-sm">Tarih</Text>
         <Text className="text-text text-base font-semibold">
           {date.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
         </Text>

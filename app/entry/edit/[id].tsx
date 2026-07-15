@@ -255,7 +255,7 @@ export default function EditEntry() {
       />
 
       {updateMutation.isError ? (
-        <Text className="text-danger text-sm mb-3">{(updateMutation.error as Error).message}</Text>
+        <Text className="text-danger text-base mb-3">{(updateMutation.error as Error).message}</Text>
       ) : null}
 
       <Pressable

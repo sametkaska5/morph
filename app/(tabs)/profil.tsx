@@ -143,11 +143,11 @@ export default function Profil() {
                     : `${stats.monthsSinceFirst} aydır`}
                 </Text>
               </View>
-              <Text className="text-accent text-sm font-semibold mb-2 leading-5">
+              <Text className="text-accent text-base font-semibold mb-2 leading-6">
                 gelecekteki kendin için anılar biriktiriyorsun.
               </Text>
               {displayWeightDiff != null ? (
-                <Text className="text-textMuted text-xs leading-5">
+                <Text className="text-textMuted text-sm leading-6">
                   Bugün baktığında ilk fotoğrafından{" "}
                   <Text className="text-accent font-semibold">
                     {displayWeightDiff <= 0
@@ -188,7 +188,7 @@ export default function Profil() {
         >
           <View className="w-10 h-1 rounded-full bg-white/20 self-center mb-5" />
           <Text className="text-text text-xl font-bold mb-1">Birimler</Text>
-          <Text className="text-textMuted text-sm mb-5">Hangi birim sistemini kullanmak istersin?</Text>
+          <Text className="text-textMuted text-base mb-5">Hangi birim sistemini kullanmak istersin?</Text>
           <View className="gap-3">
             <UnitOption
               label="Metrik"

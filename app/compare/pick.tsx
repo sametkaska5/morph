@@ -71,7 +71,7 @@ export default function PickComparison() {
         <Text className="text-text text-xl font-bold">İki Fotoğraf Seç</Text>
         <View style={{ width: 22 }} />
       </View>
-      <Text className="text-textFaint text-xs text-center mb-4">
+      <Text className="text-textFaint text-sm text-center mb-4">
         Karşılaştırmak istediğin iki anı seç ({selected.length}/2)
       </Text>
 

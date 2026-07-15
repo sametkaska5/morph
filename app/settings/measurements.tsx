@@ -89,10 +89,10 @@ export default function MeasurementSettingsScreen() {
             ))}
           </View>
 
-          <Text className="text-textFaint text-xs font-semibold mb-2 tracking-wide">ÖZEL ÖLÇÜMLERİN</Text>
+          <Text className="text-textFaint text-xs font-semibold mb-2 tracking-wide">YENİ ÖLÇÜMLERİN</Text>
           <View className="bg-surface border border-border rounded-card overflow-hidden mb-5">
             {custom.length === 0 ? (
-              <Text className="text-textMuted text-sm px-4 py-3">Henüz özel ölçüm eklemedin.</Text>
+              <Text className="text-textMuted text-sm px-4 py-3">Henüz yeni ölçüm eklemedin.</Text>
             ) : (
               custom.map((t, i) => (
                 <View
@@ -103,7 +103,7 @@ export default function MeasurementSettingsScreen() {
                 >
                   <View>
                     <Text className="text-text text-base capitalize">{t.name}</Text>
-                    <Text className="text-textFaint text-xs mt-0.5">
+                    <Text className="text-textFaint text-sm mt-0.5">
                       {t.target_direction === "decrease_is_good" ? "azalması iyi" : "artması iyi"}
                     </Text>
                   </View>

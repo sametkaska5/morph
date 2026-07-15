@@ -5,15 +5,42 @@ import {
   Pressable,
   ActivityIndicator,
   Dimensions,
-  Alert,
+  Modal,
 } from "react-native";
 import { Image } from "expo-image";
 import { useLocalSearchParams, router } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Feather from "@expo/vector-icons/Feather";
 import { supabase } from "@/lib/supabase";
 import { getPhotoUrl } from "@/lib/storage";
+
+function ActionMenuOption({
+  icon,
+  label,
+  danger,
+  onPress,
+}: {
+  icon: keyof typeof Feather.glyphMap;
+  label: string;
+  danger?: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+      className={`flex-row items-center gap-3 px-4 py-4 rounded-button border ${
+        danger ? "bg-danger/10 border-danger/30" : "bg-surface border-border"
+      }`}
+    >
+      <View className={`w-9 h-9 rounded-full items-center justify-center ${danger ? "bg-danger/15" : "bg-accentSoft"}`}>
+        <Feather name={icon} size={17} color={danger ? "#D9705A" : "#8CE05A"} />
+      </View>
+      <Text className={`text-base font-semibold ${danger ? "text-danger" : "text-text"}`}>{label}</Text>
+    </Pressable>
+  );
+}
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const IMAGE_HEIGHT = SCREEN_WIDTH * 1.25;
@@ -82,6 +109,8 @@ export default function EntryDetail() {
 
   const queryClient = useQueryClient();
   const { data, isLoading, error } = useEntryDetail(id);
+  const [showActionMenu, setShowActionMenu] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const deleteMutation = useMutation({
     mutationFn: (entryId: string) => deleteEntry(entryId),
@@ -106,7 +135,7 @@ export default function EntryDetail() {
   if (error) {
     return (
       <View className="flex-1 bg-bg justify-center items-center px-6">
-        <Text className="text-danger text-sm text-center mb-4">{(error as Error).message}</Text>
+        <Text className="text-danger text-base text-center mb-4">{(error as Error).message}</Text>
         <Pressable
           onPress={() => router.back()}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -118,31 +147,10 @@ export default function EntryDetail() {
     );
   }
 
-  /* ---------------- MENU ---------------- */
-
-  const onPressMenu = () => {
-    Alert.alert("İşlemler", "Ne yapmak istiyorsun?", [
-      { text: "Düzenle", onPress: () => router.push(`/entry/edit/${id}`) },
-      {
-        text: "Sil",
-        style: "destructive",
-        onPress: () =>
-          Alert.alert("Sil", "Bu işlem geri alınamaz", [
-            { text: "Vazgeç", style: "cancel" },
-            {
-              text: "Sil",
-              style: "destructive",
-              onPress: () => deleteMutation.mutate(id),
-            },
-          ]),
-      },
-      { text: "İptal", style: "cancel" },
-    ]);
-  };
-
   /* ---------------- UI ---------------- */
 
   return (
+    <>
     <ScrollView className="flex-1 bg-bg" bounces={false}>
       <View className="relative w-full" style={{ height: IMAGE_HEIGHT }}>
         <Pressable
@@ -155,7 +163,7 @@ export default function EntryDetail() {
         </Pressable>
 
         <Pressable
-          onPress={onPressMenu}
+          onPress={() => setShowActionMenu(true)}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
           className="absolute top-14 right-4 z-10 w-11 h-11 bg-black/40 rounded-full items-center justify-center"
@@ -210,5 +218,91 @@ export default function EntryDetail() {
         )}
       </View>
     </ScrollView>
+
+    <Modal
+      visible={showActionMenu}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowActionMenu(false)}
+    >
+      <Pressable
+        onPress={() => setShowActionMenu(false)}
+        className="flex-1 bg-black/60 items-center justify-center px-8"
+      >
+        <Pressable onPress={() => {}} className="w-full bg-bg border border-border rounded-card p-5">
+          <Text className="text-text text-xl font-bold mb-1 text-center">İşlemler</Text>
+          <Text className="text-textMuted text-sm mb-5 text-center">Bu anı için ne yapmak istiyorsun?</Text>
+          <View className="gap-3">
+            <ActionMenuOption
+              icon="edit-2"
+              label="Düzenle"
+              onPress={() => {
+                setShowActionMenu(false);
+                router.push(`/entry/edit/${id}`);
+              }}
+            />
+            <ActionMenuOption
+              icon="trash-2"
+              label="Sil"
+              danger
+              onPress={() => {
+                setShowActionMenu(false);
+                setShowDeleteConfirm(true);
+              }}
+            />
+          </View>
+          <Pressable
+            onPress={() => setShowActionMenu(false)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+            className="items-center mt-4 py-2"
+          >
+            <Text className="text-textMuted text-sm">Vazgeç</Text>
+          </Pressable>
+        </Pressable>
+      </Pressable>
+    </Modal>
+
+    <Modal
+      visible={showDeleteConfirm}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowDeleteConfirm(false)}
+    >
+      <Pressable
+        onPress={() => setShowDeleteConfirm(false)}
+        className="flex-1 bg-black/60 items-center justify-center px-8"
+      >
+        <Pressable onPress={() => {}} className="w-full bg-bg border border-border rounded-card p-5 items-center">
+          <View className="w-14 h-14 rounded-full bg-danger/15 items-center justify-center mb-4">
+            <Feather name="trash-2" size={24} color="#D9705A" />
+          </View>
+          <Text className="text-text text-xl font-bold mb-2 text-center">Bu anıyı sil?</Text>
+          <Text className="text-textMuted text-sm text-center mb-6">
+            Bu işlem geri alınamaz, fotoğraf ve ölçümler kalıcı olarak silinir.
+          </Text>
+          <View className="flex-row gap-3 w-full">
+            <Pressable
+              onPress={() => setShowDeleteConfirm(false)}
+              style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+              className="flex-1 py-4 rounded-button items-center bg-surface border border-border"
+            >
+              <Text className="text-text text-base font-semibold">Vazgeç</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                setShowDeleteConfirm(false);
+                deleteMutation.mutate(id);
+              }}
+              style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+              className="flex-1 py-4 rounded-button items-center bg-danger"
+            >
+              <Text className="text-bg text-base font-semibold">Sil</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
+    </>
   );
 }

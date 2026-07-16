@@ -106,7 +106,7 @@ export default function PickComparison() {
                       </View>
                     </View>
                   ) : null}
-                  <View className="absolute bottom-1 left-1 bg-black/55 rounded px-1.5 py-0.5">
+                  <View className="absolute bottom-1 left-1 bg-black/75 rounded px-1.5 py-0.5">
                     <Text className="text-text text-[10px]">
                       {new Date(item.date).toLocaleDateString("tr-TR", { day: "numeric", month: "short" })}
                     </Text>

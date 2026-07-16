@@ -154,7 +154,7 @@ function ComparisonBody({ data }: { data: NonNullable<Awaited<ReturnType<typeof 
           {start.photoUrl ? (
             <Image source={{ uri: start.photoUrl }} style={{ flex: 1 }} resizeMode="cover" />
           ) : null}
-          <View className="absolute top-2.5 left-2.5 bg-black/55 rounded-md px-2 py-1">
+          <View className="absolute top-2.5 left-2.5 bg-black/75 rounded-md px-2 py-1">
             <Text className="text-text text-xs font-semibold">{fmtDate(start.date)}</Text>
           </View>
         </View>
@@ -163,7 +163,7 @@ function ComparisonBody({ data }: { data: NonNullable<Awaited<ReturnType<typeof 
           {end.photoUrl ? (
             <Image source={{ uri: end.photoUrl }} style={{ flex: 1 }} resizeMode="cover" />
           ) : null}
-          <View className="absolute top-2.5 right-2.5 bg-accentSoft border border-accent rounded-md px-2 py-1">
+          <View className="absolute top-2.5 right-2.5 bg-black/75 border border-accent rounded-md px-2 py-1">
             <Text className="text-text text-xs font-semibold">{fmtDate(end.date)}</Text>
           </View>
         </View>
@@ -246,8 +246,8 @@ function ComparisonBody({ data }: { data: NonNullable<Awaited<ReturnType<typeof 
           <View className="h-1 bg-accent rounded-full" style={{ width: "100%" }} />
         </View>
         <View className="flex-row justify-between">
-          <Text className="text-textFaint text-xs">{fmtDate(start.date)}</Text>
-          <Text className="text-textFaint text-xs">{fmtDate(end.date)}</Text>
+          <Text className="text-textFaint text-sm">{fmtDate(start.date)}</Text>
+          <Text className="text-textFaint text-sm">{fmtDate(end.date)}</Text>
         </View>
       </View>
     </View>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { View, Text, ScrollView, Pressable, ActivityIndicator, Modal } from "react-native";
 import { Image } from "expo-image";
 import { useQuery } from "@tanstack/react-query";
@@ -21,11 +21,11 @@ function useProfileStats() {
 
 function StatChip({ icon, label, value }: { icon: any; label: string; value: string }) {
   return (
-    <View className="flex-row items-center gap-2">
-      <Feather name={icon} size={15} color="#8CE05A" />
+    <View className="flex-row items-center gap-3">
+      <Feather name={icon} size={20} color="#8CE05A" />
       <View>
-        <Text className="text-textFaint text-xs">{label}</Text>
-        <Text className="text-text text-sm font-semibold">{value}</Text>
+        <Text className="text-textFaint text-sm">{label}</Text>
+        <Text className="text-text text-base font-semibold">{value}</Text>
       </View>
     </View>
   );
@@ -81,6 +81,8 @@ export default function Profil() {
   const { data: unitPref = "metric" } = useUnitPreference(user?.id);
   const setUnitMutation = useSetUnitPreference(user?.id);
   const [showUnitSheet, setShowUnitSheet] = useState(false);
+  const [showPhotoPreview, setShowPhotoPreview] = useState(false);
+  const skipNextPress = useRef(false);
 
   const displayName = profile?.name || user?.email?.split("@")[0] || "Kullanıcı";
 
@@ -102,17 +104,32 @@ export default function Profil() {
     <ScrollView className="flex-1 bg-bg" contentContainerStyle={{ paddingTop: 56, paddingBottom: 32 }}>
       <Text className="text-text text-3xl font-bold px-4 pb-4">Profil</Text>
 
-      <Pressable onPress={() => router.push("/profile/edit")} className="px-4 pb-5 items-center">
-        <View className="w-24 h-24 rounded-full bg-surface border-2 border-accent items-center justify-center overflow-hidden mb-3">
+      <Pressable
+        onPress={() => {
+          if (skipNextPress.current) {
+            skipNextPress.current = false;
+            return;
+          }
+          router.push("/profile/edit");
+        }}
+        onLongPress={() => {
+          if (!profile?.avatarUrl) return;
+          skipNextPress.current = true;
+          setShowPhotoPreview(true);
+        }}
+        delayLongPress={350}
+        className="px-4 pb-5 items-center"
+      >
+        <View className="w-28 h-28 rounded-full bg-surface border-2 border-accent items-center justify-center overflow-hidden mb-3">
           {profile?.avatarUrl ? (
             <Image source={{ uri: profile.avatarUrl }} style={{ width: "100%", height: "100%" }} contentFit="cover" />
           ) : (
-            <Feather name="user" size={34} color="#8CE05A" />
+            <Feather name="user" size={40} color="#8CE05A" />
           )}
         </View>
-        <Text className="text-text text-xl font-semibold">{displayName}</Text>
+        <Text className="text-text text-2xl font-semibold">{displayName}</Text>
         {profile?.createdAt ? (
-          <Text className="text-textMuted text-xs mt-1">
+          <Text className="text-textMuted text-sm mt-1">
             {new Date(profile.createdAt).toLocaleDateString("tr-TR", { month: "long", year: "numeric" })}'den beri
             remory'de
           </Text>
@@ -204,6 +221,26 @@ export default function Profil() {
             />
           </View>
         </Pressable>
+      </Pressable>
+    </Modal>
+
+    <Modal
+      visible={showPhotoPreview}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowPhotoPreview(false)}
+    >
+      <Pressable
+        onPress={() => setShowPhotoPreview(false)}
+        className="flex-1 bg-black/90 items-center justify-center"
+      >
+        {profile?.avatarUrl ? (
+          <Image
+            source={{ uri: profile.avatarUrl }}
+            style={{ width: 288, height: 288, borderRadius: 144 }}
+            contentFit="cover"
+          />
+        ) : null}
       </Pressable>
     </Modal>
     </>

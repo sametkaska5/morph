@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { View, Text, TextInput, Pressable, ActivityIndicator, Alert } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
 import { useAuth } from "@/lib/useAuth";
@@ -58,7 +59,13 @@ export default function MeasurementSettingsScreen() {
   }
 
   return (
-    <View className="flex-1 bg-bg pt-14 px-4">
+    <KeyboardAwareScrollView
+      className="flex-1 bg-bg pt-14 px-4"
+      contentContainerStyle={{ paddingBottom: 32 }}
+      enableOnAndroid
+      extraScrollHeight={30}
+      keyboardShouldPersistTaps="handled"
+    >
       <View className="flex-row items-center gap-3 mb-6">
         <Pressable
           onPress={() => router.back()}
@@ -127,14 +134,14 @@ export default function MeasurementSettingsScreen() {
             <TextInput
               value={name}
               onChangeText={setName}
-              placeholder="isim (örn. kol çevresi)"
+              placeholder="İsim (örn. Kol Çevresi)"
               placeholderTextColor="#5C5A50"
               className="text-text text-base bg-bg rounded-lg px-3 py-3 mb-3"
             />
             <TextInput
               value={unit}
               onChangeText={setUnit}
-              placeholder="birim (örn. cm)"
+              placeholder="Birim (örn. cm)"
               placeholderTextColor="#5C5A50"
               className="text-text text-base bg-bg rounded-lg px-3 py-3 mb-3"
             />
@@ -143,23 +150,23 @@ export default function MeasurementSettingsScreen() {
               <Pressable
                 onPress={() => setDirection("decrease_is_good")}
                 style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
-                className={`flex-1 py-3 rounded-lg items-center ${
-                  direction === "decrease_is_good" ? "bg-accent" : "bg-bg border border-border"
+                className={`flex-1 py-3 rounded-lg items-center border ${
+                  direction === "decrease_is_good" ? "bg-accent border-accent" : "bg-white/5 border-white/15"
                 }`}
               >
-                <Text className={`text-sm font-semibold ${direction === "decrease_is_good" ? "text-bg" : "text-textMuted"}`}>
-                  azalması iyi
+                <Text className={`text-sm font-semibold ${direction === "decrease_is_good" ? "text-bg" : "text-text"}`}>
+                  Azalması İyi
                 </Text>
               </Pressable>
               <Pressable
                 onPress={() => setDirection("increase_is_good")}
                 style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
-                className={`flex-1 py-3 rounded-lg items-center ${
-                  direction === "increase_is_good" ? "bg-accent" : "bg-bg border border-border"
+                className={`flex-1 py-3 rounded-lg items-center border ${
+                  direction === "increase_is_good" ? "bg-accent border-accent" : "bg-white/5 border-white/15"
                 }`}
               >
-                <Text className={`text-sm font-semibold ${direction === "increase_is_good" ? "text-bg" : "text-textMuted"}`}>
-                  artması iyi
+                <Text className={`text-sm font-semibold ${direction === "increase_is_good" ? "text-bg" : "text-text"}`}>
+                  Artması İyi
                 </Text>
               </Pressable>
             </View>
@@ -179,6 +186,6 @@ export default function MeasurementSettingsScreen() {
           </View>
         </>
       )}
-    </View>
+    </KeyboardAwareScrollView>
   );
 }

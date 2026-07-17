@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { View, Text, Pressable, FlatList, Dimensions, RefreshControl, ActivityIndicator } from "react-native";
 import { Image } from "expo-image";
 import { useQuery } from "@tanstack/react-query";
@@ -8,7 +9,7 @@ import { getPhotoUrls } from "@/lib/storage";
 import { openCapturePicker } from "@/lib/capture";
 
 const { width } = Dimensions.get("window");
-const GAP = 4;
+const GAP = 8;
 const COLUMNS = 3;
 const H_PADDING = 16;
 const THUMB_W = (width - H_PADDING * 2 - GAP * (COLUMNS - 1)) / COLUMNS;
@@ -57,18 +58,26 @@ function useTimelineEntries() {
 }
 
 function PosterThumb({ entry }: { entry: EntryRow }) {
+  // Pressable'ın basınca-değişen style FONKSİYONU burada marginBottom'u (satır
+  // arası boşluk) uygulamıyordu — daha önce FAB ve Anı Akışı genişletme butonunda
+  // gördüğümüz aynı sorun. Düz stil objesine geri dönüp basma efektini elle
+  // (onPressIn/Out + local state) iç görünüme taşıyoruz.
+  const [pressed, setPressed] = useState(false);
+
   return (
     <Pressable
       onPress={() => router.push(`/entry/${entry.id}`)}
-      style={({ pressed }) => ({
-        width: THUMB_W,
-        marginBottom: 12,
-        opacity: pressed ? 0.85 : 1,
-        transform: [{ scale: pressed ? 0.97 : 1 }],
-      })}
+      onPressIn={() => setPressed(true)}
+      onPressOut={() => setPressed(false)}
+      style={{ width: THUMB_W, marginBottom: 16 }}
     >
       <View
-        style={{ width: THUMB_W, height: THUMB_H }}
+        style={{
+          width: THUMB_W,
+          height: THUMB_H,
+          opacity: pressed ? 0.85 : 1,
+          transform: [{ scale: pressed ? 0.97 : 1 }],
+        }}
         className="rounded-[10px] overflow-hidden bg-surface border border-border"
       >
         {entry.cover_photo_url ? (
@@ -81,16 +90,22 @@ function PosterThumb({ entry }: { entry: EntryRow }) {
             transition={150}
           />
         ) : null}
+        {/* Tarih fotoğrafın ALTINDA ayrı bir metin olarak durunca, ızgarada bir
+            üstteki/bir alttaki fotoğrafa mı ait olduğu karışıyordu — tarihi
+            doğrudan fotoğrafın kendi köşesine (üzerine) bindirip bu belirsizliği
+            yapısal olarak ortadan kaldırıyoruz. */}
+        <View className="absolute bottom-1.5 left-1.5 bg-black/70 rounded-md px-2 py-1">
+          <Text className="text-text text-xs font-semibold">
+            {new Date(entry.date).toLocaleDateString("tr-TR", { day: "numeric", month: "short" })}
+          </Text>
+        </View>
         {entry.pending ? (
-          <View className="absolute bottom-1.5 right-1.5 bg-black/60 rounded-full px-1.5 py-0.5 flex-row items-center gap-1">
+          <View className="absolute top-1.5 right-1.5 bg-black/60 rounded-full px-1.5 py-0.5 flex-row items-center gap-1">
             <Feather name="clock" size={11} color="#F5F3EC" />
             <Text className="text-text text-[10px] font-semibold">senkronize edilecek</Text>
           </View>
         ) : null}
       </View>
-      <Text className="text-textFaint text-xs mt-1" numberOfLines={1}>
-        {new Date(entry.date).toLocaleDateString("tr-TR", { day: "numeric", month: "short" })}
-      </Text>
     </Pressable>
   );
 }
@@ -132,7 +147,7 @@ export default function AnaEkran() {
       <View className="flex-row justify-between items-center px-4 pt-14 pb-4">
         <View>
           <Text className="text-text text-3xl font-bold tracking-wide uppercase">remory</Text>
-          <Text className="text-textFaint text-xs mt-1 capitalize">{todayLabel}</Text>
+          <Text className="text-textMuted text-sm mt-1 capitalize">{todayLabel}</Text>
         </View>
         <Pressable
           onPress={() => router.push("/compare/pick")}
@@ -145,8 +160,8 @@ export default function AnaEkran() {
 
       {!isEmpty ? (
         <View className="flex-row items-center justify-between px-4 mb-3">
-          <Text className="text-textFaint text-xs font-semibold uppercase tracking-wide">Son Kayıtlar</Text>
-          {entries?.length ? <Text className="text-textFaint text-xs">{entries.length} kayıt</Text> : null}
+          <Text className="text-textMuted text-sm font-semibold uppercase tracking-wide">Son Kayıtlar</Text>
+          {entries?.length ? <Text className="text-textMuted text-sm font-medium">{entries.length} kayıt</Text> : null}
         </View>
       ) : null}
 

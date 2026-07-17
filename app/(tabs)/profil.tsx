@@ -8,7 +8,8 @@ import { useAuth } from "@/lib/useAuth";
 import { supabase } from "@/lib/supabase";
 import { fetchProfileStats } from "@/lib/profileStats";
 import { useProfile } from "@/lib/profile";
-import { useUnitPreference, useSetUnitPreference, displayUnit, toDisplayValue } from "@/lib/units";
+import { useUnitPreference, useSetUnitPreference } from "@/lib/units";
+import { DraggableSheet } from "@/components/DraggableSheet";
 
 function useProfileStats() {
   const { user } = useAuth();
@@ -86,8 +87,6 @@ export default function Profil() {
 
   const displayName = profile?.name || user?.email?.split("@")[0] || "Kullanıcı";
 
-  const weightUnit = displayUnit("kg", unitPref);
-  const displayWeightDiff = stats?.weightDiff != null ? toDisplayValue(stats.weightDiff, "kg", unitPref) : null;
   const unitsLabel = unitPref === "imperial" ? "lb, in" : "kg, cm";
 
   async function handleSignOut() {
@@ -160,19 +159,9 @@ export default function Profil() {
                     : `${stats.monthsSinceFirst} aydır`}
                 </Text>
               </View>
-              <Text className="text-accent text-base font-semibold mb-2 leading-6">
+              <Text className="text-accent text-base font-semibold leading-6">
                 gelecekteki kendin için anılar biriktiriyorsun.
               </Text>
-              {displayWeightDiff != null ? (
-                <Text className="text-textMuted text-sm leading-6">
-                  Bugün baktığında ilk fotoğrafından{" "}
-                  <Text className="text-accent font-semibold">
-                    {displayWeightDiff <= 0
-                      ? `${Math.abs(displayWeightDiff)} ${weightUnit} daha hafifsin.`
-                      : `${displayWeightDiff} ${weightUnit} daha ağırsın.`}
-                  </Text>
-                </Text>
-              ) : null}
             </View>
           ) : null}
         </>
@@ -194,35 +183,24 @@ export default function Profil() {
       </View>
     </ScrollView>
 
-    <Modal visible={showUnitSheet} transparent animationType="fade" onRequestClose={() => setShowUnitSheet(false)}>
-      <Pressable
-        onPress={() => setShowUnitSheet(false)}
-        className="flex-1 bg-black/60 justify-end"
-      >
-        <Pressable
-          onPress={() => {}}
-          className="bg-bg border-t border-border rounded-t-[24px] px-5 pt-5 pb-10"
-        >
-          <View className="w-10 h-1 rounded-full bg-white/20 self-center mb-5" />
-          <Text className="text-text text-xl font-bold mb-1">Birimler</Text>
-          <Text className="text-textMuted text-base mb-5">Hangi birim sistemini kullanmak istersin?</Text>
-          <View className="gap-3">
-            <UnitOption
-              label="Metrik"
-              sublabel="kg, cm"
-              selected={unitPref === "metric"}
-              onPress={() => handleSelectUnit("metric")}
-            />
-            <UnitOption
-              label="Emperyal"
-              sublabel="lb, in"
-              selected={unitPref === "imperial"}
-              onPress={() => handleSelectUnit("imperial")}
-            />
-          </View>
-        </Pressable>
-      </Pressable>
-    </Modal>
+    <DraggableSheet visible={showUnitSheet} onClose={() => setShowUnitSheet(false)}>
+      <Text className="text-text text-xl font-bold mb-1">Birimler</Text>
+      <Text className="text-textMuted text-base mb-5">Hangi birim sistemini kullanmak istersin?</Text>
+      <View className="gap-3">
+        <UnitOption
+          label="Metrik"
+          sublabel="kg, cm"
+          selected={unitPref === "metric"}
+          onPress={() => handleSelectUnit("metric")}
+        />
+        <UnitOption
+          label="Emperyal"
+          sublabel="lb, in"
+          selected={unitPref === "imperial"}
+          onPress={() => handleSelectUnit("imperial")}
+        />
+      </View>
+    </DraggableSheet>
 
     <Modal
       visible={showPhotoPreview}

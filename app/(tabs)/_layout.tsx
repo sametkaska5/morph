@@ -48,6 +48,7 @@ function OfflineBanner() {
 export default function TabsLayout() {
   const { session, loading } = useAuth();
   const isOnline = useIsOnline();
+  const insets = useSafeAreaInsets();
 
   if (loading) {
     return (
@@ -73,8 +74,13 @@ export default function TabsLayout() {
           backgroundColor: BG,
           borderTopColor: "rgba(255,255,255,0.08)",
           borderTopWidth: 0.5,
-          height: 84,
+          // Android'in 3 tuşlu gezinme çubuğu (veya iOS home indicator) olan
+          // cihazlarda sabit yükseklik, sekmeleri sistem tuşlarının olduğu bölgeye
+          // çok yaklaştırıp dokunmayı zorlaştırıyordu — güvenli alanı (insets.bottom)
+          // ekleyip içeriği o kadar yukarı itiyoruz.
+          height: 84 + insets.bottom,
           paddingTop: 8,
+          paddingBottom: insets.bottom,
         },
         tabBarLabelStyle: { fontSize: 12 },
       }}

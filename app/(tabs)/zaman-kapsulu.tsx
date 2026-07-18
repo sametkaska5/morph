@@ -14,9 +14,10 @@ import { openCapturePicker } from "@/lib/capture";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 const PAGE_SIZE = 20;
-// (tabs)/_layout.tsx'teki tabBarStyle.height ile eşleşmeli — sayfa yüksekliği tam ekran
-// (SCREEN_HEIGHT) olduğu için tab bar'ın kapladığı alan hesaba katılmazsa "bottom"a
-// göre konumlanan elemanlar (genişletme butonu gibi) tab bar'ın arkasında kalıyordu.
+// (tabs)/_layout.tsx'teki tabBarStyle.height ile eşleşmeli — FlatList'in gerçek
+// görünür alanı SCREEN_HEIGHT değil, tab bar'ın kapladığı kadar eksiği; sayfa
+// yüksekliği (pageHeight) bunu hesaba katmazsa pagingEnabled snap noktaları
+// gerçek viewport ile uyuşmayıp kaydırmada bir seferde 2-3 sayfa atlıyordu.
 const TAB_BAR_HEIGHT = 84;
 
 type MeasurementEntry = { name: string; unit: string; value: number };
@@ -75,15 +76,16 @@ function CapsulePage({
   index,
   total,
   unitPref,
+  pageHeight,
 }: {
   entry: CapsuleEntry;
   index: number;
   total: number;
   unitPref: UnitPref;
+  pageHeight: number;
 }) {
   const [flipped, setFlipped] = useState(false);
   const flip = useSharedValue(0);
-  const insets = useSafeAreaInsets();
 
   function toggleFlip() {
     const next = !flipped;
@@ -110,7 +112,7 @@ function CapsulePage({
   return (
     <Pressable
       onPress={toggleFlip}
-      style={{ height: SCREEN_HEIGHT, width: "100%" }}
+      style={{ height: pageHeight, width: "100%" }}
       className="bg-surface"
     >
       {/* ÖN YÜZ — fotoğraf */}
@@ -184,7 +186,7 @@ function CapsulePage({
           }}
           style={{
             position: "absolute",
-            bottom: TAB_BAR_HEIGHT + insets.bottom - 24,
+            bottom: 24,
             right: 20,
           }}
           className="w-14 h-14 rounded-full bg-surface border border-border items-center justify-center"
@@ -207,12 +209,19 @@ function CapsulePage({
 
 export default function ZamanKapsulu() {
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
+  // Tab bar'ın gerçekte kapladığı alan platforma göre birkaç piksel oynayabiliyor;
+  // sabit bir tahminle hesaplanan sayfa yüksekliği viewport'tan az da olsa
+  // sapınca alttaki fotoğraf üsttekinin altından görünür oluyordu. Bunun yerine
+  // FlatList'in sarmalayıcısının gerçek render yüksekliğini ölçüyoruz.
+  const [measuredHeight, setMeasuredHeight] = useState(0);
+  const pageHeight = measuredHeight || SCREEN_HEIGHT - TAB_BAR_HEIGHT - insets.bottom;
   const { data: unitPref = "metric" } = useUnitPreference(user?.id);
   const { data, isLoading, error, fetchNextPage, hasNextPage, isFetchingNextPage } = useCapsuleEntries();
   const entries = data?.pages.flat();
 
   if (isLoading) {
-    return <View className="flex-1 bg-bg" />;
+    return <View className="flex-1 bg-bg" onLayout={(e) => setMeasuredHeight(e.nativeEvent.layout.height)} />;
   }
 
   if (error) {
@@ -246,21 +255,20 @@ export default function ZamanKapsulu() {
   }
 
   return (
-    <View className="flex-1 bg-bg">
+    <View className="flex-1 bg-bg" onLayout={(e) => setMeasuredHeight(e.nativeEvent.layout.height)}>
       <FlatList
         data={entries}
         keyExtractor={(item) => item.id}
         pagingEnabled
         showsVerticalScrollIndicator={false}
-        snapToInterval={SCREEN_HEIGHT}
-        decelerationRate="fast"
+        decelerationRate="normal"
         initialNumToRender={1}
         maxToRenderPerBatch={2}
         windowSize={3}
         removeClippedSubviews
-        getItemLayout={(_, index) => ({ length: SCREEN_HEIGHT, offset: SCREEN_HEIGHT * index, index })}
+        getItemLayout={(_, index) => ({ length: pageHeight, offset: pageHeight * index, index })}
         renderItem={({ item, index }) => (
-          <CapsulePage entry={item} index={index} total={entries.length} unitPref={unitPref} />
+          <CapsulePage entry={item} index={index} total={entries.length} unitPref={unitPref} pageHeight={pageHeight} />
         )}
         onEndReached={() => {
           if (hasNextPage) fetchNextPage();
@@ -268,7 +276,7 @@ export default function ZamanKapsulu() {
         onEndReachedThreshold={0.5}
         ListFooterComponent={
           isFetchingNextPage ? (
-            <View style={{ height: SCREEN_HEIGHT, alignItems: "center", justifyContent: "center" }} className="bg-bg">
+            <View style={{ height: pageHeight, alignItems: "center", justifyContent: "center" }} className="bg-bg">
               <ActivityIndicator color="#8CE05A" />
             </View>
           ) : null

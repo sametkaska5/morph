@@ -102,7 +102,7 @@ function PosterThumb({ entry }: { entry: EntryRow }) {
         {entry.pending ? (
           <View className="absolute top-1.5 right-1.5 bg-black/60 rounded-full px-1.5 py-0.5 flex-row items-center gap-1">
             <Feather name="clock" size={11} color="#F5F3EC" />
-            <Text className="text-text text-[10px] font-semibold">senkronize edilecek</Text>
+            <Text className="text-text text-[10px] font-semibold">Bekliyor</Text>
           </View>
         ) : null}
       </View>

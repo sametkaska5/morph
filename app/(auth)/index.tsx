@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { View, Text, TextInput, Pressable, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
-import { Redirect } from "expo-router";
+import { Redirect, router } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
 
@@ -74,6 +74,17 @@ export default function AuthScreen() {
           style={{ height: 52, textAlignVertical: "center" }}
           className="bg-surface border border-border rounded-button px-4 text-text text-base mb-2"
         />
+
+        {mode === "login" ? (
+          <Pressable
+            onPress={() => router.push("/forgot-password")}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+            className="items-end mb-2 py-1"
+          >
+            <Text className="text-accent text-sm font-medium">Şifremi unuttum</Text>
+          </Pressable>
+        ) : null}
 
         {errorMsg ? <Text className="text-danger text-base mb-2">{errorMsg}</Text> : null}
 

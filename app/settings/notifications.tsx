@@ -109,9 +109,9 @@ export default function NotificationSettingsScreen() {
     if (!next) cancelStreakRiskNotification();
   }
 
-  async function handleTimeChange(selected: Date | undefined) {
-    setShowPicker(Platform.OS === "ios");
-    if (!selected || !settings || !user) return;
+  async function handleTimeChange(selected: Date) {
+    if (Platform.OS === "android") setShowPicker(false);
+    if (!settings || !user) return;
 
     const newTime = formatTimeFromDate(selected);
     updateMutation.mutate({ reminder_time: newTime });
@@ -184,7 +184,8 @@ export default function NotificationSettingsScreen() {
               value={parseTimeToDate(settings.reminder_time)}
               mode="time"
               display={Platform.OS === "ios" ? "spinner" : "default"}
-              onChange={(_, selected) => handleTimeChange(selected)}
+              onValueChange={(_, selected) => handleTimeChange(selected)}
+              onDismiss={() => setShowPicker(false)}
             />
           )}
         </>

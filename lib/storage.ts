@@ -32,6 +32,31 @@ export async function uploadAvatar(userId: string, base64: string) {
   return path;
 }
 
+/**
+ * Hesap silinirken kullanıcının "photos" bucket'ındaki {user_id}/ altındaki TÜM
+ * dosyaları (entry fotoğrafları + avatar) kaldırır. Storage'ın list() metodu tek
+ * seviye döndürdüğü için önce alt klasörleri (her entry_id + avatar), sonra
+ * içindeki dosyaları listeleyip tam yollarını topluyoruz.
+ */
+export async function deleteAllUserPhotos(userId: string) {
+  const { data: folders, error: listError } = await supabase.storage.from("photos").list(userId);
+  if (listError) throw listError;
+
+  const filePaths: string[] = [];
+  for (const folder of folders ?? []) {
+    const { data: files, error } = await supabase.storage.from("photos").list(`${userId}/${folder.name}`);
+    if (error) throw error;
+    for (const file of files ?? []) {
+      filePaths.push(`${userId}/${folder.name}/${file.name}`);
+    }
+  }
+
+  if (filePaths.length > 0) {
+    const { error } = await supabase.storage.from("photos").remove(filePaths);
+    if (error) throw error;
+  }
+}
+
 export async function getPhotoUrl(path: string) {
   const { data, error } = await supabase.storage.from("photos").createSignedUrl(path, SIGNED_URL_EXPIRY);
   if (error) throw error;

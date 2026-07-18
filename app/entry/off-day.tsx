@@ -61,10 +61,11 @@ export default function OffDayScreen() {
           mode="date"
           maximumDate={new Date()}
           display={Platform.OS === "ios" ? "spinner" : "default"}
-          onChange={(_, selected) => {
-            setShowPicker(Platform.OS === "ios");
-            if (selected) setDate(selected);
+          onValueChange={(_, selected) => {
+            if (Platform.OS === "android") setShowPicker(false);
+            setDate(selected);
           }}
+          onDismiss={() => setShowPicker(false)}
         />
       )}
 

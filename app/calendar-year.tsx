@@ -63,16 +63,16 @@ function MonthCalendar({ year, monthIndex, statusMap }: { year: number; monthInd
     <View className="mb-5">
       <Text className="text-text text-base font-semibold mb-2">{MONTH_NAMES[monthIndex]}</Text>
       {weeks.map((week, wi) => (
-        <View key={wi} className="flex-row gap-1 mb-1">
+        <View key={wi} className="flex-row mb-1">
           {week.map((dateKey, di) => {
-            if (!dateKey) return <View key={di} style={{ width: 18, height: 18 }} />;
+            if (!dateKey) return <View key={di} style={{ flex: 1, aspectRatio: 1, marginHorizontal: 2 }} />;
             const status = statusMap[dateKey];
             const isFuture = dateKey > todayKey;
             const isToday = dateKey === todayKey;
             return (
               <View
                 key={di}
-                style={{ width: 18, height: 18 }}
+                style={{ flex: 1, aspectRatio: 1, marginHorizontal: 2 }}
                 className={`rounded-[4px] items-center justify-center ${
                   status === "log"
                     ? "bg-accent"

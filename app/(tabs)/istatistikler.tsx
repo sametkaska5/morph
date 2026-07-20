@@ -1,10 +1,18 @@
+<<<<<<< HEAD
+import { useEffect, useRef, useState } from "react";
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert, Image, Modal } from "react-native";
+=======
 import { useEffect, useState } from "react";
 import { View, ScrollView, Pressable, ActivityIndicator, Alert } from "react-native";
 import { Text } from "@/components/Typography";
+>>>>>>> main
 import Svg, { Path, Circle, Defs, LinearGradient, Stop } from "react-native-svg";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
+import { captureRef } from "react-native-view-shot";
+import * as Sharing from "expo-sharing";
+import type * as MediaLibraryType from "expo-media-library";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
 import { toLocalDateKey, getMondayOfWeek, weekdayLetter } from "@/lib/date";
@@ -12,6 +20,14 @@ import { scheduleStreakRiskNotification } from "@/lib/notifications";
 import { useNotificationSettings } from "@/lib/notificationSettings";
 import { useMeasurementTypes } from "@/lib/measurementTypes";
 import { useUnitPreference, displayUnit, toDisplayValue } from "@/lib/units";
+import { getPhotoUrls } from "@/lib/storage";
+
+let MediaLibrary: typeof MediaLibraryType | null = null;
+try {
+  MediaLibrary = require("expo-media-library");
+} catch {
+  MediaLibrary = null;
+}
 
 const CHART_W = 300;
 const CHART_H = 110;
@@ -75,6 +91,38 @@ function useCurrentWeek(userId: string | undefined) {
   });
 }
 
+function useShareablePhotoEntries(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["shareablePhotos", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("entries")
+        .select("id, date, photos!cover_photo_id(storage_path)")
+        .eq("user_id", userId)
+        .eq("type", "log")
+        .not("cover_photo_id", "is", null)
+        .order("date", { ascending: false })
+        .limit(12);
+      if (error) throw error;
+
+      const paths = (data ?? [])
+        .map((entry: any) => entry.photos?.storage_path)
+        .filter(Boolean) as string[];
+      const urlMap = await getPhotoUrls(paths);
+
+      return (data ?? [])
+        .map((entry: any) => ({
+          id: entry.id,
+          date: entry.date,
+          photoUrl: entry.photos?.storage_path ? urlMap.get(entry.photos.storage_path) ?? null : null,
+          photoPath: entry.photos?.storage_path ?? null,
+        }))
+        .filter((entry) => entry.photoUrl);
+    },
+  });
+}
+
 function buildChartPath(values: number[]) {
   if (values.length === 0) return { line: "", area: "" };
   const min = Math.min(...values);
@@ -108,6 +156,10 @@ export default function Istatistikler() {
   const queryClient = useQueryClient();
   const { data: types } = useMeasurementTypes(user?.id);
   const [activeTypeId, setActiveTypeId] = useState<string | null>(null);
+  const [shareModalVisible, setShareModalVisible] = useState(false);
+  const [selectedSharePhotoId, setSelectedSharePhotoId] = useState<string | null>(null);
+  const [sharePendingAction, setSharePendingAction] = useState<"save" | "share" | null>(null);
+  const shareCardRef = useRef<View>(null);
   // Hangi günlerin şu an sunucuya yazılmakta olduğunu izler. toggleOffDayMutation.isPending
   // TEK bir mutation nesnesine ait olduğu için tüm haftayı birden kilitlerdi — biri
   // işlemdeyken başka bir güne basmak sessizce yok sayılıyordu. Bunun yerine sadece
@@ -202,6 +254,7 @@ export default function Istatistikler() {
 
   const { data: series, isLoading: seriesLoading } = useMeasurementSeries(user?.id, currentTypeId);
   const { data: week, isLoading: weekLoading } = useCurrentWeek(user?.id);
+  const { data: shareablePhotos, isLoading: sharePhotosLoading } = useShareablePhotoEntries(user?.id);
   const { data: unitPref = "metric" } = useUnitPreference(user?.id);
 
   const values = activeType
@@ -229,7 +282,60 @@ export default function Istatistikler() {
     return streak;
   })();
 
+  const selectedSharePhoto = shareablePhotos?.find((photo) => photo.id === selectedSharePhotoId) ?? shareablePhotos?.[0] ?? null;
+  const shareStreakDays = Math.max(1, currentStreak || 1);
+
+  useEffect(() => {
+    if (shareablePhotos && shareablePhotos.length > 0) {
+      const hasSelected = shareablePhotos.some((photo) => photo.id === selectedSharePhotoId);
+      if (!hasSelected) {
+        setSelectedSharePhotoId(shareablePhotos[0].id);
+      }
+    } else {
+      setSelectedSharePhotoId(null);
+    }
+  }, [shareablePhotos, selectedSharePhotoId]);
+
   const { data: notifSettings } = useNotificationSettings(user?.id);
+
+  async function handleShareCard(kind: "save" | "share") {
+    if (!shareCardRef.current) {
+      Alert.alert("Ön izleme hazır değil", "Kart henüz oluşturulmadı, lütfen tekrar dene.");
+      return;
+    }
+
+    setSharePendingAction(kind);
+    try {
+      const uri = await captureRef(shareCardRef, { format: "png", quality: 1 });
+      if (kind === "save") {
+        if (!MediaLibrary) {
+          Alert.alert(
+            "Bu özellik Expo Go'da desteklenmiyor",
+            "Galeriye kaydetmek için development build gerekiyor. Bu arada 'Paylaş' ile görseli doğrudan gönderebilirsin."
+          );
+          return;
+        }
+        const { status } = await MediaLibrary.requestPermissionsAsync();
+        if (status !== "granted") {
+          Alert.alert("İzin gerekli", "Galeriye kaydetmek için fotoğraf erişim izni vermelisin.");
+          return;
+        }
+        await MediaLibrary.saveToLibraryAsync(uri);
+        Alert.alert("Kaydedildi", "Paylaşım kartı galerine kaydedildi.");
+      } else {
+        const available = await Sharing.isAvailableAsync();
+        if (!available) {
+          Alert.alert("Paylaşım desteklenmiyor", "Bu cihazda paylaşım özelliği kullanılamıyor.");
+          return;
+        }
+        await Sharing.shareAsync(uri, { mimeType: "image/png" });
+      }
+    } catch (err) {
+      Alert.alert(kind === "save" ? "Kaydetme başarısız" : "Paylaşım başarısız", (err as Error).message);
+    } finally {
+      setSharePendingAction(null);
+    }
+  }
 
   useEffect(() => {
     if (!week || !notifSettings?.streak_enabled) return;
@@ -308,15 +414,26 @@ export default function Istatistikler() {
               <Text className="text-textFaint text-xs capitalize">bu hafta</Text>
             </View>
           </View>
-          <Pressable
-            onPress={() => router.push("/calendar-year")}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-            className="flex-row items-center gap-1 py-2 px-2"
-          >
-            <Text className="text-accent text-sm font-medium capitalize">Yıla göre gör</Text>
-            <Feather name="chevron-right" size={15} color="#8CE05A" />
-          </Pressable>
+          <View className="flex-row items-center gap-2">
+            <Pressable
+              onPress={() => setShareModalVisible(true)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+              className="flex-row items-center gap-1 py-2 px-2"
+            >
+              <Feather name="share-2" size={14} color="#8CE05A" />
+              <Text className="text-accent text-sm font-medium capitalize">Paylaş</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => router.push("/calendar-year")}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+              className="flex-row items-center gap-1 py-2 px-2"
+            >
+              <Text className="text-accent text-sm font-medium capitalize">Yıla göre gör</Text>
+              <Feather name="chevron-right" size={15} color="#8CE05A" />
+            </Pressable>
+          </View>
         </View>
 
         {weekLoading ? (
@@ -373,6 +490,117 @@ export default function Istatistikler() {
           </View>
         )}
       </View>
+
+      <Modal transparent visible={shareModalVisible} animationType="slide" onRequestClose={() => setShareModalVisible(false)}>
+        <View className="flex-1 bg-black/70 justify-end">
+          <View className="bg-bg rounded-t-[28px] border-t border-border p-4 max-h-[92%]">
+            <View className="flex-row items-start justify-between mb-4">
+              <View className="flex-1 pr-3">
+                <Text className="text-text text-lg font-semibold">Remory serisini paylaş</Text>
+                <Text className="text-textFaint text-sm mt-1">
+                  Fotoğraf seç, günlük seri uzunluğunu belirle ve paylaşıma hazır hale getir.
+                </Text>
+              </View>
+              <Pressable onPress={() => setShareModalVisible(false)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <Feather name="x" size={20} color="#F5F3EC" />
+              </Pressable>
+            </View>
+
+            {sharePhotosLoading ? (
+              <ActivityIndicator color="#8CE05A" className="my-6" />
+            ) : shareablePhotos && shareablePhotos.length > 0 ? (
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 8 }}>
+                <View className="mb-4">
+                  <Text className="text-text text-sm font-semibold mb-2">Fotoğraf seç</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
+                    {shareablePhotos.map((photo) => {
+                      const isActive = selectedSharePhotoId === photo.id;
+                      return (
+                        <Pressable
+                          key={photo.id}
+                          onPress={() => setSelectedSharePhotoId(photo.id)}
+                          className={`rounded-[16px] overflow-hidden border ${isActive ? "border-accent" : "border-border"}`}
+                        >
+                          <Image source={{ uri: photo.photoUrl! }} style={{ width: 90, height: 90 }} resizeMode="cover" />
+                          <View className="px-2 py-1 bg-surface">
+                            <Text className="text-textFaint text-[11px]">{new Date(photo.date).toLocaleDateString("tr-TR", { day: "numeric", month: "short" })}</Text>
+                          </View>
+                        </Pressable>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+
+                <View className="mb-4 rounded-card border border-border bg-surface p-3">
+                  <View ref={shareCardRef} collapsable={false} className="rounded-[24px] overflow-hidden bg-[#0B0D0A]" style={{ minHeight: 420 }}>
+                    <View className="absolute inset-0">
+                      {selectedSharePhoto?.photoUrl ? (
+                        <Image source={{ uri: selectedSharePhoto.photoUrl }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+                      ) : (
+                        <View className="w-full h-full bg-white/10 items-center justify-center">
+                          <Text className="text-textMuted text-sm">Fotoğraf yok</Text>
+                        </View>
+                      )}
+                      <View className="absolute inset-0 bg-black/35" />
+                    </View>
+
+                    <View className="absolute inset-x-0 bottom-0 p-5 items-center">
+                      <View className="rounded-full border border-white/20 bg-black/55 px-4 py-2 mb-3">
+                        <Text className="text-white text-xl font-black text-center">{shareStreakDays} gün üst üste</Text>
+                      </View>
+                      <View className="flex-row items-center gap-2 rounded-full border border-white/20 bg-black/55 px-3 py-2">
+                        <View className="w-8 h-8 rounded-full bg-accent/20 items-center justify-center border border-accent/30">
+                          <Text className="text-accent font-black text-sm">R</Text>
+                        </View>
+                        <Text className="text-white text-sm font-semibold">remory</Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+
+                <View className="flex-row gap-2">
+                  <Pressable
+                    onPress={() => handleShareCard("save")}
+                    disabled={sharePendingAction !== null}
+                    style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+                    className="flex-1 flex-row items-center justify-center gap-2 border border-border rounded-[12px] py-3 bg-surface"
+                  >
+                    {sharePendingAction === "save" ? (
+                      <ActivityIndicator size="small" color="#F5F3EC" />
+                    ) : (
+                      <>
+                        <Feather name="download" size={16} color="#F5F3EC" />
+                        <Text className="text-text text-sm font-semibold">İndir</Text>
+                      </>
+                    )}
+                  </Pressable>
+                  <Pressable
+                    onPress={() => handleShareCard("share")}
+                    disabled={sharePendingAction !== null}
+                    style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+                    className="flex-1 flex-row items-center justify-center gap-2 border border-accent rounded-[12px] py-3 bg-accentSoft"
+                  >
+                    {sharePendingAction === "share" ? (
+                      <ActivityIndicator size="small" color="#8CE05A" />
+                    ) : (
+                      <>
+                        <Feather name="share-2" size={16} color="#8CE05A" />
+                        <Text className="text-accent text-sm font-semibold">Paylaş</Text>
+                      </>
+                    )}
+                  </Pressable>
+                </View>
+              </ScrollView>
+            ) : (
+              <View className="py-6">
+                <Text className="text-textMuted text-base text-center">
+                  Henüz paylaşılacak fotoğraf yok. Önce bir kayıt fotoğrafı ekle.
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }

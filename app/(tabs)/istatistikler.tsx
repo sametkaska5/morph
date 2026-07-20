@@ -169,6 +169,20 @@ export default function Istatistikler() {
     },
   });
 
+  function dayAccessibilityLabel(day: { date: string; type: string | null; isFuture: boolean; isToday: boolean }) {
+    const dateLabel = new Date(day.date).toLocaleDateString("tr-TR", { day: "numeric", month: "long", weekday: "long" });
+    if (day.isFuture) return `${dateLabel}, henüz gelmedi`;
+    const statusLabel =
+      day.type === "log"
+        ? "kayıt var, açmak için dokun"
+        : day.type === "off_day"
+        ? "off day olarak işaretli, antrenman yapmak için dokun"
+        : day.type === "workout"
+        ? "antrenman olarak işaretli, işareti kaldırmak için dokun"
+        : "boş, off day olarak işaretlemek için dokun";
+    return `${dateLabel}${day.isToday ? ", bugün" : ""}, ${statusLabel}`;
+  }
+
   function handleDayPress(day: { date: string; id: string | null; type: string | null; isFuture: boolean }) {
     if (day.isFuture) return;
     if (day.type === "log" && day.id) {
@@ -222,13 +236,17 @@ export default function Istatistikler() {
 
   return (
     <ScrollView className="flex-1 bg-bg" contentContainerStyle={{ paddingTop: 56, paddingBottom: 32 }}>
-      <Text className="text-text text-3xl font-bold px-4 mb-4">İstatistikler</Text>
+      <Text className="text-text text-3xl font-bold px-4 mb-4" accessibilityRole="header">
+        İstatistikler
+      </Text>
 
       <View className="flex-row gap-2 px-4 mb-4">
         {types?.map((t) => (
           <Pressable
             key={t.id}
             onPress={() => setActiveTypeId(t.id)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: t.id === currentTypeId }}
             style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
             className={`px-4 py-3 rounded-pill ${t.id === currentTypeId ? "bg-accent" : "bg-surface"}`}
           >
@@ -310,6 +328,9 @@ export default function Istatistikler() {
                   onPress={() => handleDayPress(day)}
                   disabled={isPending || day.isFuture}
                   hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+                  accessibilityRole="button"
+                  accessibilityLabel={isPending ? "işleniyor" : dayAccessibilityLabel(day)}
+                  accessibilityState={{ disabled: isPending || day.isFuture }}
                   style={({ pressed }) => ({ opacity: pressed && !day.isFuture ? 0.7 : 1 })}
                   className="items-center gap-1"
                 >

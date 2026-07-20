@@ -126,6 +126,8 @@ export default function NotificationSettingsScreen() {
         <Pressable
           onPress={() => router.back()}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityRole="button"
+          accessibilityLabel="Geri dön"
           style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
         >
           <Feather name="chevron-left" size={22} color="#F5F3EC" />

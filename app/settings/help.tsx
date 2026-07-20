@@ -34,6 +34,8 @@ export default function HelpScreen() {
         <Pressable
           onPress={() => router.back()}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityRole="button"
+          accessibilityLabel="Geri dön"
           style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
         >
           <Feather name="chevron-left" size={22} color="#F5F3EC" />
@@ -62,6 +64,27 @@ export default function HelpScreen() {
         <Text className="text-text text-base flex-1">Geri bildirim gönder</Text>
         <Feather name="chevron-right" size={15} color="#5C5A50" />
       </Pressable>
+
+      <View className="bg-surface border border-border rounded-card overflow-hidden mb-5">
+        <Pressable
+          onPress={() => router.push("/privacy-policy")}
+          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+          className="flex-row items-center gap-3 px-4 py-3 border-b border-border"
+        >
+          <Feather name="shield" size={16} color={ACCENT} />
+          <Text className="flex-1 text-text text-base">Gizlilik Politikası</Text>
+          <Feather name="chevron-right" size={15} color="#5C5A50" />
+        </Pressable>
+        <Pressable
+          onPress={() => router.push("/terms")}
+          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+          className="flex-row items-center gap-3 px-4 py-3"
+        >
+          <Feather name="file-text" size={16} color={ACCENT} />
+          <Text className="flex-1 text-text text-base">Kullanım Şartları</Text>
+          <Feather name="chevron-right" size={15} color="#5C5A50" />
+        </Pressable>
+      </View>
 
       <Text className="text-textFaint text-xs text-center">Remory v{version}</Text>
     </ScrollView>

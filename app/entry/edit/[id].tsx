@@ -188,6 +188,8 @@ export default function EditEntry() {
 
       <Pressable
         onPress={pickImage}
+        accessibilityRole="button"
+        accessibilityLabel="Fotoğrafı değiştir"
         style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
         className="mb-6 relative"
       >
@@ -230,6 +232,8 @@ export default function EditEntry() {
               />
               <Pressable
                 hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="Sonraki alana geç"
                 style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
                 onPress={() => {
                   const next = inputRefs.current[i + 1];
@@ -248,6 +252,7 @@ export default function EditEntry() {
         ref={noteRef}
         value={note}
         onChangeText={setNote}
+        accessibilityLabel="Not"
         placeholder="Not..."
         placeholderTextColor="#888"
         className="bg-surface border border-border text-text text-base p-4 rounded-card h-28 mb-6"

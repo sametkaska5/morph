@@ -112,6 +112,8 @@ function CapsulePage({
   return (
     <Pressable
       onPress={toggleFlip}
+      accessibilityRole="button"
+      accessibilityLabel={`${formattedDate} tarihli anı, ${flipped ? "fotoğrafı göstermek için dokun" : "değerleri görmek için dokun"}`}
       style={{ height: pageHeight, width: "100%" }}
       className="bg-surface"
     >
@@ -184,6 +186,8 @@ function CapsulePage({
             e.stopPropagation();
             router.push(`/entry/${entry.id}`);
           }}
+          accessibilityRole="button"
+          accessibilityLabel="Anı detayını aç"
           style={{
             position: "absolute",
             bottom: 24,

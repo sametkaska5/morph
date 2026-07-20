@@ -91,6 +91,8 @@ export default function EditProfileScreen() {
         <Pressable
           onPress={() => router.back()}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityRole="button"
+          accessibilityLabel="Geri dön"
         >
           <Feather name="chevron-left" size={22} color="#F5F3EC" />
         </Pressable>
@@ -98,7 +100,12 @@ export default function EditProfileScreen() {
       </View>
 
       <View className="items-center mb-8">
-        <Pressable onPress={pickAvatar} style={{ position: "relative" }}>
+        <Pressable
+          onPress={pickAvatar}
+          accessibilityRole="button"
+          accessibilityLabel="Profil fotoğrafını değiştir"
+          style={{ position: "relative" }}
+        >
           <View className="w-24 h-24 rounded-full bg-surface border-[1.5px] border-accent items-center justify-center overflow-hidden">
             {displayUri ? (
               <Image source={{ uri: displayUri }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
@@ -126,6 +133,7 @@ export default function EditProfileScreen() {
         onChangeText={setName}
         placeholder="İsmini yaz"
         placeholderTextColor="#5C5A50"
+        accessibilityLabel="İsim"
         style={{ height: 52, textAlignVertical: "center" }}
         className="bg-surface border border-border rounded-button px-4 text-text text-base mb-6"
       />

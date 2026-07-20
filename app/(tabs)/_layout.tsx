@@ -14,6 +14,8 @@ function CaptureButton() {
   return (
     <Pressable
       onPress={openCapturePicker}
+      accessibilityRole="button"
+      accessibilityLabel="Anı ekle"
       style={{
         width: 56,
         height: 56,

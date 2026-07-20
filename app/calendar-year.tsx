@@ -106,6 +106,8 @@ export default function CalendarYear() {
         <Pressable
           onPress={() => router.back()}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          accessibilityRole="button"
+          accessibilityLabel="Geri dön"
           style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
         >
           <Feather name="chevron-left" size={22} color="#F5F3EC" />
@@ -114,15 +116,22 @@ export default function CalendarYear() {
           <Pressable
             onPress={() => setYear((y) => y - 1)}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            accessibilityRole="button"
+            accessibilityLabel="Önceki yıl"
             style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
           >
             <Feather name="chevron-left" size={18} color="#8B8A82" />
           </Pressable>
-          <Text className="text-text text-xl font-bold">{year}</Text>
+          <Text className="text-text text-xl font-bold" accessibilityRole="header">
+            {year}
+          </Text>
           <Pressable
             onPress={() => setYear((y) => y + 1)}
             disabled={year >= new Date().getFullYear()}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            accessibilityRole="button"
+            accessibilityLabel="Sonraki yıl"
+            accessibilityState={{ disabled: year >= new Date().getFullYear() }}
             style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
           >
             <Feather name="chevron-right" size={18} color={year >= new Date().getFullYear() ? "#3A3A34" : "#8B8A82"} />

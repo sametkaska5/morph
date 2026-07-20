@@ -112,6 +112,8 @@ export default function NewEntry() {
         <Pressable
           onPress={() => router.back()}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          accessibilityRole="button"
+          accessibilityLabel="Geri dön"
           style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
         >
           <Feather name="chevron-left" size={22} color="#F5F3EC" />
@@ -179,6 +181,8 @@ export default function NewEntry() {
               />
               <Pressable
                 hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="Sonraki alana geç"
                 style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
                 onPress={() => {
                   const next = inputRefs.current[i + 1];
@@ -201,6 +205,7 @@ export default function NewEntry() {
           onChangeText={setNote}
           placeholder="birkaç kelime yaz..."
           placeholderTextColor="#5C5A50"
+          accessibilityLabel="Not"
           multiline
           className="text-text text-base min-h-[64px]"
           maxLength={300}

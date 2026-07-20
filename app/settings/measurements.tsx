@@ -70,6 +70,8 @@ export default function MeasurementSettingsScreen() {
         <Pressable
           onPress={() => router.back()}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityRole="button"
+          accessibilityLabel="Geri dön"
           style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
         >
           <Feather name="chevron-left" size={22} color="#F5F3EC" />
@@ -118,6 +120,8 @@ export default function MeasurementSettingsScreen() {
                     <Text className="text-textMuted text-sm">{t.unit}</Text>
                     <Pressable
                       hitSlop={10}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${t.name} ölçümünü sil`}
                       style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
                       onPress={() => handleDelete(t.id, t.name)}
                     >

@@ -84,6 +84,8 @@ export default function RootLayout() {
             <Stack.Screen name="(onboarding)/welcome" />
             <Stack.Screen name="(auth)" />
             <Stack.Screen name="forgot-password" options={{ presentation: "modal" }} />
+            <Stack.Screen name="privacy-policy" options={{ presentation: "modal" }} />
+            <Stack.Screen name="terms" options={{ presentation: "modal" }} />
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="entry/new" options={{ presentation: "modal" }} />
             <Stack.Screen name="entry/off-day" options={{ presentation: "modal" }} />
@@ -92,6 +94,7 @@ export default function RootLayout() {
             <Stack.Screen name="compare/pick" options={{ presentation: "modal" }} />
             <Stack.Screen name="compare" options={{ presentation: "modal" }} />
             <Stack.Screen name="calendar-year" />
+            <Stack.Screen name="search" options={{ presentation: "modal" }} />
             <Stack.Screen name="profile/edit" options={{ presentation: "modal" }} />
             <Stack.Screen name="settings/notifications" options={{ presentation: "modal" }} />
             <Stack.Screen name="settings/measurements" options={{ presentation: "modal" }} />

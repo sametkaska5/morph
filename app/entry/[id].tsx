@@ -156,6 +156,8 @@ export default function EntryDetail() {
         <Pressable
           onPress={() => router.back()}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel="Geri dön"
           style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
           className="absolute top-14 left-4 z-10 w-11 h-11 bg-black/40 rounded-full items-center justify-center"
         >
@@ -165,6 +167,8 @@ export default function EntryDetail() {
         <Pressable
           onPress={() => setShowActionMenu(true)}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel="Anı için işlemler"
           style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
           className="absolute top-14 right-4 z-10 w-11 h-11 bg-black/40 rounded-full items-center justify-center"
         >

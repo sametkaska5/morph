@@ -108,7 +108,9 @@ export default function Profil() {
   return (
     <>
     <ScrollView className="flex-1 bg-bg" contentContainerStyle={{ paddingTop: 56, paddingBottom: 32 }}>
-      <Text className="text-text text-3xl font-bold px-4 pb-4">Profil</Text>
+      <Text className="text-text text-3xl font-bold px-4 pb-4" accessibilityRole="header">
+        Profil
+      </Text>
 
       <Pressable
         onPress={() => {
@@ -124,6 +126,8 @@ export default function Profil() {
           setShowPhotoPreview(true);
         }}
         delayLongPress={350}
+        accessibilityRole="button"
+        accessibilityLabel={`${displayName}, profili düzenle`}
         className="px-4 pb-5 items-center"
       >
         <View className="w-28 h-28 rounded-full bg-surface border-2 border-accent items-center justify-center overflow-hidden mb-3">
@@ -150,7 +154,7 @@ export default function Profil() {
             <StatChip
               icon="calendar"
               label="Başlangıç"
-              value={stats?.firstDate ? new Date(stats.firstDate).toLocaleDateString("tr-TR") : "—"}
+              value={profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString("tr-TR") : "—"}
             />
             <StatChip icon="camera" label="Toplam Anı" value={String(stats?.totalMemories ?? 0)} />
             <StatChip icon="zap" label="En Uzun Seri" value={`${stats?.longest ?? 0} gün`} />

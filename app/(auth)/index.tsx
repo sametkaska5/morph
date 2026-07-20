@@ -60,6 +60,7 @@ export default function AuthScreen() {
           keyboardType="email-address"
           placeholder="sen@ornek.com"
           placeholderTextColor="#5C5A50"
+          accessibilityLabel="E-posta"
           style={{ height: 52, textAlignVertical: "center" }}
           className="bg-surface border border-border rounded-button px-4 text-text text-base mb-4"
         />
@@ -71,6 +72,7 @@ export default function AuthScreen() {
           secureTextEntry
           placeholder="••••••••"
           placeholderTextColor="#5C5A50"
+          accessibilityLabel="Şifre"
           style={{ height: 52, textAlignVertical: "center" }}
           className="bg-surface border border-border rounded-button px-4 text-text text-base mb-2"
         />
@@ -116,6 +118,20 @@ export default function AuthScreen() {
             </Text>
           </Text>
         </Pressable>
+
+        {mode === "signup" ? (
+          <Text className="text-textFaint text-xs text-center mt-5 leading-5">
+            Kayıt olarak{" "}
+            <Text className="text-accent" onPress={() => router.push("/terms")}>
+              Kullanım Şartları
+            </Text>{" "}
+            ve{" "}
+            <Text className="text-accent" onPress={() => router.push("/privacy-policy")}>
+              Gizlilik Politikası
+            </Text>
+            'nı kabul etmiş olursun.
+          </Text>
+        ) : null}
       </View>
     </KeyboardAvoidingView>
   );

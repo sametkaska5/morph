@@ -278,7 +278,6 @@ export default function Istatistikler() {
   })();
 
   const selectedSharePhoto = shareablePhotos?.find((photo) => photo.id === selectedSharePhotoId) ?? shareablePhotos?.[0] ?? null;
-  const shareStreakDays = Math.max(1, currentStreak || 1);
 
   useEffect(() => {
     if (shareablePhotos && shareablePhotos.length > 0) {
@@ -399,31 +398,41 @@ export default function Istatistikler() {
       </View>
 
       <View className="mx-4 bg-surface border border-border rounded-card p-4">
-        <View className="flex-row items-center justify-between mb-3">
-          <View className="flex-row items-center gap-3">
+        {/* Sol blok flex-1 + shrink: metinler taşmak yerine kısalsın. Sağdaki iki
+            aksiyon eskiden tek satıra sığmıyordu (ikon + "X gün üst üste" + "Paylaş"
+            + "Yıla göre gör" ≈ 435px, telefon ise 360-390px) ve kartın düzenini
+            bozuyordu — "Paylaş" artık yalnızca ikon, etiketi erişilebilirlik
+            tarafında duruyor. */}
+        <View className="flex-row items-center justify-between mb-3 gap-2">
+          <View className="flex-row items-center gap-3 flex-1 min-w-0">
             <View className="w-9 h-9 rounded-lg bg-stamp/15 items-center justify-center">
               <Feather name="zap" size={18} color="#FF7A3D" />
             </View>
-            <View>
-              <Text className="text-text text-base font-semibold">{currentStreak} gün üst üste</Text>
+            <View className="flex-1 min-w-0">
+              <Text className="text-text text-base font-semibold" numberOfLines={1}>
+                {currentStreak} gün üst üste
+              </Text>
               <Text className="text-textFaint text-xs capitalize">bu hafta</Text>
             </View>
           </View>
-          <View className="flex-row items-center gap-2">
+          <View className="flex-row items-center gap-1 shrink-0">
             <Pressable
               onPress={() => setShareModalVisible(true)}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              accessibilityRole="button"
+              accessibilityLabel="Paylaşım kartı oluştur"
               style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-              className="flex-row items-center gap-1 py-2 px-2"
+              className="w-9 h-9 items-center justify-center"
             >
-              <Feather name="share-2" size={14} color="#8CE05A" />
-              <Text className="text-accent text-sm font-medium capitalize">Paylaş</Text>
+              <Feather name="share-2" size={17} color="#8CE05A" />
             </Pressable>
             <Pressable
               onPress={() => router.push("/calendar-year")}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              accessibilityRole="button"
+              accessibilityLabel="Yıla göre gör"
               style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-              className="flex-row items-center gap-1 py-2 px-2"
+              className="flex-row items-center gap-1 py-2 pl-1"
             >
               <Text className="text-accent text-sm font-medium capitalize">Yıla göre gör</Text>
               <Feather name="chevron-right" size={15} color="#8CE05A" />
@@ -493,7 +502,7 @@ export default function Istatistikler() {
               <View className="flex-1 pr-3">
                 <Text className="text-text text-lg font-semibold">Remory serisini paylaş</Text>
                 <Text className="text-textFaint text-sm mt-1">
-                  Fotoğraf seç, günlük seri uzunluğunu belirle ve paylaşıma hazır hale getir.
+                  Bir fotoğraf seç — serin karta otomatik eklenir, indirip paylaşabilirsin.
                 </Text>
               </View>
               <Pressable onPress={() => setShareModalVisible(false)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
@@ -540,12 +549,18 @@ export default function Istatistikler() {
                     </View>
 
                     <View className="absolute inset-x-0 bottom-0 p-5 items-center">
-                      <View className="rounded-full border border-white/20 bg-black/55 px-4 py-2 mb-3">
-                        <Text className="text-white text-xl font-black text-center">{shareStreakDays} gün üst üste</Text>
-                      </View>
+                      {/* Seri rozetini yalnızca gerçekten devam eden bir seri varsa göster.
+                          Önceden Math.max(1, ...) ile taban 1'e sabitlenmişti; serisi olmayan
+                          kullanıcı için bile "1 gün üst üste" yazıyor, yani dışarıya paylaşılan
+                          görselde var olmayan bir seri iddia ediliyordu. */}
+                      {currentStreak > 0 ? (
+                        <View className="rounded-full border border-white/20 bg-black/55 px-4 py-2 mb-3">
+                          <Text className="text-white text-xl font-bold text-center">{currentStreak} gün üst üste</Text>
+                        </View>
+                      ) : null}
                       <View className="flex-row items-center gap-2 rounded-full border border-white/20 bg-black/55 px-3 py-2">
                         <View className="w-8 h-8 rounded-full bg-accent/20 items-center justify-center border border-accent/30">
-                          <Text className="text-accent font-black text-sm">R</Text>
+                          <Text className="text-accent font-bold text-sm">R</Text>
                         </View>
                         <Text className="text-white text-sm font-semibold">remory</Text>
                       </View>

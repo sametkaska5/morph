@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { View, Text, TextInput, Pressable, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Pressable, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
+import { Text, TextInput } from "@/components/Typography";
 import { Redirect, router } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";

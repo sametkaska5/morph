@@ -1,11 +1,10 @@
 import {
   View,
-  Text,
-  TextInput,
   Pressable,
   ActivityIndicator,
   Image,
 } from "react-native";
+import { Text, TextInput } from "@/components/Typography";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useLocalSearchParams, router } from "expo-router";
 import { useState, useEffect, useRef } from "react";
@@ -156,6 +155,22 @@ export default function EditEntry() {
           .from("measurement_values")
           .upsert(measurementRows, { onConflict: "entry_id,measurement_type_id" });
         if (valuesError) throw valuesError;
+      }
+
+      // Kullanıcı bir ölçüm alanını boşaltarak sildiğinde, sadece dolu satırları
+      // upsert etmek yetmiyordu: eski değer DB'de kalıp ekran yenilenince geri
+      // geliyordu. Bu entry'de artık değeri olmayan tipleri açıkça siliyoruz.
+      const clearedTypeIds = Object.entries(values)
+        .filter(([, v]) => v.trim() === "")
+        .map(([typeId]) => typeId);
+
+      if (clearedTypeIds.length > 0) {
+        const { error: deleteError } = await supabase
+          .from("measurement_values")
+          .delete()
+          .eq("entry_id", id)
+          .in("measurement_type_id", clearedTypeIds);
+        if (deleteError) throw deleteError;
       }
     },
 

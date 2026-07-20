@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert } from "react-native";
+import { View, ScrollView, Pressable, ActivityIndicator, Alert } from "react-native";
+import { Text } from "@/components/Typography";
 import Svg, { Path, Circle, Defs, LinearGradient, Stop } from "react-native-svg";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
@@ -17,7 +18,9 @@ const CHART_H = 110;
 
 function useMeasurementSeries(userId: string | undefined, typeId: string | undefined) {
   return useQuery({
-    queryKey: ["measurement_series", typeId],
+    // userId anahtarda yoksa, aynı cihazda hesap değiştirildiğinde önceki
+    // kullanıcının grafiği cache'ten okunabiliyordu.
+    queryKey: ["measurement_series", userId, typeId],
     enabled: !!userId && !!typeId,
     queryFn: async () => {
       const { data, error } = await supabase

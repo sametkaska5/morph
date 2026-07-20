@@ -1,4 +1,5 @@
-import { View, Text, Pressable } from "react-native";
+import { View, Pressable } from "react-native";
+import { Text } from "./Typography";
 import Feather from "@expo/vector-icons/Feather";
 import { useCaptureSheetStore } from "@/lib/captureSheetStore";
 import { captureFromCamera, captureFromLibrary } from "@/lib/capture";

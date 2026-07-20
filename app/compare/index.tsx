@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
-import { View, Text, Image, ScrollView, Pressable, ActivityIndicator, Alert } from "react-native";
+import { View, Image, ScrollView, Pressable, ActivityIndicator, Alert } from "react-native";
+import { Text } from "@/components/Typography";
 import { router, useLocalSearchParams } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import Feather from "@expo/vector-icons/Feather";

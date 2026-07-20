@@ -1,5 +1,5 @@
 import "../global.css";
-import { View, Text, TextInput } from "react-native";
+import { View } from "react-native";
 import { Stack } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { QueryClient, onlineManager } from "@tanstack/react-query";
@@ -16,15 +16,14 @@ import {
   Inter_700Bold,
 } from "@expo-google-fonts/inter";
 import { AuthProvider } from "@/lib/useAuth";
-import { registerEntryMutationDefaults } from "@/lib/entryMutations";
+import { registerEntryMutationDefaults, QUERY_CACHE_STORAGE_KEY } from "@/lib/entryMutations";
 import { CaptureOptionsSheet } from "@/components/CaptureOptionsSheet";
 
-// Uygulamadaki HER Text/TextInput varsayılan olarak Inter kullansın — font-* sınıfı
-// (font-semibold, font-bold vb.) olmayan yerler bile Inter Regular'a düşsün, sistem
-// fontuna (SF Pro/Roboto) geri dönmesin. Ağırlık sınıfları (font-bold vb.) zaten
-// tailwind.config.js'teki custom plugin ile doğru Inter dosyasına eşleniyor.
-(Text as any).defaultProps = { ...(Text as any).defaultProps, style: [{ fontFamily: "Inter_400Regular" }, (Text as any).defaultProps?.style] };
-(TextInput as any).defaultProps = { ...(TextInput as any).defaultProps, style: [{ fontFamily: "Inter_400Regular" }, (TextInput as any).defaultProps?.style] };
+// NOT: Buradaki varsayılan font ataması eskiden `Text.defaultProps` ile yapılıyordu.
+// React 19 fonksiyon bileşenlerinde defaultProps desteğini kaldırdığı için o kod
+// sessizce hiçbir işe yaramıyordu. Varsayılan font artık components/Typography.tsx
+// içindeki Text/TextInput sarmalayıcılarında tanımlı — ekranlar RN yerine oradan
+// import ediyor.
 
 // React Native'de `navigator.onLine` yok — React Query varsayılan olarak her zaman
 // online sanır. NetInfo'ya bağlamazsak offline'da mutation'lar hiç duraklamaz/kuyruğa
@@ -44,7 +43,7 @@ registerEntryMutationDefaults(queryClient);
 
 const persister = createAsyncStoragePersister({
   storage: AsyncStorage,
-  key: "remory-query-cache",
+  key: QUERY_CACHE_STORAGE_KEY,
 });
 
 // Bir sorgunun döndürdüğü veri şekli değiştiğinde (örn. yeni bir alan eklendiğinde)

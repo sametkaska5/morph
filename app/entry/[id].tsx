@@ -1,12 +1,12 @@
 import {
   View,
-  Text,
   ScrollView,
   Pressable,
   ActivityIndicator,
   Dimensions,
   Modal,
 } from "react-native";
+import { Text } from "@/components/Typography";
 import { Image } from "expo-image";
 import { useLocalSearchParams, router } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -116,6 +116,10 @@ export default function EntryDetail() {
     mutationFn: (entryId: string) => deleteEntry(entryId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["entries"] });
+      // Silinen kayıt "Toplam Anı"/seri sayaçlarını da değiştiriyor — profil
+      // istatistikleri invalidate edilmeyince eski sayılar ekranda kalıyordu.
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      queryClient.invalidateQueries({ queryKey: ["currentWeek"] });
       router.back();
     },
   });

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { View, Text, Pressable, Switch, ActivityIndicator, Platform, Alert } from "react-native";
+import { View, Pressable, Switch, ActivityIndicator, Platform, Alert } from "react-native";
+import { Text } from "@/components/Typography";
 import { router } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Feather from "@expo/vector-icons/Feather";

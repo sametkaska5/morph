@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { View, Text, TextInput, Pressable, ActivityIndicator, Image, Alert } from "react-native";
+import { View, Pressable, ActivityIndicator, Image, Alert } from "react-native";
+import { Text, TextInput } from "@/components/Typography";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";

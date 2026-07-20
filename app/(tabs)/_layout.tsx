@@ -1,5 +1,6 @@
 import { Tabs, Redirect } from "expo-router";
-import { View, Text, Pressable, ActivityIndicator } from "react-native";
+import { View, Pressable, ActivityIndicator } from "react-native";
+import { Text } from "@/components/Typography";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Feather from "@expo/vector-icons/Feather";
 import { useAuth } from "@/lib/useAuth";

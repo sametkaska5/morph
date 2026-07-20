@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
-import { View, Text, ScrollView, Pressable, ActivityIndicator, Modal, Alert } from "react-native";
+import { View, ScrollView, Pressable, ActivityIndicator, Modal, Alert } from "react-native";
+import { Text } from "@/components/Typography";
 import { Image } from "expo-image";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";

@@ -4,6 +4,11 @@ import { uploadPhoto } from "./storage";
 
 export const SAVE_ENTRY_MUTATION_KEY = ["saveEntry"] as const;
 
+/** Persist edilen React Query cache'inin AsyncStorage anahtarı. _layout.tsx bunu
+ * persister'a verir, useAuth çıkışta bununla siler — iki yerde ayrı ayrı yazılınca
+ * anahtarlar birbirinden kayabildiği için tek kaynaktan okunuyor. */
+export const QUERY_CACHE_STORAGE_KEY = "remory-query-cache";
+
 // Sadece JSON-serileştirilebilir alanlar — bu payload AsyncStorage'a yazılıp
 // uygulama offline'ken kapansa/yeniden açılsa bile aynen kalabilmeli.
 export type SaveEntryPayload = {
@@ -34,6 +39,25 @@ export async function saveEntry(payload: SaveEntryPayload) {
   if (photoError) throw photoError;
 
   await supabase.from("entries").update({ cover_photo_id: photoRow.id }).eq("id", entry.id);
+
+  // Entry upsert'ü (user_id, date) çakışmasında MEVCUT kaydı yeniden kullanıyor —
+  // yani aynı güne ikinci kez kayıt yapılınca eskisinin fotoğrafı hem photos
+  // tablosunda hem storage'da öylece kalıyordu (ızgarada yanlış kapak + sürekli
+  // büyüyen çöp dosyalar). Yeni kapağı yazdıktan sonra o entry'nin diğer tüm
+  // fotoğraflarını satır ve dosya olarak temizliyoruz.
+  const { data: stalePhotos } = await supabase
+    .from("photos")
+    .select("id, storage_path")
+    .eq("entry_id", entry.id)
+    .neq("id", photoRow.id);
+
+  if (stalePhotos && stalePhotos.length > 0) {
+    await supabase.storage.from("photos").remove(stalePhotos.map((p) => p.storage_path));
+    await supabase
+      .from("photos")
+      .delete()
+      .in("id", stalePhotos.map((p) => p.id));
+  }
 
   const measurementRows = Object.entries(values)
     .filter(([, v]) => v.trim() !== "")

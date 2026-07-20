@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { View, Text, ScrollView, Pressable, ActivityIndicator } from "react-native";
+import { View, ScrollView, Pressable, ActivityIndicator } from "react-native";
+import { Text } from "@/components/Typography";
 import { router } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import Feather from "@expo/vector-icons/Feather";

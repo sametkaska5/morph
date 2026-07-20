@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { View, Text, Pressable, ActivityIndicator, Platform } from "react-native";
+import { View, Pressable, ActivityIndicator, Platform } from "react-native";
+import { Text } from "@/components/Typography";
 import { router } from "expo-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import DateTimePicker from "@react-native-community/datetimepicker";

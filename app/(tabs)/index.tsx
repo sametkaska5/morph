@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { View, Text, Pressable, FlatList, Dimensions, RefreshControl, ActivityIndicator } from "react-native";
+import { View, Pressable, FlatList, Dimensions, RefreshControl, ActivityIndicator } from "react-native";
+import { Text } from "@/components/Typography";
 import { Image } from "expo-image";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
 import { supabase } from "@/lib/supabase";
-import { getPhotoUrls } from "@/lib/storage";
+import { getPhotoUrls, coverPhotoPath } from "@/lib/storage";
 import { openCapturePicker } from "@/lib/capture";
 
 const { width } = Dimensions.get("window");
@@ -31,20 +32,18 @@ function useTimelineEntries() {
     queryFn: async (): Promise<EntryRow[]> => {
       const { data, error } = await supabase
         .from("entries")
-        .select("id, date, note, photos!entry_id(storage_path)")
+        .select("id, date, note, cover_photo_id, photos!entry_id(id, storage_path)")
         .eq("type", "log")
         .order("date", { ascending: false })
         .limit(60);
 
       if (error) throw error;
 
-      const paths = (data ?? [])
-        .map((e: any) => e.photos?.[0]?.storage_path)
-        .filter(Boolean) as string[];
+      const paths = (data ?? []).map(coverPhotoPath).filter(Boolean) as string[];
       const urlMap = await getPhotoUrls(paths);
 
       return (data ?? []).map((e: any) => {
-        const path = e.photos?.[0]?.storage_path;
+        const path = coverPhotoPath(e);
         return {
           id: e.id,
           date: e.date,
@@ -66,7 +65,11 @@ function PosterThumb({ entry }: { entry: EntryRow }) {
 
   return (
     <Pressable
-      onPress={() => router.push(`/entry/${entry.id}`)}
+      // Henüz senkronize olmamış (offline) kaydın id'si "pending-<tarih>" —
+      // gerçek bir uuid olmadığı için detay ekranı sorguda hata verip kırmızı
+      // hata sayfası gösteriyordu. Senkronize olana kadar dokunmayı kapatıyoruz.
+      onPress={entry.pending ? undefined : () => router.push(`/entry/${entry.id}`)}
+      disabled={entry.pending}
       onPressIn={() => setPressed(true)}
       onPressOut={() => setPressed(false)}
       accessibilityRole="button"
@@ -177,7 +180,9 @@ export default function AnaEkran() {
         </View>
       </View>
 
-      {!isEmpty ? (
+      {/* isEmpty, veri gelmeden `undefined` olduğu için yükleme sırasında da
+          "Son Kayıtlar" başlığı görünüyordu — açıkça false olmasını şart koşuyoruz. */}
+      {isEmpty === false ? (
         <View className="flex-row items-center justify-between px-4 mb-3">
           <Text className="text-textMuted text-sm font-semibold uppercase tracking-wide">Son Kayıtlar</Text>
           {entries?.length ? <Text className="text-textMuted text-sm font-medium">{entries.length} kayıt</Text> : null}

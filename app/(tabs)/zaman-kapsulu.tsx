@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { View, Text, FlatList, Dimensions, Pressable, ActivityIndicator } from "react-native";
+import { View, FlatList, Dimensions, Pressable, ActivityIndicator } from "react-native";
+import { Text } from "@/components/Typography";
 import { Image } from "expo-image";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { router } from "expo-router";

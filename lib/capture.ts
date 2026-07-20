@@ -1,3 +1,4 @@
+import { Alert } from "react-native";
 import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
@@ -16,15 +17,33 @@ async function resizeAndCompress(uri: string) {
   return { uri: result.uri, base64: result.base64! };
 }
 
+// İzin reddedildiğinde eskiden sessizce undefined dönülüyordu: kullanıcı + butonuna
+// basıyor, hiçbir şey olmuyor ve nedenini anlayamıyordu. Artık ne yapması gerektiğini
+// söyleyen bir uyarı gösteriyoruz.
+function warnPermissionDenied(kind: "kamera" | "galeri") {
+  Alert.alert(
+    "İzin gerekli",
+    kind === "kamera"
+      ? "Fotoğraf çekebilmek için kamera iznini cihaz ayarlarından açman gerekiyor."
+      : "Galeriden seçebilmek için fotoğraf erişim iznini cihaz ayarlarından açman gerekiyor."
+  );
+}
+
 async function pickFromCamera() {
   const { status } = await ImagePicker.requestCameraPermissionsAsync();
-  if (status !== "granted") return;
+  if (status !== "granted") {
+    warnPermissionDenied("kamera");
+    return;
+  }
   return ImagePicker.launchCameraAsync({ allowsEditing: false, quality: 0.9 });
 }
 
 async function pickFromLibrary() {
   const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (status !== "granted") return;
+  if (status !== "granted") {
+    warnPermissionDenied("galeri");
+    return;
+  }
   return ImagePicker.launchImageLibraryAsync({ allowsEditing: false, quality: 0.9, exif: true });
 }
 
@@ -45,10 +64,17 @@ function parseExifDateTime(exif: Record<string, any> | undefined | null): string
 async function handleResult(result: ImagePicker.ImagePickerResult | undefined) {
   if (result && !result.canceled && result.assets?.[0]?.uri) {
     const asset = result.assets[0];
-    const resized = await resizeAndCompress(asset.uri);
-    const takenAt = parseExifDateTime(asset.exif);
-    useCaptureStore.getState().setPhoto({ ...resized, takenAt });
-    router.push("/entry/new");
+    try {
+      const resized = await resizeAndCompress(asset.uri);
+      const takenAt = parseExifDateTime(asset.exif);
+      useCaptureStore.getState().setPhoto({ ...resized, takenAt });
+      router.push("/entry/new");
+    } catch (err) {
+      // resizeAndCompress patlarsa (bozuk/desteklenmeyen görsel, bellek yetersiz)
+      // eskiden bu promise hiç await edilmediği için hata yakalanmadan yutuluyor,
+      // kullanıcı da neden kayıt ekranına geçmediğini göremiyordu.
+      Alert.alert("Fotoğraf işlenemedi", (err as Error).message);
+    }
   }
 }
 

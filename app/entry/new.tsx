@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
-import { View, Text, TextInput, Image, Pressable, Platform, Alert } from "react-native";
+import { View, Image, Pressable, Platform, Alert } from "react-native";
+import { Text, TextInput } from "@/components/Typography";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { router } from "expo-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";

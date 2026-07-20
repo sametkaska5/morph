@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { View, Text, TextInput, Pressable, ActivityIndicator, Alert } from "react-native";
+import { View, Pressable, ActivityIndicator, Alert } from "react-native";
+import { Text, TextInput } from "@/components/Typography";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";

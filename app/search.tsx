@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react";
-import { View, Text, TextInput, Pressable, FlatList, ActivityIndicator } from "react-native";
+import { View, Pressable, FlatList, ActivityIndicator } from "react-native";
+import { Text, TextInput } from "@/components/Typography";
 import { Image } from "expo-image";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
-import { getPhotoUrls } from "@/lib/storage";
+import { getPhotoUrls, coverPhotoPath } from "@/lib/storage";
 
 type SearchEntry = {
   id: string;
@@ -24,18 +25,18 @@ function useSearchIndex(userId: string | undefined) {
     queryFn: async (): Promise<SearchEntry[]> => {
       const { data, error } = await supabase
         .from("entries")
-        .select("id, date, note, photos!entry_id(storage_path)")
+        .select("id, date, note, cover_photo_id, photos!entry_id(id, storage_path)")
         .eq("user_id", userId!)
         .eq("type", "log")
         .order("date", { ascending: false });
 
       if (error) throw error;
 
-      const paths = (data ?? []).map((e: any) => e.photos?.[0]?.storage_path).filter(Boolean) as string[];
+      const paths = (data ?? []).map(coverPhotoPath).filter(Boolean) as string[];
       const urlMap = await getPhotoUrls(paths);
 
       return (data ?? []).map((e: any) => {
-        const path = e.photos?.[0]?.storage_path;
+        const path = coverPhotoPath(e);
         return { id: e.id, date: e.date, note: e.note, photoUrl: path ? urlMap.get(path) ?? null : null, photoPath: path ?? null };
       });
     },

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { View, Text, FlatList, Dimensions, Pressable, ActivityIndicator } from "react-native";
+import { View, FlatList, Dimensions, Pressable, ActivityIndicator } from "react-native";
+import { Text } from "@/components/Typography";
 import { Image } from "expo-image";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
@@ -112,6 +113,8 @@ function CapsulePage({
   return (
     <Pressable
       onPress={toggleFlip}
+      accessibilityRole="button"
+      accessibilityLabel={`${formattedDate} tarihli anı, ${flipped ? "fotoğrafı göstermek için dokun" : "değerleri görmek için dokun"}`}
       style={{ height: pageHeight, width: "100%" }}
       className="bg-surface"
     >
@@ -184,6 +187,8 @@ function CapsulePage({
             e.stopPropagation();
             router.push(`/entry/${entry.id}`);
           }}
+          accessibilityRole="button"
+          accessibilityLabel="Anı detayını aç"
           style={{
             position: "absolute",
             bottom: 24,

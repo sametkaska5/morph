@@ -1,11 +1,10 @@
 import {
   View,
-  Text,
-  TextInput,
   Pressable,
   ActivityIndicator,
   Image,
 } from "react-native";
+import { Text, TextInput } from "@/components/Typography";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useLocalSearchParams, router } from "expo-router";
 import { useState, useEffect, useRef } from "react";
@@ -157,6 +156,22 @@ export default function EditEntry() {
           .upsert(measurementRows, { onConflict: "entry_id,measurement_type_id" });
         if (valuesError) throw valuesError;
       }
+
+      // Kullanıcı bir ölçüm alanını boşaltarak sildiğinde, sadece dolu satırları
+      // upsert etmek yetmiyordu: eski değer DB'de kalıp ekran yenilenince geri
+      // geliyordu. Bu entry'de artık değeri olmayan tipleri açıkça siliyoruz.
+      const clearedTypeIds = Object.entries(values)
+        .filter(([, v]) => v.trim() === "")
+        .map(([typeId]) => typeId);
+
+      if (clearedTypeIds.length > 0) {
+        const { error: deleteError } = await supabase
+          .from("measurement_values")
+          .delete()
+          .eq("entry_id", id)
+          .in("measurement_type_id", clearedTypeIds);
+        if (deleteError) throw deleteError;
+      }
     },
 
     onSuccess: () => {
@@ -188,6 +203,8 @@ export default function EditEntry() {
 
       <Pressable
         onPress={pickImage}
+        accessibilityRole="button"
+        accessibilityLabel="Fotoğrafı değiştir"
         style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
         className="mb-6 relative"
       >
@@ -230,6 +247,8 @@ export default function EditEntry() {
               />
               <Pressable
                 hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="Sonraki alana geç"
                 style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
                 onPress={() => {
                   const next = inputRefs.current[i + 1];
@@ -248,6 +267,7 @@ export default function EditEntry() {
         ref={noteRef}
         value={note}
         onChangeText={setNote}
+        accessibilityLabel="Not"
         placeholder="Not..."
         placeholderTextColor="#888"
         className="bg-surface border border-border text-text text-base p-4 rounded-card h-28 mb-6"

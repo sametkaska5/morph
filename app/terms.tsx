@@ -1,0 +1,40 @@
+import { LegalScreen } from "@/components/LegalScreen";
+
+export default function TermsScreen() {
+  return (
+    <LegalScreen
+      title="Kullanım Şartları"
+      updatedAt="20 Temmuz 2026"
+      sections={[
+        {
+          heading: "Hizmet tanımı",
+          body: "Remory, kişisel gelişim/vücut dönüşüm sürecini fotoğraf ve ölçümlerle günlük olarak kaydetmene yardımcı olan kişisel bir günlük uygulamasıdır. Uygulamayı kullanarak bu şartları kabul etmiş olursun.",
+        },
+        {
+          heading: "Hesabın",
+          body: "Hesabına ait giriş bilgilerinin (e-posta, şifre) gizliliğinden sen sorumlusun. Hesabın üzerinden yapılan tüm işlemler senin sorumluluğundadır. Sadece kendi verilerini eklemeli, başka bir kullanıcının hesabına yetkisiz şekilde erişmeye çalışmamalısın.",
+        },
+        {
+          heading: "İçeriğin",
+          body: "Uygulamaya yüklediğin fotoğraflar, notlar ve ölçümler sana aittir; Remory bu içerikler üzerinde herhangi bir mülkiyet hakkı iddia etmez. İçeriklerin yalnızca uygulamanın işlevlerini (kayıt gösterme, karşılaştırma vb.) yerine getirmek için işlenir.",
+        },
+        {
+          heading: "Hizmetin sunumu",
+          body: "Remory'yi olabildiğince kesintisiz sunmaya çalışıyoruz, ancak kesintisiz erişim veya veri kaybı yaşanmayacağı garanti edilmez. Önemli verilerini (özellikle fotoğraflarını) kendi cihazında da yedeklemeni öneririz.",
+        },
+        {
+          heading: "Hesap silme ve fesih",
+          body: "Hesabını Profil > Hesabı Sil yolunu kullanarak istediğin zaman kalıcı olarak silebilirsin. Kullanım şartlarını ihlal eden (ör. başkasının hesabına yetkisiz erişim) kullanımlar tespit edilirse erişim kısıtlanabilir.",
+        },
+        {
+          heading: "Değişiklikler",
+          body: "Bu şartlar zaman zaman güncellenebilir. Önemli değişiklikler olduğunda uygulama içinden bilgilendirileceksin.",
+        },
+        {
+          heading: "İletişim",
+          body: "Sorularını sametkaska5@gmail.com adresine e-posta göndererek iletebilirsin.",
+        },
+      ]}
+    />
+  );
+}

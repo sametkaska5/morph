@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { View, Text, FlatList, Pressable, ActivityIndicator, Dimensions } from "react-native";
+import { View, FlatList, Pressable, ActivityIndicator, Dimensions } from "react-native";
+import { Text } from "@/components/Typography";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
@@ -64,6 +65,8 @@ export default function PickComparison() {
         <Pressable
           onPress={() => router.back()}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          accessibilityRole="button"
+          accessibilityLabel="Geri dön"
           style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
         >
           <Feather name="chevron-left" size={22} color="#F5F3EC" />
@@ -87,8 +90,15 @@ export default function PickComparison() {
           renderItem={({ item }) => {
             const isSelected = selected.includes(item.id);
             const order = selected.indexOf(item.id);
+            const dateLabel = new Date(item.date).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" });
             return (
-              <Pressable onPress={() => toggle(item.id)} style={{ width: THUMB_SIZE, height: THUMB_SIZE }}>
+              <Pressable
+                onPress={() => toggle(item.id)}
+                accessibilityRole="button"
+                accessibilityLabel={`${dateLabel} tarihli anı${isSelected ? `, ${order + 1}. seçim olarak işaretli` : ""}`}
+                accessibilityState={{ selected: isSelected }}
+                style={{ width: THUMB_SIZE, height: THUMB_SIZE }}
+              >
                 <View className="flex-1 rounded-lg overflow-hidden bg-surface relative">
                   {item.photoUrl ? (
                     <Image

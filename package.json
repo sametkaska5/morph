@@ -31,6 +31,7 @@
     "expo-notifications": "~57.0.6",
     "expo-router": "~57.0.7",
     "expo-sharing": "~57.0.6",
+    "expo-splash-screen": "~57.0.4",
     "expo-status-bar": "~57.0.1",
     "nativewind": "^4.0.1",
     "react": "19.2.3",

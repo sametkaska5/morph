@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { View, Text, TextInput, Pressable, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Pressable, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
+import { Text, TextInput } from "@/components/Typography";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
 import { supabase } from "@/lib/supabase";
@@ -86,6 +87,7 @@ export default function ForgotPasswordScreen() {
           keyboardType="email-address"
           placeholder="sen@ornek.com"
           placeholderTextColor="#5C5A50"
+          accessibilityLabel="E-posta"
           style={{ height: 52, textAlignVertical: "center" }}
           className={`bg-surface border border-border rounded-button px-4 text-text text-base mb-4 ${
             step !== "request" ? "opacity-60" : ""
@@ -99,8 +101,9 @@ export default function ForgotPasswordScreen() {
               value={code}
               onChangeText={setCode}
               keyboardType="number-pad"
-              placeholder="6 haneli kod"
+              placeholder="8 haneli kod"
               placeholderTextColor="#5C5A50"
+              accessibilityLabel="Doğrulama kodu"
               style={{ height: 52, textAlignVertical: "center" }}
               className="bg-surface border border-border rounded-button px-4 text-text text-base mb-4"
             />
@@ -112,6 +115,7 @@ export default function ForgotPasswordScreen() {
               secureTextEntry
               placeholder="••••••••"
               placeholderTextColor="#5C5A50"
+              accessibilityLabel="Yeni şifre"
               style={{ height: 52, textAlignVertical: "center" }}
               className="bg-surface border border-border rounded-button px-4 text-text text-base mb-2"
             />

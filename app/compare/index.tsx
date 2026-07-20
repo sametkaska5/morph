@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
-import { View, Text, Image, ScrollView, Pressable, ActivityIndicator, Alert } from "react-native";
+import { View, Image, ScrollView, Pressable, ActivityIndicator, Alert } from "react-native";
+import { Text } from "@/components/Typography";
 import { router, useLocalSearchParams } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import Feather from "@expo/vector-icons/Feather";
@@ -43,6 +44,8 @@ export default function Compare() {
         <Pressable
           onPress={() => router.back()}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          accessibilityRole="button"
+          accessibilityLabel="Geri dön"
           style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
         >
           <Feather name="chevron-left" size={22} color="#F5F3EC" />

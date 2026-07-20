@@ -57,6 +57,22 @@ export async function deleteAllUserPhotos(userId: string) {
   }
 }
 
+/**
+ * Bir entry satırının KAPAK fotoğrafının storage yolunu döner.
+ * `photos!entry_id(...)` ilişkisi bir DİZİ döndürüyor ve dizinin sırası garanti
+ * değil — daha önce körlemesine photos[0] alınıyordu, bu yüzden aynı güne ikinci
+ * kez kayıt yapıldığında (ya da fotoğraf değiştirildiğinde) ızgarada eski fotoğraf
+ * görünebiliyordu. cover_photo_id ile eşleşeni seçiyoruz; kapağı olmayan eski
+ * kayıtlar için order_index/ilk fotoğrafa geri düşüyoruz.
+ */
+export function coverPhotoPath(entryRow: any): string | null {
+  const photos = entryRow?.photos;
+  if (!Array.isArray(photos)) return photos?.storage_path ?? null;
+  if (photos.length === 0) return null;
+  const cover = photos.find((p: any) => p.id === entryRow?.cover_photo_id);
+  return (cover ?? photos[0])?.storage_path ?? null;
+}
+
 export async function getPhotoUrl(path: string) {
   const { data, error } = await supabase.storage.from("photos").createSignedUrl(path, SIGNED_URL_EXPIRY);
   if (error) throw error;

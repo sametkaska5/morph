@@ -77,9 +77,12 @@ export async function scheduleMemoryNotifications(userId: string, reminderTime: 
     for (const months of milestones) {
       const targetDate = new Date(entryDate);
       targetDate.setMonth(targetDate.getMonth() + months);
-      if (targetDate < new Date()) continue; // geçmişteyse zamanlamaya gerek yok
-
+      // Saati geçmiş kontrolünden ÖNCE uygula: aksi halde yıldönümü bugüne denk
+      // gelip hatırlatma saati çoktan geçmişse, kontrol (gece yarısı ile) geçiyor
+      // ama sonradan set edilen saat geçmişte kalıyor ve bildirim ya anında
+      // tetikleniyor ya da hiç kurulmuyordu.
       targetDate.setHours(hour, minute, 0, 0);
+      if (targetDate <= new Date()) continue; // geçmişteyse zamanlamaya gerek yok
 
       const label = months < 12 ? `${months} ay önce bugün` : `${months / 12} yıl önce bugün`;
 

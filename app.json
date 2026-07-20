@@ -7,6 +7,7 @@
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0A0A08",
+    "icon": "./assets/images/icon.png",
     "plugins": [
       "expo-router",
       "expo-status-bar",
@@ -19,14 +20,35 @@
           "savePhotosPermission": "Karşılaştırma görsellerini galerine kaydedebilmek için fotoğraflarına erişim gerekiyor."
         }
       ],
-      "expo-font"
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Anılarını fotoğraflayabilmek için kameraya erişim gerekiyor.",
+          "photosPermission": "Galerinden fotoğraf seçebilmek için galeriye erişim gerekiyor.",
+          "microphonePermission": false
+        }
+      ],
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#0A0A08"
+        }
+      ]
     ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.remory.app"
     },
     "android": {
-      "package": "com.remory.app"
+      "package": "com.remory.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#0A0A08"
+      }
     }
   }
 }

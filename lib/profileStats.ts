@@ -51,7 +51,10 @@ export async function fetchProfileStats(userId: string) {
 
   const dates = (allEntries ?? []).map((e) => e.date); // streak için log + off_day birlikte
   const { current, longest } = computeStreaks(dates);
-  const firstDate = dates[0] ?? null;
+  // "Başlangıç" kullanıcının FOTOĞRAF attığı ilk gün olmalı — off day / antrenman
+  // günleri fotoğraf içermediği için sayılmıyor. (Sorgu tarihe göre artan sıralı,
+  // yani ilk "log" kaydı en eski fotoğraflı gün.)
+  const firstDate = (allEntries ?? []).find((e) => e.type === "log")?.date ?? null;
   const totalMemories = (allEntries ?? []).filter((e) => e.type === "log").length;
 
   let weightDiff: number | null = null;

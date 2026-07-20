@@ -155,7 +155,7 @@ export default function Profil() {
             <StatChip
               icon="calendar"
               label="Başlangıç"
-              value={profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString("tr-TR") : "—"}
+              value={stats?.firstDate ? new Date(stats.firstDate).toLocaleDateString("tr-TR") : "—"}
             />
             <StatChip icon="camera" label="Toplam Anı" value={String(stats?.totalMemories ?? 0)} />
             <StatChip icon="zap" label="En Uzun Seri" value={`${stats?.longest ?? 0} gün`} />

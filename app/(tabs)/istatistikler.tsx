@@ -1,11 +1,8 @@
-<<<<<<< HEAD
-import { useEffect, useRef, useState } from "react";
+
+import { useEffect, useRef, useState }  from "react";
 import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert, Image, Modal } from "react-native";
-=======
-import { useEffect, useState } from "react";
-import { View, ScrollView, Pressable, ActivityIndicator, Alert } from "react-native";
-import { Text } from "@/components/Typography";
->>>>>>> main
+
+
 import Svg, { Path, Circle, Defs, LinearGradient, Stop } from "react-native-svg";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";

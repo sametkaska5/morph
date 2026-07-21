@@ -1,5 +1,7 @@
 # Remory
 
+Fotoğraf tabanlı, offline-öncelikli bir anı/ilerleme günlüğü. Expo Router + Supabase üzerine kurulu, NativeWind ile tasarım sistemine bağlı.
+
 ## Kurulum
 
 ```bash
@@ -20,7 +22,7 @@ supabase link --project-ref <proje-ref>
 supabase db push
 ```
 
-(`supabase/migrations/0001_init.sql` — sohbette çıkardığımız ERD'nin tamamı burada.)
+Migration'lar `supabase/migrations/` altında sırayla uygulanır (`0001_init.sql` temel ERD + RLS, sonrakiler auth trigger, storage politikaları, ölçüm tipleri, avatar, hesap silme vb.).
 
 Çalıştır:
 
@@ -28,30 +30,75 @@ supabase db push
 npx expo start
 ```
 
+## Teknolojiler
+
+- **Expo (~57) + Expo Router** — dosya tabanlı navigasyon
+- **Supabase** — auth, Postgres (RLS'li), storage
+- **TanStack Query** + `query-async-storage-persister` — offline-öncelikli veri katmanı ve önbellek kalıcılığı
+- **Zustand** — çekim/sheet için hafif yerel state
+- **NativeWind (Tailwind)** — tasarım sistemi tokenları (`tailwind.config.js`)
+- **react-native-reanimated / gesture-handler** — sürüklenebilir sheet ve geçiş animasyonları
+- **expo-image-picker / -manipulator / -media-library / view-shot / sharing** — fotoğraf çekimi, kırpma, paylaşılabilir kart üretimi
+- **expo-notifications** — "X ay önce bugün" yerel hatırlatmaları
+
 ## Klasör yapısı
 
 ```
 app/
-  (onboarding)/     onboarding akışı (welcome.tsx şimdilik tek ekran)
-  (tabs)/           5 sekmeli ana navigasyon
-    index.tsx       Ana Ekran — tam implemente edildi
-    zaman-kapsulu.tsx, capture.tsx, istatistikler.tsx, profil.tsx  — stub, sırada
+  _layout.tsx          kök layout (providers, query client, auth gate)
+  index.tsx            açılış yönlendirmesi
+  (auth)/index.tsx     giriş
+  forgot-password.tsx  şifre sıfırlama
+  (onboarding)/
+    welcome.tsx        karşılama ekranı
+  (tabs)/              ana navigasyon
+    _layout.tsx        sekme çubuğu (capture butonu doğrudan kamera açar)
+    index.tsx          Ana Ekran
+    zaman-kapsulu.tsx  Anı akışı / zaman kapsülü
+    capture.tsx        render edilmeyen placeholder route (bkz. _layout)
+    istatistikler.tsx  İstatistikler + paylaşılabilir kart
+    profil.tsx         Profil
+  entry/
+    new.tsx            yeni kayıt
+    [id].tsx           kayıt detayı
+    edit/[id].tsx      kayıt düzenleme
+    off-day.tsx        boş/atlanan gün kaydı
+  compare/
+    index.tsx          iki kaydı karşılaştırma
+    pick.tsx           karşılaştırma için kayıt seçimi
+  calendar-year.tsx    yıllık takvim görünümü
+  search.tsx           arama
+  profile/edit.tsx     profil düzenleme
+  settings/
+    notifications.tsx  bildirim tercihleri
+    measurements.tsx   ölçüm tipleri yönetimi
+    help.tsx           yardım
+  privacy-policy.tsx, terms.tsx   yasal metinler
+
+components/
+  DraggableSheet.tsx, CaptureOptionsSheet.tsx, Typography.tsx, LegalScreen.tsx
+
 lib/
-  supabase.ts       Supabase client
-  notifications.ts  yerel bildirim zamanlama ("X ay önce bugün" mantığı)
-supabase/migrations/
-  0001_init.sql     tam veri şeması + RLS politikaları
+  supabase.ts          Supabase client
+  useAuth.tsx          oturum context'i
+  useIsOnline.ts       ağ durumu (netinfo)
+  capture.ts, captureStore.ts, captureSheetStore.ts   fotoğraf çekim akışı
+  entryMutations.ts    kayıt CRUD mutasyonları (offline sync dahil)
+  storage.ts           Supabase storage yükleme/imzalı link
+  comparison.ts        karşılaştırma mantığı
+  profile.ts, profileStats.ts, account.ts   profil & hesap
+  measurementTypes.ts, units.ts             ölçümler & birimler
+  notifications.ts, notificationSettings.ts yerel bildirimler
+  date.ts              tarih yardımcıları
+
+supabase/migrations/   0001–0008 şema + RLS + storage politikaları
 ```
 
-## Şu ana kadar tamamlanan
+## Durum
 
-- Proje iskeleti, NativeWind tema tokenları (tasarım sistemimizdeki renkler)
-- Supabase şeması + RLS
-- Ana Ekran'ın gerçek implementasyonu (Supabase'den veri çeken query dahil)
-- Bildirim zamanlama mantığının iskeleti
+Ana akışlar uçtan uca çalışır durumda: auth, kayıt oluşturma/düzenleme/silme, offline ekleme + geri senkronizasyon, karşılaştırma, istatistikler, paylaşılabilir kart, bildirimler, profil ve ayarlar. TypeScript temiz derlenir (`npx tsc --noEmit`).
 
-## Sırada
+## Bilinen açık uçlar
 
-- Anı Akışı, Çekim, İstatistik, Profil ekranlarının implementasyonu
-- Kart çevirme animasyonu (react-native-reanimated ile)
-- Onboarding akışının kalan 4 ekranı
+- Onboarding tek ekranda (`welcome.tsx`); planlanan ek adımlar henüz yok.
+- `app/compare/index.tsx` içinde bir yerli modül koşullu (try/catch'li) yükleniyor — modül yoksa "Kaydet" sessizce devre dışı kalıyor; gözden geçirmeye değer.

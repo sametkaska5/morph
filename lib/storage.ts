@@ -58,19 +58,27 @@ export async function deleteAllUserPhotos(userId: string) {
 }
 
 /**
- * Bir entry satırının KAPAK fotoğrafının storage yolunu döner.
+ * Bir entry satırının KAPAK fotoğrafı SATIRINI ({ id, storage_path, ... }) döner.
  * `photos!entry_id(...)` ilişkisi bir DİZİ döndürüyor ve dizinin sırası garanti
- * değil — daha önce körlemesine photos[0] alınıyordu, bu yüzden aynı güne ikinci
- * kez kayıt yapıldığında (ya da fotoğraf değiştirildiğinde) ızgarada eski fotoğraf
- * görünebiliyordu. cover_photo_id ile eşleşeni seçiyoruz; kapağı olmayan eski
- * kayıtlar için order_index/ilk fotoğrafa geri düşüyoruz.
+ * değil — körlemesine photos[0] almak, aynı güne ikinci kez kayıt yapıldığında (ya
+ * da fotoğraf değiştirildiğinde) eski fotoğrafı seçebiliyor. cover_photo_id ile
+ * eşleşeni seçiyoruz; kapağı olmayan eski kayıtlar için ilk fotoğrafa geri düşüyoruz.
+ */
+export function coverPhotoRow<T extends { id?: string; storage_path?: string }>(entryRow: any): T | null {
+  const photos = entryRow?.photos;
+  if (!Array.isArray(photos)) return photos ?? null;
+  if (photos.length === 0) return null;
+  const cover = photos.find((p: any) => p.id === entryRow?.cover_photo_id);
+  return (cover ?? photos[0]) ?? null;
+}
+
+/**
+ * Bir entry satırının KAPAK fotoğrafının storage yolunu döner (bkz. coverPhotoRow).
  */
 export function coverPhotoPath(entryRow: any): string | null {
   const photos = entryRow?.photos;
   if (!Array.isArray(photos)) return photos?.storage_path ?? null;
-  if (photos.length === 0) return null;
-  const cover = photos.find((p: any) => p.id === entryRow?.cover_photo_id);
-  return (cover ?? photos[0])?.storage_path ?? null;
+  return coverPhotoRow(entryRow)?.storage_path ?? null;
 }
 
 export async function getPhotoUrl(path: string) {

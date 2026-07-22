@@ -13,7 +13,7 @@ import * as ImagePicker from "expo-image-picker";
 import Feather from "@expo/vector-icons/Feather";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
-import { uploadPhoto, getPhotoUrl } from "@/lib/storage";
+import { uploadPhoto, getPhotoUrl, coverPhotoRow } from "@/lib/storage";
 import { useMeasurementTypes } from "@/lib/measurementTypes";
 import { useUnitPreference, displayUnit, toDisplayValue, toMetricValue } from "@/lib/units";
 
@@ -64,7 +64,9 @@ export default function EditEntry() {
   useEffect(() => {
     if (data?.note) setNote(data.note);
 
-    const existingPath = (data as any)?.photos?.[0]?.storage_path;
+    // Kör photos[0] yerine cover_photo_id ile eşleşen kapak satırını al — birden
+    // fazla fotoğraf satırı olan (eski) kayıtlarda yanlış fotoğrafı göstermesin.
+    const existingPath = coverPhotoRow<{ storage_path: string }>(data)?.storage_path;
     if (existingPath) {
       setPhotoPath(existingPath);
       getPhotoUrl(existingPath).then(setDisplayUri).catch(() => {});
@@ -111,7 +113,7 @@ export default function EditEntry() {
 
   const updateMutation = useMutation({
     mutationFn: async () => {
-      const existingPhotoRow = (data as any)?.photos?.[0];
+      const existingPhotoRow = coverPhotoRow<{ id: string; storage_path: string }>(data);
       const photoChanged = photoPath && photoPath !== existingPhotoRow?.storage_path;
 
       let coverPhotoId = (data as any)?.cover_photo_id ?? existingPhotoRow?.id ?? null;

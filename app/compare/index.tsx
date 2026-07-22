@@ -101,7 +101,9 @@ function ComparisonBody({ data }: { data: NonNullable<Awaited<ReturnType<typeof 
     }
     setPendingAction("save");
     try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
+      // writeOnly=true: sadece galeriye kaydediyoruz, tüm galeriye erişim izni istemeye gerek yok
+      // (iOS'ta "Yalnızca Fotoğraf Ekle", Android'de medya-okuma iznini atlar)
+      const { status } = await MediaLibrary.requestPermissionsAsync(true);
       if (status !== "granted") {
         Alert.alert("İzin gerekli", "Galeriye kaydetmek için fotoğraf erişim izni vermelisin.");
         return;

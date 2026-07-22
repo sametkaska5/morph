@@ -309,7 +309,9 @@ export default function Istatistikler() {
           );
           return;
         }
-        const { status } = await MediaLibrary.requestPermissionsAsync();
+        // writeOnly=true: sadece galeriye yazıyoruz, tüm galeriye okuma izni gerekmiyor
+        // (compare/index.tsx ile aynı yaklaşım — iOS "Yalnızca Fotoğraf Ekle").
+        const { status } = await MediaLibrary.requestPermissionsAsync(true);
         if (status !== "granted") {
           Alert.alert("İzin gerekli", "Galeriye kaydetmek için fotoğraf erişim izni vermelisin.");
           return;

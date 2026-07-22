@@ -101,4 +101,4 @@ Ana akışlar uçtan uca çalışır durumda: auth, kayıt oluşturma/düzenleme
 ## Bilinen açık uçlar
 
 - Onboarding tek ekranda (`welcome.tsx`); planlanan ek adımlar henüz yok.
-- `app/compare/index.tsx` içinde bir yerli modül koşullu (try/catch'li) yükleniyor — modül yoksa "Kaydet" sessizce devre dışı kalıyor; gözden geçirmeye değer.
+- Galeriye kaydetme (`app/compare/index.tsx`), `expo-media-library`'yi try/catch'li `require` ile yüklüyor: bu native modül Expo Go'da bulunmadığı için import anında throw eder, yakalanır ve "Kaydet" bilinçli olarak devre dışı kalıp kullanıcıyı development build'e / "Paylaş"a yönlendirir. Beklenen davranış — galeri kaydı için development/production build gerekir.

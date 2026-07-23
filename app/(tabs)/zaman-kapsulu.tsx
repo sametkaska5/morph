@@ -124,10 +124,16 @@ function CapsulePage({
       >
         {entry.photoUrl ? (
           <Image
-            source={{ uri: entry.photoUrl }}
+            // cacheKey'i değişmeyen storage yoluna sabitliyoruz: imzalı URL her
+            // yeniden fetch'te farklı token'la üretildiğinden (staleTime dolunca ya
+            // da kayıt ekleme/düzenleme/silme ["entries"]'i invalidate ettiğinde),
+            // URL'ye göre anahtarlanan disk cache aynı fotoğrafı her seferinde
+            // yeniden indiriyordu. cacheKey path'e bağlanınca token dönse de cache
+            // isabet ediyor ve tekrar indirme olmuyor.
+            source={{ uri: entry.photoUrl, cacheKey: entry.photoPath ?? undefined }}
             style={{ flex: 1 }}
             contentFit="cover"
-            cachePolicy="disk"
+            cachePolicy="memory-disk"
             recyclingKey={entry.photoPath ?? undefined}
             transition={150}
           />

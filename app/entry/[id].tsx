@@ -181,10 +181,12 @@ export default function EntryDetail() {
 
         {data?.photoUrl ? (
           <Image
-            source={{ uri: data.photoUrl }}
+            // cacheKey stabil storage yoluna bağlı — imzalı URL token'ı değişse de
+            // (feed/ana ekranla aynı fotoğraf) cache isabet eder, yeniden indirmez.
+            source={{ uri: data.photoUrl, cacheKey: (data as any).photoPath ?? undefined }}
             style={{ width: "100%", height: "100%" }}
             contentFit="cover"
-            cachePolicy="disk"
+            cachePolicy="memory-disk"
             recyclingKey={(data as any).photoPath ?? undefined}
             transition={150}
           />

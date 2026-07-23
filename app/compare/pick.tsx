@@ -102,10 +102,12 @@ export default function PickComparison() {
                 <View className="flex-1 rounded-lg overflow-hidden bg-surface relative">
                   {item.photoUrl ? (
                     <Image
-                      source={{ uri: item.photoUrl }}
+                      // cacheKey stabil path'e bağlı: imzalı URL token dönse de
+                      // disk cache path'e göre isabet eder, yeniden indirmez.
+                      source={{ uri: item.photoUrl, cacheKey: item.photoPath ?? undefined }}
                       style={{ flex: 1 }}
                       contentFit="cover"
-                      cachePolicy="disk"
+                      cachePolicy="memory-disk"
                       recyclingKey={item.photoPath ?? undefined}
                     />
                   ) : null}

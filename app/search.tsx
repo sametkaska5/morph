@@ -56,7 +56,7 @@ function ResultRow({ entry }: { entry: SearchEntry }) {
     >
       <View className="w-12 h-12 rounded-[8px] overflow-hidden bg-surface border border-border">
         {entry.photoUrl ? (
-          <Image source={{ uri: entry.photoUrl }} style={{ width: "100%", height: "100%" }} contentFit="cover" recyclingKey={entry.photoPath ?? undefined} />
+          <Image source={{ uri: entry.photoUrl, cacheKey: entry.photoPath ?? undefined }} style={{ width: "100%", height: "100%" }} contentFit="cover" cachePolicy="memory-disk" recyclingKey={entry.photoPath ?? undefined} />
         ) : null}
       </View>
       <View className="flex-1">

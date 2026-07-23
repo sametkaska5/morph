@@ -89,10 +89,17 @@ function PosterThumb({ entry }: { entry: EntryRow }) {
       >
         {entry.cover_photo_url ? (
           <Image
-            source={{ uri: entry.cover_photo_url }}
+            // cacheKey'i değişmeyen storage yoluna sabitliyoruz — imzalı URL'nin
+            // token'ı her yeniden fetch'te değiştiğinden URL bazlı disk cache
+            // aksi halde aynı fotoğrafı tekrar tekrar indiriyor (bkz. zaman-kapsulu).
+            // Pending kayıtların henüz path'i yok; onlarda cacheKey vermiyoruz.
+            source={{
+              uri: entry.cover_photo_url,
+              cacheKey: entry.pending ? undefined : entry.cover_photo_path ?? undefined,
+            }}
             style={{ width: "100%", height: "100%" }}
             contentFit="cover"
-            cachePolicy={entry.pending ? "none" : "disk"}
+            cachePolicy={entry.pending ? "none" : "memory-disk"}
             recyclingKey={entry.cover_photo_path ?? undefined}
             transition={150}
           />

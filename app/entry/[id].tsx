@@ -5,12 +5,13 @@ import {
   ActivityIndicator,
   Dimensions,
   Modal,
+  FlatList,
 } from "react-native";
 import { Text } from "@/components/Typography";
 import { Image } from "expo-image";
 import { useLocalSearchParams, router } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Feather from "@expo/vector-icons/Feather";
 import { supabase } from "@/lib/supabase";
 import { getPhotoUrl, photoCacheKey } from "@/lib/storage";
@@ -69,6 +70,31 @@ function useEntryDetail(entryId: string) {
   });
 }
 
+/**
+ * Yan yana kaydırılabilecek kayıtların SIRASI.
+ *
+ * Ana ekran ızgarasıyla aynı sıralama ve aynı limit kullanılıyor (type=log,
+ * tarihe göre yeniden eskiye, 60) — böylece ızgarada gördüğün sıra ile
+ * kaydırdığında geldiğin sıra birebir aynı oluyor. user_id filtresi yok;
+ * ızgara sorgusunda olduğu gibi RLS hallediyor.
+ */
+function useEntryOrder() {
+  return useQuery({
+    queryKey: ["entries", "order"],
+    staleTime: 1000 * 60 * 30,
+    queryFn: async (): Promise<string[]> => {
+      const { data, error } = await supabase
+        .from("entries")
+        .select("id")
+        .eq("type", "log")
+        .order("date", { ascending: false })
+        .limit(60);
+      if (error) throw error;
+      return (data ?? []).map((e: any) => e.id as string);
+    },
+  });
+}
+
 /* ---------------- DELETE ---------------- */
 
 async function deleteEntry(entryId: string) {
@@ -100,89 +126,42 @@ async function deleteEntry(entryId: string) {
   return true;
 }
 
-/* ---------------- PAGE ---------------- */
+/* ---------------- TEK KAYIT SAYFASI ---------------- */
 
-export default function EntryDetail() {
-  const params = useLocalSearchParams();
+/**
+ * Yatay sayfalayıcının tek bir sayfası. Üstteki geri/işlem butonları burada
+ * DEĞİL — onlar ekran seviyesinde sabit duruyor, yoksa her sayfada bir kopyası
+ * olur ve kaydırırken beraber kayarlardı.
+ */
+function EntryPage({ entryId }: { entryId: string }) {
+  const { data, isLoading, error } = useEntryDetail(entryId);
 
-  const id = useMemo(() => {
-    const raw = params.id;
-    if (Array.isArray(raw)) return raw[0];
-    return raw ?? "";
-  }, [params.id]);
-
-  const queryClient = useQueryClient();
-  const { data, isLoading, error } = useEntryDetail(id);
-  const [showActionMenu, setShowActionMenu] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
-  const deleteMutation = useMutation({
-    mutationFn: (entryId: string) => deleteEntry(entryId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["entries"] });
-      // Silinen kayıt "Toplam Anı"/seri sayaçlarını da değiştiriyor — profil
-      // istatistikleri invalidate edilmeyince eski sayılar ekranda kalıyordu.
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
-      queryClient.invalidateQueries({ queryKey: ["currentWeek"] });
-      router.back();
-    },
-  });
-
-  /* ---------------- LOADING ---------------- */
+  // DİKKAT: Bu kaplarda `flex-1` KULLANILMAZ.
+  // Yatay listede iç kap satır yönünde dizilir; orada `flex-1` (flexBasis: 0)
+  // ana ekseni, yani GENİŞLİĞİ kontrol eder ve aşağıdaki sabit width'i ezer.
+  // Sayfalar tek ekran genişliğine sıkışınca kaydırılacak içerik kalmaz ve
+  // sayfalayıcı hiç çalışmaz. Yükseklik zaten yatay listenin varsayılan
+  // `alignItems: stretch` davranışıyla geliyor, ayrıca vermeye gerek yok.
 
   if (isLoading) {
     return (
-      <View className="flex-1 bg-bg justify-center items-center">
+      <View style={{ width: SCREEN_WIDTH }} className="bg-bg justify-center items-center">
         <ActivityIndicator color="#8CE05A" size="large" />
       </View>
     );
   }
 
-  /* ---------------- ERROR ---------------- */
-
   if (error) {
     return (
-      <View className="flex-1 bg-bg justify-center items-center px-6">
-        <Text className="text-danger text-base text-center mb-4">{(error as Error).message}</Text>
-        <Pressable
-          onPress={() => router.back()}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-        >
-          <Text className="text-text text-base font-semibold">Geri Dön</Text>
-        </Pressable>
+      <View style={{ width: SCREEN_WIDTH }} className="bg-bg justify-center items-center px-6">
+        <Text className="text-danger text-base text-center">{(error as Error).message}</Text>
       </View>
     );
   }
 
-  /* ---------------- UI ---------------- */
-
   return (
-    <>
-    <ScrollView className="flex-1 bg-bg" bounces={false}>
+    <ScrollView style={{ width: SCREEN_WIDTH }} className="bg-bg" bounces={false}>
       <View className="relative w-full" style={{ height: IMAGE_HEIGHT }}>
-        <Pressable
-          onPress={() => router.back()}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityRole="button"
-          accessibilityLabel="Geri dön"
-          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
-          className="absolute top-14 left-4 z-10 w-11 h-11 bg-black/40 rounded-full items-center justify-center"
-        >
-          <Feather name="chevron-left" size={22} color="#fff" />
-        </Pressable>
-
-        <Pressable
-          onPress={() => setShowActionMenu(true)}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityRole="button"
-          accessibilityLabel="Anı için işlemler"
-          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
-          className="absolute top-14 right-4 z-10 w-11 h-11 bg-black/40 rounded-full items-center justify-center"
-        >
-          <Feather name="more-vertical" size={20} color="#fff" />
-        </Pressable>
-
         {data?.photoUrl ? (
           <Image
             // cacheKey stabil storage yoluna bağlı — imzalı URL token'ı değişse de
@@ -201,13 +180,7 @@ export default function EntryDetail() {
           />
         ) : (
           <View className="w-full h-full bg-surface items-center justify-center">
-            <Text className="text-textMuted text-sm">Fotoğraf yok</Text>
-          </View>
-        )}
-
-        {deleteMutation.isPending && (
-          <View className="absolute inset-0 bg-black/50 items-center justify-center">
-            <ActivityIndicator color="#fff" />
+            <Text className="text-textMuted text-base">Fotoğraf yok</Text>
           </View>
         )}
       </View>
@@ -221,7 +194,7 @@ export default function EntryDetail() {
           <View className="bg-surface border border-border rounded-card p-4 mb-4">
             {(data as any).measurement_values.map((mv: any, i: number) => (
               <View key={i} className="flex-row justify-between py-2">
-                <Text className="text-textMuted text-sm capitalize">{mv.measurement_types.name}</Text>
+                <Text className="text-textMuted text-base capitalize">{mv.measurement_types.name}</Text>
                 <Text className="text-text text-base font-bold">
                   {mv.value} {mv.measurement_types.unit}
                 </Text>
@@ -237,6 +210,137 @@ export default function EntryDetail() {
         )}
       </View>
     </ScrollView>
+  );
+}
+
+/* ---------------- PAGE ---------------- */
+
+export default function EntryDetail() {
+  const params = useLocalSearchParams();
+
+  const id = useMemo(() => {
+    const raw = params.id;
+    if (Array.isArray(raw)) return raw[0];
+    return raw ?? "";
+  }, [params.id]);
+
+  const queryClient = useQueryClient();
+  const { data: orderIds, isLoading: orderLoading } = useEntryOrder();
+  const [showActionMenu, setShowActionMenu] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  // Arama ya da yıllık takvimden açılan ESKİ bir kayıt son 60'ın dışında
+  // kalabilir. O durumda tek sayfalık listeye düşüyoruz: yana kaydırma olmaz
+  // ama ekran normal şekilde çalışmaya devam eder.
+  const ids = useMemo(() => {
+    if (!orderIds || !orderIds.includes(id)) return [id];
+    return orderIds;
+  }, [orderIds, id]);
+
+  const initialIndex = Math.max(0, ids.indexOf(id));
+
+  useEffect(() => {
+    setActiveIndex(initialIndex);
+  }, [initialIndex]);
+
+  // Düzenle/sil her zaman EKRANDA GÖRÜNEN kayda uygulanmalı — kaydırdıktan
+  // sonra hâlâ URL'deki ilk id'ye işlem yapmak sessizce yanlış kaydı silerdi.
+  const activeId = ids[activeIndex] ?? id;
+
+  const deleteMutation = useMutation({
+    mutationFn: (entryId: string) => deleteEntry(entryId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["entries"] });
+      // Silinen kayıt "Toplam Anı"/seri sayaçlarını da değiştiriyor — profil
+      // istatistikleri invalidate edilmeyince eski sayılar ekranda kalıyordu.
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      queryClient.invalidateQueries({ queryKey: ["currentWeek"] });
+      router.back();
+    },
+  });
+
+  /* ---------------- LOADING ---------------- */
+
+  // Sırayı bekliyoruz: initialScrollIndex yalnızca ilk render'da uygulandığı
+  // için liste hazır olmadan çizersek açılışta yanlış kayıtta başlardık.
+  if (orderLoading) {
+    return (
+      <View className="flex-1 bg-bg justify-center items-center">
+        <ActivityIndicator color="#8CE05A" size="large" />
+      </View>
+    );
+  }
+
+  /* ---------------- UI ---------------- */
+
+  return (
+    <>
+    <View className="flex-1 bg-bg">
+      <FlatList
+        data={ids}
+        keyExtractor={(item) => item}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        initialScrollIndex={initialIndex}
+        getItemLayout={(_, index) => ({ length: SCREEN_WIDTH, offset: SCREEN_WIDTH * index, index })}
+        initialNumToRender={1}
+        maxToRenderPerBatch={2}
+        // windowSize=3 → aynı anda en fazla 3 sayfa bağlı, bellek sınırlı kalıyor.
+        // removeClippedSubviews BİLEREK kapalı: her sayfa kendi içinde bir
+        // ScrollView ve bu kombinasyon Android'de sayfaları boş gösterebiliyor.
+        windowSize={3}
+        onMomentumScrollEnd={(e) =>
+          setActiveIndex(Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH))
+        }
+        renderItem={({ item }) => <EntryPage entryId={item} />}
+      />
+
+      {/* Üst kontroller sayfalayıcının DIŞINDA: kaydırırken yerinde kalıyorlar. */}
+      <Pressable
+        onPress={() => router.back()}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        accessibilityRole="button"
+        accessibilityLabel="Geri dön"
+        style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+        className="absolute top-14 left-4 z-10 w-11 h-11 bg-black/40 rounded-full items-center justify-center"
+      >
+        <Feather name="chevron-left" size={22} color="#fff" />
+      </Pressable>
+
+      <Pressable
+        onPress={() => setShowActionMenu(true)}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        accessibilityRole="button"
+        accessibilityLabel="Anı için işlemler"
+        style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+        className="absolute top-14 right-4 z-10 w-11 h-11 bg-black/40 rounded-full items-center justify-center"
+      >
+        <Feather name="more-vertical" size={20} color="#fff" />
+      </Pressable>
+
+      {/* Sayaç, yanlarda başka kayıt olduğunu belli ediyor — Anı Akışı'ndaki
+          ile aynı desen. h-11 sayesinde üstteki butonlarla aynı hizada. */}
+      {ids.length > 1 ? (
+        <View
+          pointerEvents="none"
+          className="absolute top-14 left-0 right-0 h-11 items-center justify-center z-10"
+        >
+          <View className="bg-black/50 rounded-pill px-3 py-1">
+            <Text className="text-text text-xs font-medium">
+              {activeIndex + 1}/{ids.length}
+            </Text>
+          </View>
+        </View>
+      ) : null}
+
+      {deleteMutation.isPending && (
+        <View className="absolute inset-0 bg-black/50 items-center justify-center z-20">
+          <ActivityIndicator color="#fff" />
+        </View>
+      )}
+    </View>
 
     <Modal
       visible={showActionMenu}
@@ -257,7 +361,7 @@ export default function EntryDetail() {
               label="Düzenle"
               onPress={() => {
                 setShowActionMenu(false);
-                router.push(`/entry/edit/${id}`);
+                router.push(`/entry/edit/${activeId}`);
               }}
             />
             <ActionMenuOption
@@ -311,7 +415,7 @@ export default function EntryDetail() {
             <Pressable
               onPress={() => {
                 setShowDeleteConfirm(false);
-                deleteMutation.mutate(id);
+                deleteMutation.mutate(activeId);
               }}
               style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
               className="flex-1 py-4 rounded-button items-center bg-danger"

@@ -1,7 +1,13 @@
-import { useState } from "react";
-import { View, Pressable, ActivityIndicator, Alert } from "react-native";
+import { useRef, useState } from "react";
+import {
+  View,
+  Pressable,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  type TextInput as RNTextInput,
+} from "react-native";
 import { Text, TextInput } from "@/components/Typography";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
 import { useAuth } from "@/lib/useAuth";
@@ -11,6 +17,7 @@ import {
   useDeleteMeasurementType,
   type TargetDirection,
 } from "@/lib/measurementTypes";
+import { useKeyboardFocus } from "@/lib/useKeyboardFocus";
 
 const ACCENT = "#8CE05A";
 
@@ -23,6 +30,11 @@ export default function MeasurementSettingsScreen() {
   const [name, setName] = useState("");
   const [unit, setUnit] = useState("");
   const [direction, setDirection] = useState<TargetDirection>("decrease_is_good");
+  // "Yeni ölçüm ekle" formu listenin en altında — klavye açıkken alanlar arası
+  // geçerken alt alan klavyenin altında kalabiliyordu.
+  const nameRef = useRef<RNTextInput | null>(null);
+  const unitRef = useRef<RNTextInput | null>(null);
+  const { scrollRef, onScroll, revealField, keyboardPadding } = useKeyboardFocus();
 
   const defaults = types?.filter((t) => t.is_default) ?? [];
   const custom = types?.filter((t) => !t.is_default) ?? [];
@@ -60,11 +72,12 @@ export default function MeasurementSettingsScreen() {
   }
 
   return (
-    <KeyboardAwareScrollView
+    <ScrollView
+      ref={scrollRef}
+      onScroll={onScroll}
+      scrollEventThrottle={16}
       className="flex-1 bg-bg pt-14 px-4"
-      contentContainerStyle={{ paddingBottom: 32 }}
-      enableOnAndroid
-      extraScrollHeight={30}
+      contentContainerStyle={{ paddingBottom: 32 + keyboardPadding }}
       keyboardShouldPersistTaps="handled"
     >
       <View className="flex-row items-center gap-3 mb-6">
@@ -137,17 +150,21 @@ export default function MeasurementSettingsScreen() {
           <Text className="text-textFaint text-xs font-semibold mb-2 tracking-wide">YENİ ÖLÇÜM EKLE</Text>
           <View className="bg-surface border border-border rounded-card p-4 mb-6">
             <TextInput
+              ref={nameRef}
               value={name}
               onChangeText={setName}
               placeholder="İsim (örn. Kol Çevresi)"
               placeholderTextColor="#5C5A50"
+              onFocus={() => revealField(nameRef.current)}
               className="text-text text-base bg-bg rounded-lg px-3 py-3 mb-3"
             />
             <TextInput
+              ref={unitRef}
               value={unit}
               onChangeText={setUnit}
               placeholder="Birim (örn. cm)"
               placeholderTextColor="#5C5A50"
+              onFocus={() => revealField(unitRef.current)}
               className="text-text text-base bg-bg rounded-lg px-3 py-3 mb-3"
             />
 
@@ -191,6 +208,6 @@ export default function MeasurementSettingsScreen() {
           </View>
         </>
       )}
-    </KeyboardAwareScrollView>
+    </ScrollView>
   );
 }

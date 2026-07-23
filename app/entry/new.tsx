@@ -1,7 +1,6 @@
 import { useState, useRef } from "react";
-import { View, Image, Pressable, Platform, Alert } from "react-native";
+import { View, Image, Pressable, Platform, Alert, ScrollView } from "react-native";
 import { Text, TextInput } from "@/components/Typography";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { router } from "expo-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -11,6 +10,7 @@ import { useCaptureStore } from "@/lib/captureStore";
 import { toLocalDateKey } from "@/lib/date";
 import { saveEntry, SAVE_ENTRY_MUTATION_KEY, type SaveEntryPayload } from "@/lib/entryMutations";
 import { useMeasurementTypes } from "@/lib/measurementTypes";
+import { useKeyboardFocus } from "@/lib/useKeyboardFocus";
 import { useUnitPreference, displayUnit, toMetricValue } from "@/lib/units";
 import type { EntryRow } from "@/app/(tabs)/index";
 
@@ -30,6 +30,7 @@ export default function NewEntry() {
   const [showPicker, setShowPicker] = useState(false);
   const inputRefs = useRef<Array<TextInput | null>>([]);
   const noteRef = useRef<TextInput | null>(null);
+  const { scrollRef, onScroll, revealField, keyboardPadding } = useKeyboardFocus();
 
   const saveMutation = useMutation<
     Awaited<ReturnType<typeof saveEntry>>,
@@ -107,11 +108,12 @@ export default function NewEntry() {
   }
 
   return (
-    <KeyboardAwareScrollView
+    <ScrollView
+      ref={scrollRef}
+      onScroll={onScroll}
+      scrollEventThrottle={16}
       className="flex-1 bg-bg"
-      contentContainerStyle={{ padding: 20, paddingTop: 56 }}
-      enableOnAndroid
-      extraScrollHeight={30}
+      contentContainerStyle={{ padding: 20, paddingTop: 56, paddingBottom: 20 + keyboardPadding }}
       keyboardShouldPersistTaps="handled"
     >
       <View className="flex-row justify-between items-center mb-4">
@@ -178,6 +180,9 @@ export default function NewEntry() {
                 placeholderTextColor="#5C5A50"
                 returnKeyType="next"
                 blurOnSubmit={false}
+                // Klavye açıkken odak buraya geçtiğinde kendiliğinden kaydırma
+                // olmadığı için alanı elle görünür alana taşıyoruz.
+                onFocus={() => revealField(inputRefs.current[i])}
                 onSubmitEditing={() => {
                   const next = inputRefs.current[i + 1];
                   if (next) next.focus();
@@ -212,11 +217,12 @@ export default function NewEntry() {
           placeholder="birkaç kelime yaz..."
           placeholderTextColor="#5C5A50"
           accessibilityLabel="Not"
+          onFocus={() => revealField(noteRef.current)}
           multiline
           className="text-text text-base min-h-[64px]"
           maxLength={300}
         />
       </View>
-    </KeyboardAwareScrollView>
+    </ScrollView>
   );
 }

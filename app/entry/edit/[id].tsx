@@ -3,9 +3,9 @@ import {
   Pressable,
   ActivityIndicator,
   Image,
+  ScrollView,
 } from "react-native";
 import { Text, TextInput } from "@/components/Typography";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useLocalSearchParams, router } from "expo-router";
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -15,6 +15,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
 import { uploadPhoto, uploadThumb, getPhotoUrl, coverPhotoRow } from "@/lib/storage";
 import { resizeAndCompress } from "@/lib/capture";
+import { useKeyboardFocus } from "@/lib/useKeyboardFocus";
 import { useMeasurementTypes } from "@/lib/measurementTypes";
 import { useUnitPreference, displayUnit, toDisplayValue, toMetricValue } from "@/lib/units";
 
@@ -61,6 +62,7 @@ export default function EditEntry() {
   const [uploading, setUploading] = useState(false);
   const inputRefs = useRef<Array<TextInput | null>>([]);
   const noteRef = useRef<TextInput | null>(null);
+  const { scrollRef, onScroll, revealField, keyboardPadding } = useKeyboardFocus();
 
   /* INIT */
   useEffect(() => {
@@ -222,10 +224,12 @@ export default function EditEntry() {
   }
 
   return (
-    <KeyboardAwareScrollView
+    <ScrollView
+      ref={scrollRef}
+      onScroll={onScroll}
+      scrollEventThrottle={16}
       className="flex-1 bg-bg px-5 pt-14"
-      enableOnAndroid
-      extraScrollHeight={30}
+      contentContainerStyle={{ paddingBottom: keyboardPadding }}
       keyboardShouldPersistTaps="handled"
     >
       <Text className="text-text text-xl font-bold mb-6">Düzenle</Text>
@@ -267,6 +271,9 @@ export default function EditEntry() {
                 placeholderTextColor="#5C5A50"
                 returnKeyType="next"
                 blurOnSubmit={false}
+                // Klavye açıkken odak buraya geçtiğinde kendiliğinden kaydırma
+                // olmadığı için alanı elle görünür alana taşıyoruz.
+                onFocus={() => revealField(inputRefs.current[i])}
                 onSubmitEditing={() => {
                   const next = inputRefs.current[i + 1];
                   if (next) next.focus();
@@ -299,6 +306,7 @@ export default function EditEntry() {
         accessibilityLabel="Not"
         placeholder="Not..."
         placeholderTextColor="#888"
+        onFocus={() => revealField(noteRef.current)}
         className="bg-surface border border-border text-text text-base p-4 rounded-card h-28 mb-6"
         multiline
       />
@@ -328,6 +336,6 @@ export default function EditEntry() {
       >
         <Text className="text-textMuted text-sm">İptal</Text>
       </Pressable>
-    </KeyboardAwareScrollView>
+    </ScrollView>
   );
 }

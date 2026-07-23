@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
 import { supabase } from "@/lib/supabase";
-import { getPhotoUrls, coverPhotoPath } from "@/lib/storage";
+import { getPhotoUrls, coverThumbPath, photoCacheKey } from "@/lib/storage";
 import { openCapturePicker } from "@/lib/capture";
 
 const { width } = Dimensions.get("window");
@@ -32,18 +32,23 @@ function useTimelineEntries() {
     queryFn: async (): Promise<EntryRow[]> => {
       const { data, error } = await supabase
         .from("entries")
-        .select("id, date, note, cover_photo_id, photos!entry_id(id, storage_path)")
+        .select("id, date, note, cover_photo_id, photos!entry_id(id, storage_path, thumb_path)")
         .eq("type", "log")
         .order("date", { ascending: false })
         .limit(60);
 
       if (error) throw error;
 
-      const paths = (data ?? []).map(coverPhotoPath).filter(Boolean) as string[];
+      // 3 sütunlu ızgara: kare ~108pt. Yüklemede üretilen küçük kopyayı
+      // kullanıyoruz; olmayan (eski) kayıtlarda coverThumbPath tam boya düşer.
+      const paths = (data ?? []).map(coverThumbPath).filter(Boolean) as string[];
+      // Bilerek transform'suz (varyantsız) çağrı: yol zaten küçük kopyaya işaret
+      // ediyor, üstüne dönüşüm istemek path başına ayrı imzalama isteği demek
+      // olurdu — 60 kayıtlık ızgarada tek batch isteği çok daha hızlı.
       const urlMap = await getPhotoUrls(paths);
 
       return (data ?? []).map((e: any) => {
-        const path = coverPhotoPath(e);
+        const path = coverThumbPath(e);
         return {
           id: e.id,
           date: e.date,
@@ -95,7 +100,10 @@ function PosterThumb({ entry }: { entry: EntryRow }) {
             // Pending kayıtların henüz path'i yok; onlarda cacheKey vermiyoruz.
             source={{
               uri: entry.cover_photo_url,
-              cacheKey: entry.pending ? undefined : entry.cover_photo_path ?? undefined,
+              cacheKey:
+                entry.pending || !entry.cover_photo_path
+                  ? undefined
+                  : photoCacheKey(entry.cover_photo_path, "thumb"),
             }}
             style={{ width: "100%", height: "100%" }}
             contentFit="cover"

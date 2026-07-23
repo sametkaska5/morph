@@ -1,6 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { supabase } from "./supabase";
-import { uploadPhoto } from "./storage";
+import { uploadPhoto, uploadThumb } from "./storage";
 
 export const SAVE_ENTRY_MUTATION_KEY = ["saveEntry"] as const;
 
@@ -17,10 +17,16 @@ export type SaveEntryPayload = {
   note: string | null;
   values: Record<string, string>;
   photoBase64: string;
+  /**
+   * Izgaralarda kullanılan küçük kopya. Opsiyonel çünkü bu alan eklenmeden ÖNCE
+   * offline kuyruğa alınmış (AsyncStorage'da bekleyen) mutation'lar bunu
+   * taşımıyor — onlar da senkronize olabilmeli, sadece thumbnail'siz kalırlar.
+   */
+  thumbBase64?: string;
 };
 
 export async function saveEntry(payload: SaveEntryPayload) {
-  const { userId, date, note, values, photoBase64 } = payload;
+  const { userId, date, note, values, photoBase64, thumbBase64 } = payload;
 
   const { data: entry, error: entryError } = await supabase
     .from("entries")
@@ -31,9 +37,20 @@ export async function saveEntry(payload: SaveEntryPayload) {
 
   const storagePath = await uploadPhoto(userId, entry.id, photoBase64);
 
+  // Thumbnail bir optimizasyon — yüklenemezse kaydı düşürmüyoruz, thumb_path
+  // null kalır ve okuyan taraf tam boya geri düşer.
+  let thumbPath: string | null = null;
+  if (thumbBase64) {
+    try {
+      thumbPath = await uploadThumb(userId, entry.id, thumbBase64);
+    } catch (err) {
+      console.warn("thumbnail yüklenemedi, tam boy kullanılacak:", err);
+    }
+  }
+
   const { data: photoRow, error: photoError } = await supabase
     .from("photos")
-    .insert({ entry_id: entry.id, storage_path: storagePath, order_index: 0 })
+    .insert({ entry_id: entry.id, storage_path: storagePath, thumb_path: thumbPath, order_index: 0 })
     .select()
     .single();
   if (photoError) throw photoError;
@@ -47,12 +64,17 @@ export async function saveEntry(payload: SaveEntryPayload) {
   // fotoğraflarını satır ve dosya olarak temizliyoruz.
   const { data: stalePhotos } = await supabase
     .from("photos")
-    .select("id, storage_path")
+    .select("id, storage_path, thumb_path")
     .eq("entry_id", entry.id)
     .neq("id", photoRow.id);
 
   if (stalePhotos && stalePhotos.length > 0) {
-    await supabase.storage.from("photos").remove(stalePhotos.map((p) => p.storage_path));
+    // Tam boy kopyanın yanında thumbnail'i de silmezsek storage'da yetim
+    // küçük dosyalar birikir.
+    const staleFiles = stalePhotos.flatMap((p) =>
+      [p.storage_path, p.thumb_path].filter(Boolean) as string[]
+    );
+    await supabase.storage.from("photos").remove(staleFiles);
     await supabase
       .from("photos")
       .delete()

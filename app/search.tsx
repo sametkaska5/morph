@@ -7,7 +7,7 @@ import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
-import { getPhotoUrls, coverPhotoPath } from "@/lib/storage";
+import { getPhotoUrls, coverThumbPath, photoCacheKey } from "@/lib/storage";
 
 type SearchEntry = {
   id: string;
@@ -25,18 +25,20 @@ function useSearchIndex(userId: string | undefined) {
     queryFn: async (): Promise<SearchEntry[]> => {
       const { data, error } = await supabase
         .from("entries")
-        .select("id, date, note, cover_photo_id, photos!entry_id(id, storage_path)")
+        .select("id, date, note, cover_photo_id, photos!entry_id(id, storage_path, thumb_path)")
         .eq("user_id", userId!)
         .eq("type", "log")
         .order("date", { ascending: false });
 
       if (error) throw error;
 
-      const paths = (data ?? []).map(coverPhotoPath).filter(Boolean) as string[];
+      // Küçük liste thumb'ları: yüklemede üretilen kopyayı tercih et.
+      // Varyantsız: yol zaten küçük kopya, tek batch isteği yeterli.
+      const paths = (data ?? []).map(coverThumbPath).filter(Boolean) as string[];
       const urlMap = await getPhotoUrls(paths);
 
       return (data ?? []).map((e: any) => {
-        const path = coverPhotoPath(e);
+        const path = coverThumbPath(e);
         return { id: e.id, date: e.date, note: e.note, photoUrl: path ? urlMap.get(path) ?? null : null, photoPath: path ?? null };
       });
     },
@@ -56,7 +58,7 @@ function ResultRow({ entry }: { entry: SearchEntry }) {
     >
       <View className="w-12 h-12 rounded-[8px] overflow-hidden bg-surface border border-border">
         {entry.photoUrl ? (
-          <Image source={{ uri: entry.photoUrl, cacheKey: entry.photoPath ?? undefined }} style={{ width: "100%", height: "100%" }} contentFit="cover" cachePolicy="memory-disk" recyclingKey={entry.photoPath ?? undefined} />
+          <Image source={{ uri: entry.photoUrl, cacheKey: entry.photoPath ? photoCacheKey(entry.photoPath, "thumb") : undefined }} style={{ width: "100%", height: "100%" }} contentFit="cover" cachePolicy="memory-disk" recyclingKey={entry.photoPath ?? undefined} />
         ) : null}
       </View>
       <View className="flex-1">

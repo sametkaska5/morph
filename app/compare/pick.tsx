@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import Feather from "@expo/vector-icons/Feather";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
-import { getPhotoUrls } from "@/lib/storage";
+import { getPhotoUrls, coverThumbPath, photoCacheKey } from "@/lib/storage";
 
 const { width } = Dimensions.get("window");
 const THUMB_SIZE = (width - 20 * 2 - 8 * 2) / 3;
@@ -21,22 +21,27 @@ function usePickableEntries() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("entries")
-        .select("id, date, photos!cover_photo_id(storage_path)")
+        .select("id, date, photos!cover_photo_id(storage_path, thumb_path)")
         .eq("user_id", user!.id)
         .eq("type", "log")
         .order("date", { ascending: false })
         .limit(60);
       if (error) throw error;
 
-      const paths = (data ?? []).map((e: any) => e.photos?.storage_path).filter(Boolean) as string[];
+      // Izgara görünümü: küçük kopyayı tercih et, yoksa tam boya düş.
+      // Varyantsız: yol zaten küçük kopya, tek batch isteği yeterli.
+      const paths = (data ?? []).map(coverThumbPath).filter(Boolean) as string[];
       const urlMap = await getPhotoUrls(paths);
 
-      return (data ?? []).map((e: any) => ({
-        id: e.id,
-        date: e.date,
-        photoUrl: e.photos?.storage_path ? urlMap.get(e.photos.storage_path) ?? null : null,
-        photoPath: e.photos?.storage_path ?? null,
-      }));
+      return (data ?? []).map((e: any) => {
+        const path = coverThumbPath(e);
+        return {
+          id: e.id,
+          date: e.date,
+          photoUrl: path ? urlMap.get(path) ?? null : null,
+          photoPath: path ?? null,
+        };
+      });
     },
   });
 }
@@ -104,7 +109,10 @@ export default function PickComparison() {
                     <Image
                       // cacheKey stabil path'e bağlı: imzalı URL token dönse de
                       // disk cache path'e göre isabet eder, yeniden indirmez.
-                      source={{ uri: item.photoUrl, cacheKey: item.photoPath ?? undefined }}
+                      source={{
+                        uri: item.photoUrl,
+                        cacheKey: item.photoPath ? photoCacheKey(item.photoPath, "thumb") : undefined,
+                      }}
                       style={{ flex: 1 }}
                       contentFit="cover"
                       cachePolicy="memory-disk"

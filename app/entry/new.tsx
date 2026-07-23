@@ -50,7 +50,11 @@ export default function NewEntry() {
         id: `pending-${payload.date}`,
         date: payload.date,
         note: payload.note,
-        cover_photo_url: `data:image/jpeg;base64,${payload.photoBase64}`,
+        // Izgarada ~108pt'lik kare gösteriliyor ve bu obje persist edilen React
+        // Query cache'i üzerinden AsyncStorage'a yazılıyor — tam boy base64'ü
+        // gömmek hem diske yüzlerce KB yazıyor hem render'ı yavaşlatıyordu.
+        // Küçük kopya varsa onu kullan, yoksa (eski akış) tam boya düş.
+        cover_photo_url: `data:image/jpeg;base64,${payload.thumbBase64 ?? payload.photoBase64}`,
         cover_photo_path: `pending-${payload.date}`,
         pending: true,
       };
@@ -96,6 +100,7 @@ export default function NewEntry() {
       note: note || null,
       values: metricValues,
       photoBase64: photo.base64,
+      thumbBase64: photo.thumbBase64,
     });
     clearPhoto();
     router.replace("/(tabs)");

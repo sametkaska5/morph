@@ -13,7 +13,8 @@ import * as ImagePicker from "expo-image-picker";
 import Feather from "@expo/vector-icons/Feather";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
-import { uploadPhoto, getPhotoUrl, coverPhotoRow } from "@/lib/storage";
+import { uploadPhoto, uploadThumb, getPhotoUrl, coverPhotoRow } from "@/lib/storage";
+import { resizeAndCompress } from "@/lib/capture";
 import { useMeasurementTypes } from "@/lib/measurementTypes";
 import { useUnitPreference, displayUnit, toDisplayValue, toMetricValue } from "@/lib/units";
 
@@ -26,7 +27,7 @@ function useEntry(entryId: string) {
       const { data, error } = await supabase
         .from("entries")
         .select(
-          "id, note, cover_photo_id, photos!entry_id(id, storage_path), measurement_values(id, value, measurement_type_id, measurement_types(name, unit))"
+          "id, note, cover_photo_id, photos!entry_id(id, storage_path, thumb_path), measurement_values(id, value, measurement_type_id, measurement_types(name, unit))"
         )
         .eq("id", entryId)
         .single();
@@ -52,6 +53,7 @@ export default function EditEntry() {
   const [note, setNote] = useState("");
   // storage'daki gerçek yol (DB'ye yazılacak olan)
   const [photoPath, setPhotoPath] = useState<string | null>(null);
+  const [thumbPath, setThumbPath] = useState<string | null>(null);
   // ekranda gösterilecek geçici imzalı link ya da yeni seçilen fotoğrafın yerel uri'si
   const [displayUri, setDisplayUri] = useState<string | null>(null);
   // measurement_type_id -> girilen değer (string, boş olabilir)
@@ -69,7 +71,7 @@ export default function EditEntry() {
     const existingPath = coverPhotoRow<{ storage_path: string }>(data)?.storage_path;
     if (existingPath) {
       setPhotoPath(existingPath);
-      getPhotoUrl(existingPath).then(setDisplayUri).catch(() => {});
+      getPhotoUrl(existingPath, "full").then(setDisplayUri).catch(() => {});
     }
 
     if (data?.measurement_values) {
@@ -87,22 +89,38 @@ export default function EditEntry() {
   async function pickImage() {
     if (!user) return;
 
+    // base64'ü picker'dan istemiyoruz: resizeAndCompress zaten uri'den çalışıp
+    // küçültülmüş base64'ü üretiyor, ham dosyayı ayrıca belleğe almak gereksiz.
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: "images",
       allowsEditing: false,
       quality: 0.8,
-      base64: true,
     });
 
     if (result.canceled) return;
 
     const asset = result.assets[0];
-    if (!asset?.base64) return;
+    if (!asset?.uri) return;
 
     setUploading(true);
     try {
-      const path = await uploadPhoto(user.id, id, asset.base64);
+      // Burada eskiden seçilen dosya HİÇ küçültülmeden yükleniyordu — düzenlenen
+      // kayıtların fotoğrafı çekim akışındakinin kat kat üstünde boyutta kalıyor,
+      // her görüntülemede o boyut iniyordu. Artık çekimle aynı işlemden geçiyor.
+      const { base64, thumbBase64 } = await resizeAndCompress(asset.uri);
+
+      const path = await uploadPhoto(user.id, id, base64);
+
+      // Thumbnail opsiyonel — üretilemezse kayıt yine de tam boyla çalışır.
+      let newThumbPath: string | null = null;
+      try {
+        newThumbPath = await uploadThumb(user.id, id, thumbBase64);
+      } catch (err) {
+        console.warn("thumbnail yüklenemedi, tam boy kullanılacak:", err);
+      }
+
       setPhotoPath(path);
+      setThumbPath(newThumbPath);
       setDisplayUri(asset.uri);
     } finally {
       setUploading(false);
@@ -113,7 +131,11 @@ export default function EditEntry() {
 
   const updateMutation = useMutation({
     mutationFn: async () => {
-      const existingPhotoRow = coverPhotoRow<{ id: string; storage_path: string }>(data);
+      const existingPhotoRow = coverPhotoRow<{
+        id: string;
+        storage_path: string;
+        thumb_path?: string | null;
+      }>(data);
       const photoChanged = photoPath && photoPath !== existingPhotoRow?.storage_path;
 
       let coverPhotoId = (data as any)?.cover_photo_id ?? existingPhotoRow?.id ?? null;
@@ -121,7 +143,7 @@ export default function EditEntry() {
       if (photoChanged) {
         const { data: newPhoto, error: photoError } = await supabase
           .from("photos")
-          .insert({ entry_id: id, storage_path: photoPath, order_index: 0 })
+          .insert({ entry_id: id, storage_path: photoPath, thumb_path: thumbPath, order_index: 0 })
           .select()
           .single();
         if (photoError) throw photoError;
@@ -129,7 +151,12 @@ export default function EditEntry() {
         coverPhotoId = newPhoto.id;
 
         if (existingPhotoRow) {
-          await supabase.storage.from("photos").remove([existingPhotoRow.storage_path]);
+          // Eski kaydın thumbnail'ini de siliyoruz, yoksa storage'da yetim kalır.
+          await supabase.storage
+            .from("photos")
+            .remove(
+              [existingPhotoRow.storage_path, existingPhotoRow.thumb_path].filter(Boolean) as string[]
+            );
           await supabase.from("photos").delete().eq("id", existingPhotoRow.id);
         }
       }

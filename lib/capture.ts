@@ -7,14 +7,35 @@ import { useCaptureSheetStore } from "@/lib/captureSheetStore";
 
 const MAX_DIMENSION = 1280;
 const JPEG_QUALITY = 0.75;
+// Izgaralarda kare ~108pt gösteriliyor (3x ekranda ~325px) — 400px fazlasıyla yeter.
+const THUMB_DIMENSION = 400;
+const THUMB_QUALITY = 0.6;
 
-async function resizeAndCompress(uri: string) {
-  const result = await ImageManipulator.manipulateAsync(
+/**
+ * Tam boy kopyanın YANI SIRA küçük bir thumbnail de üretir.
+ *
+ * Thumbnail'i yükleme anında değil ÇEKİM anında üretmek zorundayız: offline
+ * kaydedilen entry'ler AsyncStorage'a yalnızca base64 olarak yazılıyor
+ * (SaveEntryPayload) ve uygulama kapanıp açıldıktan sonra senkronize olabiliyor —
+ * o noktada orijinal dosyanın uri'si artık geçerli olmayabilir. Base64'ü baştan
+ * payload'a koyunca offline akış da sorunsuz çalışıyor.
+ */
+export async function resizeAndCompress(uri: string) {
+  const full = await ImageManipulator.manipulateAsync(
     uri,
     [{ resize: { width: MAX_DIMENSION } }],
     { compress: JPEG_QUALITY, format: ImageManipulator.SaveFormat.JPEG, base64: true }
   );
-  return { uri: result.uri, base64: result.base64! };
+
+  // Thumbnail'i orijinalden değil, küçültülmüş kopyadan üretiyoruz — sonuç
+  // görsel olarak aynı, ama büyük dosyayı ikinci kez decode etmekten kurtuluyoruz.
+  const thumb = await ImageManipulator.manipulateAsync(
+    full.uri,
+    [{ resize: { width: THUMB_DIMENSION } }],
+    { compress: THUMB_QUALITY, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+  );
+
+  return { uri: full.uri, base64: full.base64!, thumbBase64: thumb.base64! };
 }
 
 // İzin reddedildiğinde eskiden sessizce undefined dönülüyordu: kullanıcı + butonuna

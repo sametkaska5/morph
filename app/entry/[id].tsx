@@ -13,7 +13,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import Feather from "@expo/vector-icons/Feather";
 import { supabase } from "@/lib/supabase";
-import { getPhotoUrl } from "@/lib/storage";
+import { getPhotoUrl, photoCacheKey } from "@/lib/storage";
 
 function ActionMenuOption({
   icon,
@@ -62,7 +62,7 @@ function useEntryDetail(entryId: string) {
       if (error) throw error;
 
       const photoPath = (data as any)?.photos?.storage_path;
-      const photoUrl = photoPath ? await getPhotoUrl(photoPath) : null;
+      const photoUrl = photoPath ? await getPhotoUrl(photoPath, "full") : null;
 
       return { ...data, photoUrl, photoPath };
     },
@@ -74,12 +74,16 @@ function useEntryDetail(entryId: string) {
 async function deleteEntry(entryId: string) {
   const { data: photos, error: photoError } = await supabase
     .from("photos")
-    .select("storage_path")
+    .select("storage_path, thumb_path")
     .eq("entry_id", entryId);
 
   if (photoError) throw photoError;
 
-  const paths = (photos ?? []).map((p: any) => p.storage_path);
+  // Tam boy kopyanın yanında küçük kopyayı da siliyoruz, yoksa storage'da
+  // yetim thumbnail dosyaları birikir.
+  const paths = (photos ?? []).flatMap(
+    (p: any) => [p.storage_path, p.thumb_path].filter(Boolean) as string[]
+  );
 
   if (paths.length > 0) {
     // cover_photo_id, entries'i referans aldığı için önce onu temizlemek gerekiyor,
@@ -183,7 +187,12 @@ export default function EntryDetail() {
           <Image
             // cacheKey stabil storage yoluna bağlı — imzalı URL token'ı değişse de
             // (feed/ana ekranla aynı fotoğraf) cache isabet eder, yeniden indirmez.
-            source={{ uri: data.photoUrl, cacheKey: (data as any).photoPath ?? undefined }}
+            source={{
+              uri: data.photoUrl,
+              cacheKey: (data as any).photoPath
+                ? photoCacheKey((data as any).photoPath, "full")
+                : undefined,
+            }}
             style={{ width: "100%", height: "100%" }}
             contentFit="cover"
             cachePolicy="memory-disk"

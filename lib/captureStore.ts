@@ -1,6 +1,8 @@
 import { create } from "zustand";
 
-type CapturedPhoto = { uri: string; base64: string; takenAt?: string } | null;
+// thumbBase64 opsiyonel: üretimi başarısız olursa akış durmasın, sadece
+// thumbnail'siz devam edilsin (okuyan taraf tam boya geri düşer).
+type CapturedPhoto = { uri: string; base64: string; thumbBase64?: string; takenAt?: string } | null;
 
 interface CaptureStore {
   photo: CapturedPhoto;

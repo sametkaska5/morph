@@ -8,7 +8,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming } from "react-na
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Feather from "@expo/vector-icons/Feather";
 import { supabase } from "@/lib/supabase";
-import { getPhotoUrls } from "@/lib/storage";
+import { getPhotoUrls, photoCacheKey } from "@/lib/storage";
 import { useAuth } from "@/lib/useAuth";
 import { useUnitPreference, displayUnit, toDisplayValue, type UnitPref } from "@/lib/units";
 import { openCapturePicker } from "@/lib/capture";
@@ -50,7 +50,7 @@ function useCapsuleEntries() {
       if (error) throw error;
 
       const paths = (data ?? []).map((e: any) => e.photos?.storage_path).filter(Boolean) as string[];
-      const urlMap = await getPhotoUrls(paths);
+      const urlMap = await getPhotoUrls(paths, "full");
 
       return (data ?? []).map((e: any) => ({
         id: e.id,
@@ -130,7 +130,10 @@ function CapsulePage({
             // URL'ye göre anahtarlanan disk cache aynı fotoğrafı her seferinde
             // yeniden indiriyordu. cacheKey path'e bağlanınca token dönse de cache
             // isabet ediyor ve tekrar indirme olmuyor.
-            source={{ uri: entry.photoUrl, cacheKey: entry.photoPath ?? undefined }}
+            source={{
+              uri: entry.photoUrl,
+              cacheKey: entry.photoPath ? photoCacheKey(entry.photoPath, "full") : undefined,
+            }}
             style={{ flex: 1 }}
             contentFit="cover"
             cachePolicy="memory-disk"

@@ -191,13 +191,21 @@ function CapsulePage({
           ) : null}
         </View>
 
+        {/* Bu köşedeki buton eskiden kaydı BÜYÜTÜP detay ekranını açıyordu.
+            Büyütme şimdilik kaldırıldı; buton yerinde duruyor çünkü ileride
+            buraya ANTRENMAN eklenecek. O gelene kadar slot boş durmasın diye
+            düzenleme aksiyonunu buraya aldık — kart çevrildiğinde erişilebiliyor.
+
+            NOT: konum düz bir style objesiyle veriliyor, fonksiyon-biçimli
+            style ile DEĞİL. Daha önce bu butonun tam olarak burada yanlış
+            konumlandığı bir hata yaşandı; o yüzden bu hâli koruyoruz. */}
         <Pressable
           onPress={(e) => {
             e.stopPropagation();
-            router.push(`/entry/${entry.id}`);
+            router.push(`/entry/edit/${entry.id}`);
           }}
           accessibilityRole="button"
-          accessibilityLabel="Anı detayını aç"
+          accessibilityLabel="Anıyı düzenle"
           style={{
             position: "absolute",
             bottom: 24,
@@ -205,7 +213,7 @@ function CapsulePage({
           }}
           className="w-14 h-14 rounded-full bg-surface border border-border items-center justify-center"
         >
-          <Feather name="maximize-2" size={24} color="#8CE05A" />
+          <Feather name="edit-2" size={24} color="#8CE05A" />
         </Pressable>
       </Animated.View>
 

@@ -44,7 +44,7 @@ function SettingsRow({ icon, label, value, danger, onPress }: any) {
       <Feather name={icon} size={16} color={danger ? "#D9705A" : "#8CE05A"} />
       <Text className={`flex-1 text-base ${danger ? "text-danger" : "text-text"}`}>{label}</Text>
       {value ? <Text className="text-textMuted text-sm mr-1">{value}</Text> : null}
-      {!danger && <Feather name="chevron-right" size={15} color="#5C5A50" />}
+      {!danger && <Feather name="chevron-right" size={15} color="#8B8A82" />}
     </Pressable>
   );
 }

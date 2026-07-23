@@ -63,7 +63,7 @@ export default function HelpScreen() {
       >
         <Feather name="mail" size={16} color={ACCENT} />
         <Text className="text-text text-base flex-1">Geri bildirim gönder</Text>
-        <Feather name="chevron-right" size={15} color="#5C5A50" />
+        <Feather name="chevron-right" size={15} color="#8B8A82" />
       </Pressable>
 
       <View className="bg-surface border border-border rounded-card overflow-hidden mb-5">
@@ -74,7 +74,7 @@ export default function HelpScreen() {
         >
           <Feather name="shield" size={16} color={ACCENT} />
           <Text className="flex-1 text-text text-base">Gizlilik Politikası</Text>
-          <Feather name="chevron-right" size={15} color="#5C5A50" />
+          <Feather name="chevron-right" size={15} color="#8B8A82" />
         </Pressable>
         <Pressable
           onPress={() => router.push("/terms")}
@@ -83,7 +83,7 @@ export default function HelpScreen() {
         >
           <Feather name="file-text" size={16} color={ACCENT} />
           <Text className="flex-1 text-text text-base">Kullanım Şartları</Text>
-          <Feather name="chevron-right" size={15} color="#5C5A50" />
+          <Feather name="chevron-right" size={15} color="#8B8A82" />
         </Pressable>
       </View>
 

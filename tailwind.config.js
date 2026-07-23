@@ -24,9 +24,16 @@ module.exports = {
         accentSoft: "rgba(140,224,90,0.14)",
 
         // Metin
-        text: "#F5F3EC",
-        textMuted: "#8B8A82",
-        textFaint: "#5C5A50",
+        //
+        // Kontrast notu: eski textFaint (#5C5A50) kart yüzeyinde (#12140D)
+        // yalnızca 2.68:1 kontrast veriyordu — WCAG AA eşiğinin (4.5:1) çok
+        // altında, okunması gerçekten zordu. Skalayı bir kademe yukarı kaydırdık:
+        // textFaint artık eski textMuted değerini (kanıtlanmış 5.35:1) alıyor,
+        // textMuted de ondan bir tık parlıyor. Sadece textFaint'i aydınlatsaydık
+        // iki token neredeyse aynı renge gelip hiyerarşi çökerdi.
+        text: "#F5F3EC", // birincil
+        textMuted: "#ADABA1", // ikincil — 8.1:1
+        textFaint: "#8B8A82", // üçüncül / etiket — 5.35:1
 
         // Kamera tarih damgası
         stamp: "#FF7A3D",

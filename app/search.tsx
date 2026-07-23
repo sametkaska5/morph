@@ -69,7 +69,7 @@ function ResultRow({ entry }: { entry: SearchEntry }) {
           </Text>
         ) : null}
       </View>
-      <Feather name="chevron-right" size={15} color="#5C5A50" />
+      <Feather name="chevron-right" size={15} color="#8B8A82" />
     </Pressable>
   );
 }
@@ -107,12 +107,12 @@ export default function SearchScreen() {
       </View>
 
       <View className="flex-row items-center gap-2 bg-surface border border-border rounded-button px-4 mb-4" style={{ height: 52 }}>
-        <Feather name="search" size={17} color="#5C5A50" />
+        <Feather name="search" size={17} color="#8B8A82" />
         <TextInput
           value={query}
           onChangeText={setQuery}
           placeholder="Tarih veya not ara (ör. temmuz, tatil)"
-          placeholderTextColor="#5C5A50"
+          placeholderTextColor="#8B8A82"
           autoFocus
           accessibilityLabel="Arama kutusu"
           className="flex-1 text-text text-base"
@@ -125,7 +125,7 @@ export default function SearchScreen() {
             accessibilityRole="button"
             accessibilityLabel="Aramayı temizle"
           >
-            <Feather name="x" size={17} color="#5C5A50" />
+            <Feather name="x" size={17} color="#8B8A82" />
           </Pressable>
         ) : null}
       </View>

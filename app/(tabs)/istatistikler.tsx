@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { View, ScrollView, Pressable, ActivityIndicator, Alert, Image, Modal } from "react-native";
 import { Text } from "@/components/Typography";
-import Svg, { Path, Circle, Defs, LinearGradient, Stop } from "react-native-svg";
+import Svg, { Path, Circle, Line, Defs, LinearGradient, Stop } from "react-native-svg";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
@@ -24,8 +24,14 @@ try {
   MediaLibrary = null;
 }
 
-const CHART_W = 300;
 const CHART_H = 110;
+/** Çizgi yumuşatma gücü. Fazlası veriyi çarpıtan taşmalara yol açıyor. */
+const SMOOTHING = 0.18;
+/** Bu sayıdan fazla veri noktası varsa tek tek noktalar çizgiyi boğuyor. */
+const MAX_VISIBLE_DOTS = 24;
+const TOOLTIP_W = 96;
+
+type ChartPoint = { x: number; y: number };
 
 function useMeasurementSeries(userId: string | undefined, typeId: string | undefined) {
   return useQuery({
@@ -118,23 +124,63 @@ function useShareablePhotoEntries(userId: string | undefined) {
   });
 }
 
-function buildChartPath(values: number[]) {
-  if (values.length === 0) return { line: "", area: "" };
+/**
+ * Noktaları köşesiz bir eğriye çevirir (Catmull-Rom → kübik Bézier).
+ * Eskiden düz `L` segmentleriyle çiziliyordu; her veri noktasında keskin bir
+ * köşe oluşuyordu.
+ */
+function smoothLine(points: ChartPoint[]) {
+  if (points.length === 0) return "";
+  if (points.length === 1) return `M${points[0].x},${points[0].y}`;
+
+  let d = `M${points[0].x},${points[0].y}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    // Uçlarda komşu nokta olmadığı için noktanın kendisini kullanıyoruz —
+    // böylece ilk/son segment dışarı taşmadan düzleşiyor.
+    const prev = points[i - 1] ?? points[i];
+    const curr = points[i];
+    const next = points[i + 1];
+    const after = points[i + 2] ?? next;
+
+    const cp1x = curr.x + (next.x - prev.x) * SMOOTHING;
+    const cp1y = curr.y + (next.y - prev.y) * SMOOTHING;
+    const cp2x = next.x - (after.x - curr.x) * SMOOTHING;
+    const cp2y = next.y - (after.y - curr.y) * SMOOTHING;
+
+    d += ` C${cp1x},${cp1y} ${cp2x},${cp2y} ${next.x},${next.y}`;
+  }
+  return d;
+}
+
+/**
+ * Grafiği ölçülen GERÇEK genişliğe göre kurar. Eskiden sabit bir viewBox (300)
+ * vardı ve preserveAspectRatio yüzünden kart daha genişse grafik ortada dar
+ * kalıyordu. Gerçek genişlikle SVG birimi = ekran noktası oluyor, bu da hem
+ * grafiğin tam yayılmasını hem de dokunma baloncuğunun koordinat dönüşümü
+ * olmadan konumlandırılmasını sağlıyor.
+ */
+function buildChartPath(values: number[], width: number) {
+  if (values.length === 0 || width <= 0) {
+    return { line: "", area: "", points: [] as ChartPoint[] };
+  }
+
   const min = Math.min(...values);
   const max = Math.max(...values);
   const range = max - min || 1;
-  const stepX = values.length > 1 ? CHART_W / (values.length - 1) : 0;
+  const stepX = values.length > 1 ? width / (values.length - 1) : 0;
 
-  const points = values.map((v, i) => {
-    const x = i * stepX;
-    const y = CHART_H - ((v - min) / range) * (CHART_H - 20) - 10;
-    return { x, y };
-  });
+  const points: ChartPoint[] = values.map((v, i) => ({
+    // Tek veri varsa ortala, yoksa sola yapışık tek bir nokta kalıyor.
+    x: values.length === 1 ? width / 2 : i * stepX,
+    y: CHART_H - ((v - min) / range) * (CHART_H - 20) - 10,
+  }));
 
-  const line = points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
-  const area = `${line} L${points[points.length - 1].x},${CHART_H} L0,${CHART_H} Z`;
+  const line = smoothLine(points);
+  const first = points[0];
+  const last = points[points.length - 1];
+  const area = `${line} L${last.x},${CHART_H} L${first.x},${CHART_H} Z`;
 
-  return { line, area, lastPoint: points[points.length - 1] };
+  return { line, area, points };
 }
 
 // Gün kutusuna basınca dönen 3 durumlu döngü: boş → off day (bilinçli dinlenme) →
@@ -151,6 +197,10 @@ export default function Istatistikler() {
   const queryClient = useQueryClient();
   const { data: types } = useMeasurementTypes(user?.id);
   const [activeTypeId, setActiveTypeId] = useState<string | null>(null);
+  /** Grafikte dokunulan nokta. null = seçim yok, başlıkta son değer gösterilir. */
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  /** Grafiğin ölçülen gerçek genişliği (bkz. buildChartPath). */
+  const [chartW, setChartW] = useState(0);
   const [shareModalVisible, setShareModalVisible] = useState(false);
   const [selectedSharePhotoId, setSelectedSharePhotoId] = useState<string | null>(null);
   const [sharePendingAction, setSharePendingAction] = useState<"save" | "share" | null>(null);
@@ -255,9 +305,23 @@ export default function Istatistikler() {
   const values = activeType
     ? (series?.map((s) => toDisplayValue(s.value, activeType.unit, unitPref)) ?? [])
     : series?.map((s) => s.value) ?? [];
-  const { line, area, lastPoint } = buildChartPath(values);
-  const currentValue = values[values.length - 1];
-  const previousValue = values[values.length - 2];
+  const { line, area, points } = buildChartPath(values, chartW);
+
+  // Seçili nokta ölçüm tipi değişince geçersizleşiyor (yeni serinin uzunluğu
+  // farklı olabilir) — sınır dışıysa yok sayıyoruz.
+  const activeIndex = selectedIndex != null && selectedIndex < values.length ? selectedIndex : null;
+  const selectedPoint = activeIndex != null ? points[activeIndex] : null;
+
+  // Başlıktaki büyük değer: bir nokta seçiliyse o günün değeri, yoksa sonuncusu.
+  const currentValue = activeIndex != null ? values[activeIndex] : values[values.length - 1];
+  const previousValue = activeIndex != null ? values[activeIndex - 1] : values[values.length - 2];
+  const selectedDate = activeIndex != null ? series?.[activeIndex]?.date ?? null : null;
+  const lastPoint = points[points.length - 1];
+
+  // Başka bir ölçüme geçilince önceki serinin seçili noktası anlamsız kalıyor.
+  useEffect(() => {
+    setSelectedIndex(null);
+  }, [currentTypeId]);
   const delta = currentValue != null && previousValue != null ? Number((currentValue - previousValue).toFixed(1)) : null;
   const isGoodDelta =
     delta != null && activeType
@@ -384,17 +448,113 @@ export default function Istatistikler() {
               ) : null}
             </View>
 
-            <Svg width="100%" height={CHART_H} viewBox={`0 0 ${CHART_W} ${CHART_H}`}>
-              <Defs>
-                <LinearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                  <Stop offset="0%" stopColor="#8CE05A" stopOpacity={0.35} />
-                  <Stop offset="100%" stopColor="#8CE05A" stopOpacity={0} />
-                </LinearGradient>
-              </Defs>
-              <Path d={area} fill="url(#areaGrad)" />
-              <Path d={line} fill="none" stroke="#8CE05A" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
-              {lastPoint ? <Circle cx={lastPoint.x} cy={lastPoint.y} r={4.5} fill="#0B0D0A" stroke="#8CE05A" strokeWidth={2.5} /> : null}
-            </Svg>
+            <View onLayout={(e) => setChartW(e.nativeEvent.layout.width)} style={{ height: CHART_H }}>
+              {chartW > 0 && points.length > 0 ? (
+                <>
+                  <Svg width={chartW} height={CHART_H}>
+                    <Defs>
+                      <LinearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                        <Stop offset="0%" stopColor="#8CE05A" stopOpacity={0.35} />
+                        <Stop offset="100%" stopColor="#8CE05A" stopOpacity={0} />
+                      </LinearGradient>
+                    </Defs>
+                    <Path d={area} fill="url(#areaGrad)" />
+                    <Path d={line} fill="none" stroke="#8CE05A" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+
+                    {selectedPoint ? (
+                      <Line
+                        x1={selectedPoint.x}
+                        y1={0}
+                        x2={selectedPoint.x}
+                        y2={CHART_H}
+                        stroke="#8CE05A"
+                        strokeOpacity={0.35}
+                        strokeWidth={1}
+                        strokeDasharray="3 4"
+                      />
+                    ) : null}
+
+                    {/* Küçük noktalar dokunulabilir olduğunu belli ediyor. Veri
+                        kalabalıklaşınca çizgiyi boğmasın diye gizleniyor. */}
+                    {/* Dolu accent nokta + koyu kontur: nokta çizginin kendisiyle
+                        aynı renkte olduğu için, arkaplan renginde ince bir halka
+                        olmadan çizgiye karışıp seçilebilir olduğu anlaşılmıyordu. */}
+                    {points.length <= MAX_VISIBLE_DOTS
+                      ? points.map((p, i) =>
+                          i === activeIndex ? null : (
+                            <Circle
+                              key={`dot-${i}`}
+                              cx={p.x}
+                              cy={p.y}
+                              r={3.5}
+                              fill="#8CE05A"
+                              stroke="#0B0D0A"
+                              strokeWidth={1.5}
+                            />
+                          )
+                        )
+                      : null}
+
+                    {/* Son ve seçili nokta içi boş halka olarak çiziliyor —
+                        dolu noktalardan ayrışıp hiyerarşiyi koruyor. */}
+                    {activeIndex == null && lastPoint ? (
+                      <Circle cx={lastPoint.x} cy={lastPoint.y} r={5} fill="#0B0D0A" stroke="#8CE05A" strokeWidth={2.5} />
+                    ) : null}
+
+                    {selectedPoint ? (
+                      <Circle cx={selectedPoint.x} cy={selectedPoint.y} r={6} fill="#0B0D0A" stroke="#8CE05A" strokeWidth={3} />
+                    ) : null}
+
+                  </Svg>
+
+                  {/* Dokunmayı SVG şekilleri yerine üstteki bu katman yakalıyor:
+                      react-native-svg'de şeffaf dolgulu şekillerin isabet
+                      algılaması platforma göre değişebiliyor. Ayrıca tam noktaya
+                      basmak gerekmiyor — en yakın nokta seçiliyor. */}
+                  <Pressable
+                    onPress={(e) => {
+                      const x = e.nativeEvent.locationX;
+                      let nearest = 0;
+                      let bestDistance = Infinity;
+                      points.forEach((p, i) => {
+                        const distance = Math.abs(p.x - x);
+                        if (distance < bestDistance) {
+                          bestDistance = distance;
+                          nearest = i;
+                        }
+                      });
+                      setSelectedIndex((prev) => (prev === nearest ? null : nearest));
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel="Grafikte bir güne dokunarak o günün değerini gör"
+                    style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+                  />
+
+                  {selectedPoint && selectedDate ? (
+                    <View
+                      pointerEvents="none"
+                      style={{
+                        position: "absolute",
+                        width: TOOLTIP_W,
+                        // Baloncuk grafiğin dışına taşmasın diye yatayda sınırlanıyor.
+                        left: Math.min(Math.max(selectedPoint.x - TOOLTIP_W / 2, 0), Math.max(chartW - TOOLTIP_W, 0)),
+                        // Nokta tepedeyse baloncuk yukarı sığmıyor, altına alıyoruz.
+                        top: selectedPoint.y > 48 ? selectedPoint.y - 48 : selectedPoint.y + 14,
+                      }}
+                    >
+                      <View className="bg-bg border border-accent rounded-lg px-2 py-1.5 items-center">
+                        <Text className="text-textFaint text-xs">
+                          {new Date(selectedDate).toLocaleDateString("tr-TR", { day: "numeric", month: "short" })}
+                        </Text>
+                        <Text className="text-text text-sm font-semibold">
+                          {currentValue} {activeType ? displayUnit(activeType.unit, unitPref) : ""}
+                        </Text>
+                      </View>
+                    </View>
+                  ) : null}
+                </>
+              ) : null}
+            </View>
           </>
         )}
       </View>
@@ -529,7 +689,7 @@ export default function Istatistikler() {
                         >
                           <Image source={{ uri: photo.photoUrl! }} style={{ width: 90, height: 90 }} resizeMode="cover" />
                           <View className="px-2 py-1 bg-surface">
-                            <Text className="text-textFaint text-[11px]">{new Date(photo.date).toLocaleDateString("tr-TR", { day: "numeric", month: "short" })}</Text>
+                            <Text className="text-textFaint text-xs">{new Date(photo.date).toLocaleDateString("tr-TR", { day: "numeric", month: "short" })}</Text>
                           </View>
                         </Pressable>
                       );

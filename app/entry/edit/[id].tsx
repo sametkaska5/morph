@@ -260,7 +260,9 @@ export default function EditEntry() {
         <Text className="text-textFaint text-xs font-semibold uppercase tracking-wide mb-3">Ölçümler</Text>
         {allTypes?.map((t, i) => (
           <View key={t.id} className="flex-row justify-between items-center mb-3">
-            <Text className="text-textMuted text-sm capitalize">{t.name}</Text>
+            {/* Ölçüm adı ikincil bir etiket değil, girilen değerin ne olduğunu
+                söyleyen asıl metin — 14pt gri yerine 16pt gövde boyutu. */}
+            <Text className="text-textMuted text-base capitalize">{t.name}</Text>
             <View className="flex-row items-center gap-2">
               <TextInput
                 ref={(el) => { inputRefs.current[i] = el; }}
@@ -268,7 +270,7 @@ export default function EditEntry() {
                 onChangeText={(val) => setValues((prev) => ({ ...prev, [t.id]: val }))}
                 keyboardType="decimal-pad"
                 placeholder={`— ${displayUnit(t.unit, unitPref)}`}
-                placeholderTextColor="#5C5A50"
+                placeholderTextColor="#8B8A82"
                 returnKeyType="next"
                 blurOnSubmit={false}
                 // Klavye açıkken odak buraya geçtiğinde kendiliğinden kaydırma
@@ -292,7 +294,7 @@ export default function EditEntry() {
                   else noteRef.current?.focus();
                 }}
               >
-                <Feather name="chevron-right" size={16} color="#5C5A50" />
+                <Feather name="chevron-right" size={16} color="#8B8A82" />
               </Pressable>
             </View>
           </View>
@@ -305,7 +307,7 @@ export default function EditEntry() {
         onChangeText={setNote}
         accessibilityLabel="Not"
         placeholder="Not..."
-        placeholderTextColor="#888"
+        placeholderTextColor="#8B8A82"
         onFocus={() => revealField(noteRef.current)}
         className="bg-surface border border-border text-text text-base p-4 rounded-card h-28 mb-6"
         multiline

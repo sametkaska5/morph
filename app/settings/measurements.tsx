@@ -154,7 +154,7 @@ export default function MeasurementSettingsScreen() {
               value={name}
               onChangeText={setName}
               placeholder="İsim (örn. Kol Çevresi)"
-              placeholderTextColor="#5C5A50"
+              placeholderTextColor="#8B8A82"
               onFocus={() => revealField(nameRef.current)}
               className="text-text text-base bg-bg rounded-lg px-3 py-3 mb-3"
             />
@@ -163,7 +163,7 @@ export default function MeasurementSettingsScreen() {
               value={unit}
               onChangeText={setUnit}
               placeholder="Birim (örn. cm)"
-              placeholderTextColor="#5C5A50"
+              placeholderTextColor="#8B8A82"
               onFocus={() => revealField(unitRef.current)}
               className="text-text text-base bg-bg rounded-lg px-3 py-3 mb-3"
             />

@@ -169,7 +169,9 @@ export default function NewEntry() {
         <Text className="text-textFaint text-xs font-semibold mb-2 tracking-wide">ÖLÇÜMLER</Text>
         {types?.map((t, i) => (
           <View key={t.id} className="flex-row items-center justify-between py-2">
-            <Text className="text-textMuted text-sm capitalize">{t.name}</Text>
+            {/* Ölçüm adı ikincil bir etiket değil, girilen değerin ne olduğunu
+                söyleyen asıl metin — 14pt gri yerine 16pt gövde boyutu. */}
+            <Text className="text-textMuted text-base capitalize">{t.name}</Text>
             <View className="flex-row items-center gap-2">
               <TextInput
                 ref={(el) => { inputRefs.current[i] = el; }}
@@ -177,7 +179,7 @@ export default function NewEntry() {
                 onChangeText={(v) => setValues((prev) => ({ ...prev, [t.id]: v }))}
                 keyboardType="decimal-pad"
                 placeholder={`— ${displayUnit(t.unit, unitPref)}`}
-                placeholderTextColor="#5C5A50"
+                placeholderTextColor="#8B8A82"
                 returnKeyType="next"
                 blurOnSubmit={false}
                 // Klavye açıkken odak buraya geçtiğinde kendiliğinden kaydırma
@@ -201,7 +203,7 @@ export default function NewEntry() {
                   else noteRef.current?.focus();
                 }}
               >
-                <Feather name="chevron-right" size={16} color="#5C5A50" />
+                <Feather name="chevron-right" size={16} color="#8B8A82" />
               </Pressable>
             </View>
           </View>
@@ -215,7 +217,7 @@ export default function NewEntry() {
           value={note}
           onChangeText={setNote}
           placeholder="birkaç kelime yaz..."
-          placeholderTextColor="#5C5A50"
+          placeholderTextColor="#8B8A82"
           accessibilityLabel="Not"
           onFocus={() => revealField(noteRef.current)}
           multiline

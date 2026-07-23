@@ -60,7 +60,7 @@ export default function AuthScreen() {
           autoCapitalize="none"
           keyboardType="email-address"
           placeholder="sen@ornek.com"
-          placeholderTextColor="#5C5A50"
+          placeholderTextColor="#8B8A82"
           accessibilityLabel="E-posta"
           style={{ height: 52, textAlignVertical: "center" }}
           className="bg-surface border border-border rounded-button px-4 text-text text-base mb-4"
@@ -72,7 +72,7 @@ export default function AuthScreen() {
           onChangeText={setPassword}
           secureTextEntry
           placeholder="••••••••"
-          placeholderTextColor="#5C5A50"
+          placeholderTextColor="#8B8A82"
           accessibilityLabel="Şifre"
           style={{ height: 52, textAlignVertical: "center" }}
           className="bg-surface border border-border rounded-button px-4 text-text text-base mb-2"

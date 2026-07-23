@@ -86,7 +86,7 @@ export default function ForgotPasswordScreen() {
           autoCapitalize="none"
           keyboardType="email-address"
           placeholder="sen@ornek.com"
-          placeholderTextColor="#5C5A50"
+          placeholderTextColor="#8B8A82"
           accessibilityLabel="E-posta"
           style={{ height: 52, textAlignVertical: "center" }}
           className={`bg-surface border border-border rounded-button px-4 text-text text-base mb-4 ${
@@ -102,7 +102,7 @@ export default function ForgotPasswordScreen() {
               onChangeText={setCode}
               keyboardType="number-pad"
               placeholder="8 haneli kod"
-              placeholderTextColor="#5C5A50"
+              placeholderTextColor="#8B8A82"
               accessibilityLabel="Doğrulama kodu"
               style={{ height: 52, textAlignVertical: "center" }}
               className="bg-surface border border-border rounded-button px-4 text-text text-base mb-4"
@@ -114,7 +114,7 @@ export default function ForgotPasswordScreen() {
               onChangeText={setPassword}
               secureTextEntry
               placeholder="••••••••"
-              placeholderTextColor="#5C5A50"
+              placeholderTextColor="#8B8A82"
               accessibilityLabel="Yeni şifre"
               style={{ height: 52, textAlignVertical: "center" }}
               className="bg-surface border border-border rounded-button px-4 text-text text-base mb-2"

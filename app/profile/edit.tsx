@@ -133,7 +133,7 @@ export default function EditProfileScreen() {
         value={name}
         onChangeText={setName}
         placeholder="İsmini yaz"
-        placeholderTextColor="#5C5A50"
+        placeholderTextColor="#8B8A82"
         accessibilityLabel="İsim"
         style={{ height: 52, textAlignVertical: "center" }}
         className="bg-surface border border-border rounded-button px-4 text-text text-base mb-6"

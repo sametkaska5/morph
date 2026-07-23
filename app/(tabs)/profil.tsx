@@ -180,7 +180,7 @@ export default function Profil() {
       )}
 
       <View className="px-4 mb-2">
-        <Text className="text-textFaint text-xs font-semibold uppercase tracking-wide mb-2">Ayarlar</Text>
+        <Text className="text-textFaint text-sm font-semibold uppercase tracking-wide mb-2">Ayarlar</Text>
         <View className="bg-surface border border-border rounded-card overflow-hidden">
           <SettingsRow icon="bell" label="Bildirimler" onPress={() => router.push("/settings/notifications")} />
           <SettingsRow

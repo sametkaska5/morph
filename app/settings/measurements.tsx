@@ -97,7 +97,7 @@ export default function MeasurementSettingsScreen() {
         <ActivityIndicator color={ACCENT} className="mt-10" />
       ) : (
         <>
-          <Text className="text-textFaint text-xs font-semibold mb-2 tracking-wide">SİSTEM ÖLÇÜMLERİ</Text>
+          <Text className="text-textFaint text-sm font-semibold mb-2 tracking-wide">SİSTEM ÖLÇÜMLERİ</Text>
           <View className="bg-surface border border-border rounded-card overflow-hidden mb-5">
             {defaults.map((t, i) => (
               <View
@@ -112,7 +112,7 @@ export default function MeasurementSettingsScreen() {
             ))}
           </View>
 
-          <Text className="text-textFaint text-xs font-semibold mb-2 tracking-wide">YENİ ÖLÇÜMLERİN</Text>
+          <Text className="text-textFaint text-sm font-semibold mb-2 tracking-wide">YENİ ÖLÇÜMLERİN</Text>
           <View className="bg-surface border border-border rounded-card overflow-hidden mb-5">
             {custom.length === 0 ? (
               <Text className="text-textMuted text-sm px-4 py-3">Henüz yeni ölçüm eklemedin.</Text>
@@ -147,7 +147,7 @@ export default function MeasurementSettingsScreen() {
             )}
           </View>
 
-          <Text className="text-textFaint text-xs font-semibold mb-2 tracking-wide">YENİ ÖLÇÜM EKLE</Text>
+          <Text className="text-textFaint text-sm font-semibold mb-2 tracking-wide">YENİ ÖLÇÜM EKLE</Text>
           <View className="bg-surface border border-border rounded-card p-4 mb-6">
             <TextInput
               ref={nameRef}

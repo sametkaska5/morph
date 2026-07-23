@@ -127,13 +127,10 @@ export default function NewEntry() {
           <Feather name="chevron-left" size={22} color="#F5F3EC" />
         </Pressable>
         <Text className="text-text text-xl font-bold">Yeni Kayıt</Text>
-        <Pressable
-          onPress={handleSave}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-        >
-          <Text className="text-accent text-base font-semibold">Kaydet</Text>
-        </Pressable>
+        {/* Kaydet artık altta tam genişlikte birincil buton olarak duruyor
+            (düzenleme ekranıyla aynı desen). Başlığın ortada kalması için
+            sol taraftaki chevron kadar boşluk bırakıyoruz. */}
+        <View style={{ width: 22 }} />
       </View>
 
       {photo?.uri ? (
@@ -145,7 +142,7 @@ export default function NewEntry() {
         style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
         className="bg-surface border border-border rounded-button px-4 py-4 mb-3 flex-row items-center justify-between"
       >
-        <Text className="text-textMuted text-sm">Tarih</Text>
+        <Text className="text-textMuted text-base">Tarih</Text>
         <Text className="text-text text-base font-semibold">
           {date.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
         </Text>
@@ -166,7 +163,7 @@ export default function NewEntry() {
       )}
 
       <View className="bg-surface border border-border rounded-card p-4 mb-3">
-        <Text className="text-textFaint text-xs font-semibold mb-2 tracking-wide">ÖLÇÜMLER</Text>
+        <Text className="text-textFaint text-sm font-semibold mb-2 tracking-wide">ÖLÇÜMLER</Text>
         {types?.map((t, i) => (
           <View key={t.id} className="flex-row items-center justify-between py-2">
             {/* Ölçüm adı ikincil bir etiket değil, girilen değerin ne olduğunu
@@ -211,7 +208,7 @@ export default function NewEntry() {
       </View>
 
       <View className="bg-surface border border-border rounded-card p-4">
-        <Text className="text-textFaint text-xs font-semibold mb-2 tracking-wide">NOT</Text>
+        <Text className="text-textFaint text-sm font-semibold mb-2 tracking-wide">NOT</Text>
         <TextInput
           ref={noteRef}
           value={note}
@@ -225,6 +222,28 @@ export default function NewEntry() {
           maxLength={300}
         />
       </View>
+
+      {/* Birincil aksiyon: üstteki küçük metin bağlantısı yerine altta tam
+          genişlikte dolu buton. Düzenleme ekranıyla birebir aynı desen —
+          iki kardeş ekranda kaydetmenin yeri ve görünümü artık ayrışmıyor. */}
+      <Pressable
+        onPress={handleSave}
+        style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+        accessibilityRole="button"
+        accessibilityLabel="Kaydı kaydet"
+        className="bg-accent p-4 rounded-button items-center mt-6"
+      >
+        <Text className="text-bg text-base font-bold">Kaydet</Text>
+      </Pressable>
+
+      <Pressable
+        onPress={() => router.back()}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+        className="mt-4 items-center mb-8"
+      >
+        <Text className="text-textMuted text-base">İptal</Text>
+      </Pressable>
     </ScrollView>
   );
 }

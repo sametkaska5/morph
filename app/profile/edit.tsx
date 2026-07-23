@@ -128,7 +128,7 @@ export default function EditProfileScreen() {
         <Text className="text-textFaint text-sm mt-3">Fotoğrafı değiştirmek için dokun</Text>
       </View>
 
-      <Text className="text-textFaint text-xs font-semibold mb-2 tracking-wide">İSİM</Text>
+      <Text className="text-textFaint text-sm font-semibold mb-2 tracking-wide">İSİM</Text>
       <TextInput
         value={name}
         onChangeText={setName}

@@ -245,7 +245,7 @@ export default function EditEntry() {
           <Image source={{ uri: displayUri }} className="w-full h-64 rounded-card" resizeMode="cover" />
         ) : (
           <View className="w-full h-64 bg-surface rounded-card items-center justify-center">
-            <Text className="text-textMuted text-sm">Fotoğraf seç</Text>
+            <Text className="text-textMuted text-base">Fotoğraf seç</Text>
           </View>
         )}
 
@@ -257,7 +257,7 @@ export default function EditEntry() {
       </Pressable>
 
       <View className="bg-surface border border-border p-4 rounded-card mb-6">
-        <Text className="text-textFaint text-xs font-semibold uppercase tracking-wide mb-3">Ölçümler</Text>
+        <Text className="text-textFaint text-sm font-semibold uppercase tracking-wide mb-3">Ölçümler</Text>
         {allTypes?.map((t, i) => (
           <View key={t.id} className="flex-row justify-between items-center mb-3">
             {/* Ölçüm adı ikincil bir etiket değil, girilen değerin ne olduğunu
@@ -336,7 +336,7 @@ export default function EditEntry() {
         style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
         className="mt-4 items-center mb-8"
       >
-        <Text className="text-textMuted text-sm">İptal</Text>
+        <Text className="text-textMuted text-base">İptal</Text>
       </Pressable>
     </ScrollView>
   );

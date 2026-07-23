@@ -185,7 +185,7 @@ function CapsulePage({
 
           {entry.note ? (
             <View className="bg-surface border border-border rounded-card p-4">
-              <Text className="text-textFaint text-xs font-semibold mb-1.5 tracking-wide">NOT</Text>
+              <Text className="text-textFaint text-sm font-semibold mb-1.5 tracking-wide">NOT</Text>
               <Text className="text-text text-base leading-6">{entry.note}</Text>
             </View>
           ) : null}

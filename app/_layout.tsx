@@ -1,4 +1,5 @@
 import "../global.css";
+import { useEffect } from "react";
 import { View } from "react-native";
 import { Stack } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -15,8 +16,9 @@ import {
   Inter_600SemiBold,
   Inter_700Bold,
 } from "@expo-google-fonts/inter";
-import { AuthProvider } from "@/lib/useAuth";
+import { AuthProvider, useAuth } from "@/lib/useAuth";
 import { registerEntryMutationDefaults, QUERY_CACHE_STORAGE_KEY } from "@/lib/entryMutations";
+import { maybeSweepOrphans } from "@/lib/orphanSweep";
 import { CaptureOptionsSheet } from "@/components/CaptureOptionsSheet";
 
 // NOT: Buradaki varsayılan font ataması eskiden `Text.defaultProps` ile yapılıyordu.
@@ -52,6 +54,22 @@ const persister = createAsyncStoragePersister({
 // çarpar (bkz: zaman-kapsulu.tsx measurements alanı eklenince yaşanan çökme).
 const PERSIST_CACHE_BUSTER = "2";
 
+// Yetim dosya süpürmesini uygulama açılışında tetikler. Görünür bir şey render
+// etmez. Süpürme fire-and-forget (maybeSweepOrphans kendi içinde günde bir kez
+// çalışır ve hataları yutar); startup'la yarışmasın diye birkaç saniye
+// geciktiriyoruz — asıl veri yüklemesi ve resumePausedMutations öne geçsin.
+function OrphanSweeper() {
+  const { user } = useAuth();
+  useEffect(() => {
+    if (!user) return;
+    const t = setTimeout(() => {
+      maybeSweepOrphans(user.id);
+    }, 5000);
+    return () => clearTimeout(t);
+  }, [user?.id]);
+  return null;
+}
+
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
@@ -78,6 +96,7 @@ export default function RootLayout() {
         }}
       >
         <AuthProvider>
+          <OrphanSweeper />
           <StatusBar style="light" />
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(onboarding)/welcome" />

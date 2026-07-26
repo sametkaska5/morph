@@ -85,6 +85,7 @@ lib/
   capture.ts, captureStore.ts, captureSheetStore.ts   fotoğraf çekim akışı
   entryMutations.ts    kayıt CRUD mutasyonları (offline sync dahil)
   storage.ts           Supabase storage yükleme/imzalı link
+  orphanSweep.ts       hiçbir DB satırının işaret etmediği yetim fotoğrafları temizler (günde bir, açılışta)
   comparison.ts        karşılaştırma mantığı
   profile.ts, profileStats.ts, account.ts   profil & hesap
   measurementTypes.ts, units.ts             ölçümler & birimler

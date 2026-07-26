@@ -25,12 +25,86 @@ import { useUnitPreference, displayUnit, toDisplayValue, toMetricValue } from "@
 
 /* ---------------- FETCH ---------------- */
 
+/**
+ * Düzenleme ekranı hemen HER ZAMAN başka bir ekrandan (anı akışı, detay, ana
+ * ekran) açılıyor ve o ekranlar bu kaydı zaten çekmiş, fotoğrafını da diske
+ * indirmiş oluyor. Ağ sorgusunu beklemek yerine o cache'lerden kaydı anında
+ * bulup placeholder olarak veriyoruz: ekran spinner göstermeden açılıyor,
+ * fotoğraf cacheKey ile diskten geliyor. Gerçek sorgu arka planda tamamlanıp
+ * yerini alıyor (ölçüm değerleri gibi placeholder'da olmayan alanları doldurur).
+ */
+type EntrySeed = {
+  note: string | null;
+  photoUrl: string | null; // tam boy
+  photoPath: string | null; // tam boy storage yolu (cacheKey path@full)
+  thumbUrl: string | null; // küçük kopya (anlık placeholder)
+  thumbPath: string | null; // küçük kopya yolu (cacheKey path@thumb)
+};
+
+function findEntryInCaches(
+  queryClient: ReturnType<typeof useQueryClient>,
+  entryId: string
+): EntrySeed | null {
+  const seed: EntrySeed = { note: null, photoUrl: null, photoPath: null, thumbUrl: null, thumbPath: null };
+  let found = false;
+
+  // Anı akışı (sonsuz sorgu) ve detay ekranı: TAM BOY photoUrl + photoPath.
+  const capsule = queryClient.getQueryData<{ pages: any[][] }>(["entries", "capsule"]);
+  for (const page of capsule?.pages ?? []) {
+    const hit = page.find((e: any) => e.id === entryId);
+    if (hit) {
+      seed.note = hit.note ?? null;
+      seed.photoUrl = hit.photoUrl ?? null;
+      seed.photoPath = hit.photoPath ?? null;
+      found = true;
+      break;
+    }
+  }
+  if (!seed.photoUrl) {
+    const detail = queryClient.getQueryData<any>(["entry", entryId]);
+    if (detail) {
+      seed.note = seed.note ?? detail.note ?? null;
+      seed.photoUrl = detail.photoUrl ?? null;
+      seed.photoPath = detail.photoPath ?? null;
+      found = true;
+    }
+  }
+
+  // Ana ekran ızgarası: KÜÇÜK kopya (thumb). Tam boy diskte olmasa da bu genelde
+  // cache'te oluyor ve anlık placeholder olarak gösterilebiliyor.
+  const timeline = queryClient.getQueryData<any[]>(["entries", "timeline"]);
+  const gridHit = timeline?.find((e: any) => e.id === entryId);
+  if (gridHit?.cover_photo_url) {
+    seed.thumbUrl = gridHit.cover_photo_url;
+    seed.thumbPath = gridHit.cover_photo_path ?? null;
+    found = true;
+  }
+
+  return found ? seed : null;
+}
+
 function useEntry(entryId: string) {
+  const queryClient = useQueryClient();
   return useQuery({
     queryKey: ["entry", "edit", entryId],
     // İmzalı linkler 6 saat geçerli; ekranı her açışta sıfırdan çekmek yerine
     // cache'ten anında gösteriyoruz (uygulamanın geri kalanıyla aynı süre).
     staleTime: 1000 * 60 * 30,
+    // Fotoğrafı ve notu anında gösterebilmek için başka ekranların cache'inden
+    // tohumla; gerçek fetch tamamlanınca ölçümlerle birlikte tam veri gelir.
+    placeholderData: () => {
+      const seed = findEntryInCaches(queryClient, entryId);
+      if (!seed) return undefined;
+      return {
+        id: entryId,
+        note: seed.note,
+        photoUrl: seed.photoUrl,
+        photoPath: seed.photoPath,
+        thumbUrl: seed.thumbUrl,
+        thumbPath: seed.thumbPath,
+        measurement_values: [],
+      } as any;
+    },
     queryFn: async () => {
       const { data, error } = await supabase
         .from("entries")
@@ -42,15 +116,21 @@ function useEntry(entryId: string) {
 
       if (error) throw error;
 
-      // İmzalı linki BURADA üretiyoruz. Eskiden bu iş render sonrası bir
+      // İmzalı linkleri BURADA üretiyoruz. Eskiden bu iş render sonrası bir
       // useEffect'te yapılıyordu: kayıt sorgusu bitiyor → efekt çalışıyor →
       // imzalama isteği gidiyor → ancak ondan sonra fotoğraf inmeye başlıyordu.
-      // Üç ağ turu arka arkaya bekleniyordu; artık ikisi tek sorguda ve sonuç
-      // React Query cache'ine giriyor.
-      const photoPath = coverPhotoRow<{ storage_path: string }>(data)?.storage_path ?? null;
-      const photoUrl = photoPath ? await getPhotoUrl(photoPath, "full").catch(() => null) : null;
+      // Tam boy VE küçük kopyayı paralel imzalıyoruz; küçük kopya, tam boy diskte
+      // yoksa anlık placeholder olarak gösterilip "boş kare" beklemesini önlüyor.
+      const coverRow = coverPhotoRow<{ storage_path: string; thumb_path?: string | null }>(data);
+      const photoPath = coverRow?.storage_path ?? null;
+      const thumbPath = coverRow?.thumb_path ?? null;
 
-      return { ...data, photoUrl, photoPath };
+      const [photoUrl, thumbUrl] = await Promise.all([
+        photoPath ? getPhotoUrl(photoPath, "full").catch(() => null) : Promise.resolve(null),
+        thumbPath ? getPhotoUrl(thumbPath).catch(() => null) : Promise.resolve(null),
+      ]);
+
+      return { ...data, photoUrl, photoPath, thumbUrl, thumbPath };
     },
   });
 }
@@ -92,13 +172,28 @@ export default function EditEntry() {
       ? photoCacheKey((data as any).photoPath, "full")
       : undefined;
 
+  // Tam boy diskte yoksa gösterilecek anlık düşük çözünürlüklü kopya. Yeni
+  // seçilen yerel fotoğrafta placeholder'a gerek yok (dosya zaten cihazda).
+  const placeholderSource =
+    !localUri && (data as any)?.thumbUrl
+      ? {
+          uri: (data as any).thumbUrl,
+          cacheKey: (data as any).thumbPath
+            ? photoCacheKey((data as any).thumbPath, "thumb")
+            : undefined,
+        }
+      : undefined;
+
   /* INIT */
   useEffect(() => {
     if (data?.note) setNote(data.note);
 
     // Kör photos[0] yerine cover_photo_id ile eşleşen kapak satırını al — birden
     // fazla fotoğraf satırı olan (eski) kayıtlarda yanlış fotoğrafı göstermesin.
-    const existingPath = coverPhotoRow<{ storage_path: string }>(data)?.storage_path;
+    // Placeholder verisinde photos[] yok, onun yerine düz photoPath geliyor —
+    // ikisinden hangisi varsa onu kullan ki kaydetme mantığı doğru path'i bilsin.
+    const existingPath =
+      coverPhotoRow<{ storage_path: string }>(data)?.storage_path ?? (data as any)?.photoPath ?? null;
     if (existingPath) setPhotoPath(existingPath);
 
     if (data?.measurement_values) {
@@ -269,6 +364,11 @@ export default function EditEntry() {
         {displayUri ? (
           <Image
             source={{ uri: displayUri, cacheKey: displayCacheKey }}
+            // Tam boy diskte yoksa küçük kopya anında görünsün; boş kare
+            // beklemesi yerine kullanıcı düşük çözünürlüklü hâli hemen görüyor,
+            // tam boy hazır olunca üstüne geçiyor.
+            placeholder={placeholderSource}
+            placeholderContentFit="cover"
             // Boyut className ile DEĞİL style ile veriliyor: NativeWind bu
             // projede expo-image'a className uygulamıyor (uygulamadaki diğer
             // tüm expo-image kullanımları da style kullanıyor). className

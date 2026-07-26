@@ -148,12 +148,15 @@ export default function EditEntry() {
   const { data: unitPref = "metric" } = useUnitPreference(user?.id);
 
   const [note, setNote] = useState("");
-  // storage'daki gerçek yol (DB'ye yazılacak olan)
-  const [photoPath, setPhotoPath] = useState<string | null>(null);
-  const [thumbPath, setThumbPath] = useState<string | null>(null);
-  // SADECE yeni seçilen fotoğrafın yerel uri'si. Kayıtlı fotoğrafın linki artık
-  // sorgudan geliyor (bkz. useEntry) — state'te ayrıca tutup efektle doldurmak
-  // gereksiz bir bekleme turu yaratıyordu.
+  // Yeni seçilen fotoğrafın SIKIŞTIRILMIŞ base64'ü — henüz storage'a YÜKLENMEDEN
+  // burada bekliyor. Yükleme, Kaydet'e basılınca mutation'ın içinde yapılıyor.
+  // Eskiden fotoğraf seçilir seçilmez yükleniyordu: kullanıcı kaydetmeden çıkarsa
+  // (ya da üst üste birkaç foto seçerse) storage'da hiçbir kaydın işaret etmediği
+  // yetim dosyalar kalıyordu. Yüklemeyi kayda ertelemek bu kaynağı tümüyle kapatır.
+  const [pendingImage, setPendingImage] = useState<{ base64: string; thumbBase64: string } | null>(null);
+  // SADECE yeni seçilen fotoğrafın yerel uri'si (önizleme için). Kayıtlı fotoğrafın
+  // linki artık sorgudan geliyor (bkz. useEntry) — state'te ayrıca tutup efektle
+  // doldurmak gereksiz bir bekleme turu yaratıyordu.
   const [localUri, setLocalUri] = useState<string | null>(null);
   // measurement_type_id -> girilen değer (string, boş olabilir)
   const [values, setValues] = useState<Record<string, string>>({});
@@ -188,14 +191,6 @@ export default function EditEntry() {
   useEffect(() => {
     if (data?.note) setNote(data.note);
 
-    // Kör photos[0] yerine cover_photo_id ile eşleşen kapak satırını al — birden
-    // fazla fotoğraf satırı olan (eski) kayıtlarda yanlış fotoğrafı göstermesin.
-    // Placeholder verisinde photos[] yok, onun yerine düz photoPath geliyor —
-    // ikisinden hangisi varsa onu kullan ki kaydetme mantığı doğru path'i bilsin.
-    const existingPath =
-      coverPhotoRow<{ storage_path: string }>(data)?.storage_path ?? (data as any)?.photoPath ?? null;
-    if (existingPath) setPhotoPath(existingPath);
-
     if (data?.measurement_values) {
       const initial: Record<string, string> = {};
       for (const mv of data.measurement_values as any[]) {
@@ -226,23 +221,12 @@ export default function EditEntry() {
 
     setUploading(true);
     try {
-      // Burada eskiden seçilen dosya HİÇ küçültülmeden yükleniyordu — düzenlenen
-      // kayıtların fotoğrafı çekim akışındakinin kat kat üstünde boyutta kalıyor,
-      // her görüntülemede o boyut iniyordu. Artık çekimle aynı işlemden geçiyor.
+      // Fotoğrafı çekim akışıyla aynı şekilde küçültüp sıkıştırıyoruz ama HENÜZ
+      // yüklemiyoruz — base64'ü state'te tutup asıl yüklemeyi Kaydet'e (mutation'a)
+      // bırakıyoruz. Önizlemeyi yerel uri'den gösteriyoruz; kaydetmeden çıkılırsa
+      // storage'a hiç dosya yazılmamış olur (yetim dosya oluşmaz).
       const { base64, thumbBase64 } = await resizeAndCompress(asset.uri);
-
-      const path = await uploadPhoto(user.id, id, base64);
-
-      // Thumbnail opsiyonel — üretilemezse kayıt yine de tam boyla çalışır.
-      let newThumbPath: string | null = null;
-      try {
-        newThumbPath = await uploadThumb(user.id, id, thumbBase64);
-      } catch (err) {
-        console.warn("thumbnail yüklenemedi, tam boy kullanılacak:", err);
-      }
-
-      setPhotoPath(path);
-      setThumbPath(newThumbPath);
+      setPendingImage({ base64, thumbBase64 });
       setLocalUri(asset.uri);
     } finally {
       setUploading(false);
@@ -258,14 +242,27 @@ export default function EditEntry() {
         storage_path: string;
         thumb_path?: string | null;
       }>(data);
-      const photoChanged = photoPath && photoPath !== existingPhotoRow?.storage_path;
 
       let coverPhotoId = (data as any)?.cover_photo_id ?? existingPhotoRow?.id ?? null;
 
-      if (photoChanged) {
+      // Yeni fotoğraf yalnızca kullanıcı gerçekten seçtiyse (pendingImage dolu)
+      // yüklenir — ve yükleme tam da BURADA, kayıt anında yapılır.
+      if (pendingImage) {
+        if (!user) throw new Error("Giriş yapılmamış");
+
+        const storagePath = await uploadPhoto(user.id, id, pendingImage.base64);
+
+        // Thumbnail opsiyonel — üretilemezse kayıt yine de tam boyla çalışır.
+        let newThumbPath: string | null = null;
+        try {
+          newThumbPath = await uploadThumb(user.id, id, pendingImage.thumbBase64);
+        } catch (err) {
+          console.warn("thumbnail yüklenemedi, tam boy kullanılacak:", err);
+        }
+
         const { data: newPhoto, error: photoError } = await supabase
           .from("photos")
-          .insert({ entry_id: id, storage_path: photoPath, thumb_path: thumbPath, order_index: 0 })
+          .insert({ entry_id: id, storage_path: storagePath, thumb_path: newThumbPath, order_index: 0 })
           .select()
           .single();
         if (photoError) throw photoError;

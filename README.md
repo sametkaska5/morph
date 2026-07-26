@@ -94,9 +94,19 @@ lib/
 supabase/migrations/   0001–0008 şema + RLS + storage politikaları
 ```
 
+## Test
+
+Saf mantık katmanı (tarih, birim dönüşümü, kapak-fotoğraf seçimi) `jest-expo` ile test ediliyor:
+
+```bash
+npm test
+```
+
+Testler `lib/__tests__/` altında. Native/Supabase köprüsü gerektirmeyen saf fonksiyonlara odaklı (`date`, `units`, `storage` yardımcıları); `jest.setup.js` sahte Supabase env'i verip AsyncStorage'ı mock'layarak bu modüllerin ağa çıkmadan yüklenmesini sağlıyor.
+
 ## Durum
 
-Ana akışlar uçtan uca çalışır durumda: auth, kayıt oluşturma/düzenleme/silme, offline ekleme + geri senkronizasyon, karşılaştırma, istatistikler, paylaşılabilir kart, bildirimler, profil ve ayarlar. TypeScript temiz derlenir (`npx tsc --noEmit`).
+Ana akışlar uçtan uca çalışır durumda: auth, kayıt oluşturma/düzenleme/silme, offline ekleme + geri senkronizasyon, karşılaştırma, istatistikler, paylaşılabilir kart, bildirimler, profil ve ayarlar. TypeScript temiz derlenir (`npx tsc --noEmit`), testler `npm test` ile geçer.
 
 ## Bilinen açık uçlar
 

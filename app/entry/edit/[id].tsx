@@ -2,9 +2,13 @@ import {
   View,
   Pressable,
   ActivityIndicator,
-  Image,
   ScrollView,
 } from "react-native";
+// expo-image (RN'in kendi Image'ı DEĞİL): anı akışı ve detay ekranı zaten
+// expo-image kullanıyor ve aynı fotoğrafı cacheKey ile diskte tutuyor. RN Image
+// AYRI bir cache kullandığı için buradaki fotoğraf her seferinde sıfırdan
+// iniyordu — oysa aynı dosya zaten indirilmiş durumdaydı.
+import { Image } from "expo-image";
 import { Text, TextInput } from "@/components/Typography";
 import { useLocalSearchParams, router } from "expo-router";
 import { useState, useEffect, useRef } from "react";
@@ -13,7 +17,7 @@ import * as ImagePicker from "expo-image-picker";
 import Feather from "@expo/vector-icons/Feather";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
-import { uploadPhoto, uploadThumb, getPhotoUrl, coverPhotoRow } from "@/lib/storage";
+import { uploadPhoto, uploadThumb, getPhotoUrl, coverPhotoRow, photoCacheKey } from "@/lib/storage";
 import { resizeAndCompress } from "@/lib/capture";
 import { useKeyboardFocus } from "@/lib/useKeyboardFocus";
 import { useMeasurementTypes } from "@/lib/measurementTypes";
@@ -24,6 +28,9 @@ import { useUnitPreference, displayUnit, toDisplayValue, toMetricValue } from "@
 function useEntry(entryId: string) {
   return useQuery({
     queryKey: ["entry", "edit", entryId],
+    // İmzalı linkler 6 saat geçerli; ekranı her açışta sıfırdan çekmek yerine
+    // cache'ten anında gösteriyoruz (uygulamanın geri kalanıyla aynı süre).
+    staleTime: 1000 * 60 * 30,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("entries")
@@ -34,7 +41,16 @@ function useEntry(entryId: string) {
         .single();
 
       if (error) throw error;
-      return data;
+
+      // İmzalı linki BURADA üretiyoruz. Eskiden bu iş render sonrası bir
+      // useEffect'te yapılıyordu: kayıt sorgusu bitiyor → efekt çalışıyor →
+      // imzalama isteği gidiyor → ancak ondan sonra fotoğraf inmeye başlıyordu.
+      // Üç ağ turu arka arkaya bekleniyordu; artık ikisi tek sorguda ve sonuç
+      // React Query cache'ine giriyor.
+      const photoPath = coverPhotoRow<{ storage_path: string }>(data)?.storage_path ?? null;
+      const photoUrl = photoPath ? await getPhotoUrl(photoPath, "full").catch(() => null) : null;
+
+      return { ...data, photoUrl, photoPath };
     },
   });
 }
@@ -55,14 +71,26 @@ export default function EditEntry() {
   // storage'daki gerçek yol (DB'ye yazılacak olan)
   const [photoPath, setPhotoPath] = useState<string | null>(null);
   const [thumbPath, setThumbPath] = useState<string | null>(null);
-  // ekranda gösterilecek geçici imzalı link ya da yeni seçilen fotoğrafın yerel uri'si
-  const [displayUri, setDisplayUri] = useState<string | null>(null);
+  // SADECE yeni seçilen fotoğrafın yerel uri'si. Kayıtlı fotoğrafın linki artık
+  // sorgudan geliyor (bkz. useEntry) — state'te ayrıca tutup efektle doldurmak
+  // gereksiz bir bekleme turu yaratıyordu.
+  const [localUri, setLocalUri] = useState<string | null>(null);
   // measurement_type_id -> girilen değer (string, boş olabilir)
   const [values, setValues] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState(false);
   const inputRefs = useRef<Array<TextInput | null>>([]);
   const noteRef = useRef<TextInput | null>(null);
   const { scrollRef, onScroll, revealField, keyboardPadding } = useKeyboardFocus();
+
+  // Yeni fotoğraf seçildiyse onu, yoksa kayıtlı olanı göster.
+  const displayUri = localUri ?? (data as any)?.photoUrl ?? null;
+  // Kayıtlı fotoğrafı gösterirken cacheKey veriyoruz; akış/detay ekranlarıyla
+  // aynı anahtar olduğu için disk cache'ten anında geliyor. Yeni seçilen yerel
+  // dosyada cacheKey olmaz (henüz storage'da bir karşılığı yok).
+  const displayCacheKey =
+    !localUri && (data as any)?.photoPath
+      ? photoCacheKey((data as any).photoPath, "full")
+      : undefined;
 
   /* INIT */
   useEffect(() => {
@@ -71,10 +99,7 @@ export default function EditEntry() {
     // Kör photos[0] yerine cover_photo_id ile eşleşen kapak satırını al — birden
     // fazla fotoğraf satırı olan (eski) kayıtlarda yanlış fotoğrafı göstermesin.
     const existingPath = coverPhotoRow<{ storage_path: string }>(data)?.storage_path;
-    if (existingPath) {
-      setPhotoPath(existingPath);
-      getPhotoUrl(existingPath, "full").then(setDisplayUri).catch(() => {});
-    }
+    if (existingPath) setPhotoPath(existingPath);
 
     if (data?.measurement_values) {
       const initial: Record<string, string> = {};
@@ -123,7 +148,7 @@ export default function EditEntry() {
 
       setPhotoPath(path);
       setThumbPath(newThumbPath);
-      setDisplayUri(asset.uri);
+      setLocalUri(asset.uri);
     } finally {
       setUploading(false);
     }
@@ -242,7 +267,19 @@ export default function EditEntry() {
         className="mb-6 relative"
       >
         {displayUri ? (
-          <Image source={{ uri: displayUri }} className="w-full h-64 rounded-card" resizeMode="cover" />
+          <Image
+            source={{ uri: displayUri, cacheKey: displayCacheKey }}
+            // Boyut className ile DEĞİL style ile veriliyor: NativeWind bu
+            // projede expo-image'a className uygulamıyor (uygulamadaki diğer
+            // tüm expo-image kullanımları da style kullanıyor). className
+            // verilince görsel boyutsuz kalıp hiç görünmüyordu.
+            // w-full/h-64/rounded-card karşılıkları: %100 / 256 / 20.
+            style={{ width: "100%", height: 256, borderRadius: 20 }}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            recyclingKey={(data as any)?.photoPath ?? undefined}
+            transition={150}
+          />
         ) : (
           <View className="w-full h-64 bg-surface rounded-card items-center justify-center">
             <Text className="text-textMuted text-base">Fotoğraf seç</Text>

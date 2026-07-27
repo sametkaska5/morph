@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "./supabase";
+import { captureError } from "./monitoring";
 
 /**
  * "Yetim dosya" temizliği.
@@ -156,6 +157,6 @@ export async function maybeSweepOrphans(userId: string): Promise<void> {
       console.log(`[orphanSweep] ${deleted}/${scanned} yetim dosya temizlendi`);
     }
   } catch (err) {
-    console.warn("[orphanSweep] süpürme atlandı:", err);
+    captureError(err, { where: "orphanSweep" });
   }
 }

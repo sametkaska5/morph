@@ -13,6 +13,8 @@ npm install
 ```
 EXPO_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=xxxxx
+# Opsiyonel — tanımlanırsa hata izleme (Sentry) devreye girer, yoksa no-op:
+EXPO_PUBLIC_SENTRY_DSN=https://xxxx@xxxx.ingest.sentry.io/xxxx
 ```
 
 Supabase şemasını kur:
@@ -84,8 +86,11 @@ lib/
   useIsOnline.ts       ağ durumu (netinfo)
   capture.ts, captureStore.ts, captureSheetStore.ts   fotoğraf çekim akışı
   entryMutations.ts    kayıt CRUD mutasyonları (offline sync dahil)
+  measurementInput.ts  ölçüm girdisini güvenle sayıya çevirir (geçersizde null, NaN DB'ye gitmez)
   storage.ts           Supabase storage yükleme/imzalı link
   orphanSweep.ts       hiçbir DB satırının işaret etmediği yetim fotoğrafları temizler (günde bir, açılışta)
+  offDay.ts            gün kutusu 3 durumlu döngü mantığı (boş→off_day→workout)
+  monitoring.ts        ince hata-izleme katmanı (Sentry; DSN yoksa no-op)
   comparison.ts        karşılaştırma mantığı
   profile.ts, profileStats.ts, account.ts   profil & hesap
   measurementTypes.ts, units.ts             ölçümler & birimler

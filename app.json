@@ -37,7 +37,8 @@
           "resizeMode": "contain",
           "backgroundColor": "#0A0A08"
         }
-      ]
+      ],
+      "@sentry/react-native"
     ],
     "ios": {
       "supportsTablet": false,

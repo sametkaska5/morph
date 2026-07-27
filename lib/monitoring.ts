@@ -1,0 +1,55 @@
+import * as Sentry from "@sentry/react-native";
+
+/**
+ * İnce bir hata-izleme katmanı.
+ *
+ * Amaç: üretimde SESSİZCE başarısız olan yerleri (senkron mutation'ları, arka
+ * plan işleri) görünür kılmak. Bugüne kadar bu hatalar yalnızca console'a
+ * gidiyordu — gerçek bir kullanıcının senkronu patlasa haberimiz olmuyordu.
+ *
+ * Tasarım: Sentry YALNIZCA `EXPO_PUBLIC_SENTRY_DSN` tanımlıysa başlatılır. DSN
+ * yoksa katman tam bir no-op'tur (yalnızca console) — kişisel/geliştirme
+ * kullanımında ekstra ağ trafiği ya da kurulum gerektirmez. Böylece bu dosya
+ * eklenmeden önceki davranış birebir korunur; DSN eklenince izleme kendiliğinden
+ * devreye girer.
+ */
+
+const DSN = process.env.EXPO_PUBLIC_SENTRY_DSN;
+let enabled = false;
+
+export function initMonitoring() {
+  if (!DSN) return; // DSN yok -> Sentry hiç başlatılmaz (no-op katman)
+
+  try {
+    Sentry.init({
+      dsn: DSN,
+      // Kişisel bir günlük uygulaması — kullanıcıyı tanımlayan veri toplamıyoruz.
+      sendDefaultPii: false,
+    });
+    enabled = true;
+  } catch (err) {
+    // İzleme opsiyonel bir özellik: init'in kendisi patlasa bile uygulama
+    // açılışı ASLA bundan etkilenmemeli.
+    console.warn("[monitoring] Sentry başlatılamadı:", err);
+  }
+}
+
+/**
+ * Bir hatayı izleme servisine bildirir (etkinse) ve HER durumda console'a yazar.
+ * `context` ile hangi işlemin patladığını (örn. { where: "saveEntry" })
+ * etiketleyebilirsin — Sentry'de "extra" olarak görünür.
+ *
+ * enabled=false iken davranış eski console.error ile aynıdır, o yüzden çağrı
+ * yerlerinde eski log'ların yerine güvenle geçebilir.
+ */
+export function captureError(error: unknown, context?: Record<string, unknown>) {
+  if (enabled) {
+    try {
+      Sentry.captureException(error, context ? { extra: context } : undefined);
+    } catch {
+      // Bildirim başarısız olursa yut — bir hatayı raporlarken yeni hata üretmeyelim.
+    }
+  }
+  if (context) console.error("[monitoring]", error, context);
+  else console.error("[monitoring]", error);
+}

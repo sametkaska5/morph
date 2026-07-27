@@ -16,6 +16,7 @@ import { useNotificationSettings } from "@/lib/notificationSettings";
 import { useMeasurementTypes } from "@/lib/measurementTypes";
 import { useUnitPreference, displayUnit, toDisplayValue } from "@/lib/units";
 import { getPhotoUrls } from "@/lib/storage";
+import { nextOffDayState } from "@/lib/offDay";
 
 let MediaLibrary: typeof MediaLibraryType | null = null;
 try {
@@ -181,15 +182,6 @@ function buildChartPath(values: number[], width: number) {
   const area = `${line} L${last.x},${CHART_H} L${first.x},${CHART_H} Z`;
 
   return { line, area, points };
-}
-
-// Gün kutusuna basınca dönen 3 durumlu döngü: boş → off day (bilinçli dinlenme) →
-// antrenman (spor yapıldı ama foto çekilmedi — off day sayılmasın istendi) → boş.
-// "log" (fotoğraflı gerçek kayıt) bu döngünün dışında, ayrı bir akıştan (kayıt ekranı) gelir.
-function nextOffDayState(current: string | null): "off_day" | "workout" | null {
-  if (current === "off_day") return "workout";
-  if (current === "workout") return null;
-  return "off_day";
 }
 
 export default function Istatistikler() {

@@ -22,6 +22,7 @@ import { resizeAndCompress } from "@/lib/capture";
 import { useKeyboardFocus } from "@/lib/useKeyboardFocus";
 import { useMeasurementTypes } from "@/lib/measurementTypes";
 import { useUnitPreference, displayUnit, toDisplayValue, toMetricValue } from "@/lib/units";
+import { parseMeasurementInput } from "@/lib/measurementInput";
 
 /* ---------------- FETCH ---------------- */
 
@@ -287,16 +288,19 @@ export default function EditEntry() {
       if (entryError) throw entryError;
 
       const measurementRows = Object.entries(values)
-        .filter(([, v]) => v.trim() !== "")
         .map(([typeId, v]) => {
+          // Geçersiz/boş girdi -> null -> aşağıda eleniyor. Eskiden burada ham
+          // parseFloat vardı ve "abc" gibi bir girdi NaN üretip DB'ye yazılıyordu.
+          const num = parseMeasurementInput(v);
+          if (num === null) return null;
           const baseUnit = allTypes?.find((t) => t.id === typeId)?.unit ?? "";
-          const num = parseFloat(v.replace(",", "."));
           return {
             entry_id: id,
             measurement_type_id: typeId,
             value: toMetricValue(num, baseUnit, unitPref),
           };
-        });
+        })
+        .filter((row): row is NonNullable<typeof row> => row !== null);
 
       if (measurementRows.length > 0) {
         const { error: valuesError } = await supabase

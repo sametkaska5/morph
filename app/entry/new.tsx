@@ -12,6 +12,8 @@ import { saveEntry, SAVE_ENTRY_MUTATION_KEY, type SaveEntryPayload } from "@/lib
 import { useMeasurementTypes } from "@/lib/measurementTypes";
 import { useKeyboardFocus } from "@/lib/useKeyboardFocus";
 import { useUnitPreference, displayUnit, toMetricValue } from "@/lib/units";
+import { parseMeasurementInput } from "@/lib/measurementInput";
+import { captureError } from "@/lib/monitoring";
 import type { EntryRow } from "@/app/(tabs)/index";
 
 export default function NewEntry() {
@@ -71,6 +73,7 @@ export default function NewEntry() {
       if (context?.previous) {
         queryClient.setQueryData(["entries", "timeline"], context.previous);
       }
+      captureError(err, { where: "new.saveEntry" });
       Alert.alert("Kayıt başarısız", (err as Error).message);
     },
   });
@@ -85,10 +88,9 @@ export default function NewEntry() {
     // her zaman metrik yazıldığı için kaydetmeden önce kg/cm'ye çeviriyoruz.
     const metricValues: Record<string, string> = {};
     for (const [typeId, raw] of Object.entries(values)) {
-      if (raw.trim() === "") continue;
+      const num = parseMeasurementInput(raw);
       const type = types?.find((t) => t.id === typeId);
-      const num = parseFloat(raw.replace(",", "."));
-      if (!type || Number.isNaN(num)) continue;
+      if (num === null || !type) continue;
       metricValues[typeId] = String(toMetricValue(num, type.unit, unitPref));
     }
 

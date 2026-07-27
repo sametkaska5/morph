@@ -13,3 +13,11 @@ process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
 jest.mock("@react-native-async-storage/async-storage", () =>
   require("@react-native-async-storage/async-storage/jest/async-storage-mock")
 );
+
+// lib/monitoring.ts, @sentry/react-native'i içe aktarıyor (native köprü). Testler
+// gerçek Sentry'yi çalıştırmaz — hata sınırı olan modülleri (orphanSweep vb.)
+// yükleyebilmek için hafif bir mock veriyoruz.
+jest.mock("@sentry/react-native", () => ({
+  init: jest.fn(),
+  captureException: jest.fn(),
+}));

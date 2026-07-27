@@ -1,6 +1,8 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 import { uploadPhoto, uploadThumb } from "./storage";
+import { parseMeasurementInput } from "./measurementInput";
+import { captureError } from "./monitoring";
 
 export const SAVE_ENTRY_MUTATION_KEY = ["saveEntry"] as const;
 
@@ -81,13 +83,15 @@ export async function saveEntry(payload: SaveEntryPayload) {
       .in("id", stalePhotos.map((p) => p.id));
   }
 
+  // Değerler buraya new.tsx'ten zaten temizlenmiş (metrik) gelir; yine de
+  // parseMeasurementInput ile geçiriyoruz — offline'da kuyruğa alınıp sonra
+  // resume edilen eski payload'lar dahil, DB'ye NaN yazılmasın (savunma katmanı).
   const measurementRows = Object.entries(values)
-    .filter(([, v]) => v.trim() !== "")
-    .map(([typeId, v]) => ({
-      entry_id: entry.id,
-      measurement_type_id: typeId,
-      value: parseFloat(v.replace(",", ".")),
-    }));
+    .map(([typeId, v]) => {
+      const num = parseMeasurementInput(v);
+      return num === null ? null : { entry_id: entry.id, measurement_type_id: typeId, value: num };
+    })
+    .filter((row): row is NonNullable<typeof row> => row !== null);
 
   if (measurementRows.length > 0) {
     const { error: valuesError } = await supabase
@@ -115,7 +119,9 @@ export function registerEntryMutationDefaults(queryClient: QueryClient) {
       queryClient.invalidateQueries({ queryKey: ["profile"] });
     },
     onError: (err) => {
-      console.error("saveEntry mutation başarısız:", err);
+      // Bu, offline'da kuyruğa alınıp sonra resume edilen senkronları da kapsar —
+      // kullanıcı ekranda olmayabilir, o yüzden sessiz kalması en tehlikeli yer.
+      captureError(err, { where: "saveEntry" });
     },
   });
 }

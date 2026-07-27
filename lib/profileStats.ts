@@ -1,7 +1,13 @@
 import { supabase } from "./supabase";
 import { toLocalDateKey } from "./date";
 
-function computeStreaks(sortedDates: string[]) {
+/**
+ * Tarihe göre ARTAN sıralı gün listesinden mevcut ve en uzun seriyi hesaplar.
+ * Ardışık günler (1 gün fark) seriyi büyütür; boşluk sıfırlar. Mevcut seri son
+ * kayıttan geriye doğru sayılır ama yalnızca son kayıt bugün ya da dün ise
+ * (aksi halde seri kopmuştur). Test edilebilmesi için export edildi.
+ */
+export function computeStreaks(sortedDates: string[]) {
   if (sortedDates.length === 0) return { current: 0, longest: 0 };
 
   let longest = 1;

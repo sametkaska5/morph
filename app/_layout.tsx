@@ -19,6 +19,7 @@ import {
 import { AuthProvider, useAuth } from "@/lib/useAuth";
 import { registerEntryMutationDefaults, QUERY_CACHE_STORAGE_KEY } from "@/lib/entryMutations";
 import { maybeSweepOrphans } from "@/lib/orphanSweep";
+import { initMonitoring } from "@/lib/monitoring";
 import { CaptureOptionsSheet } from "@/components/CaptureOptionsSheet";
 
 // NOT: Buradaki varsayılan font ataması eskiden `Text.defaultProps` ile yapılıyordu.
@@ -42,6 +43,9 @@ const queryClient = new QueryClient({
   },
 });
 registerEntryMutationDefaults(queryClient);
+
+// Hata izlemeyi uygulama açılışında bir kez başlat (DSN yoksa no-op).
+initMonitoring();
 
 const persister = createAsyncStoragePersister({
   storage: AsyncStorage,

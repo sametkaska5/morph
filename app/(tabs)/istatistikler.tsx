@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { View, ScrollView, Pressable, ActivityIndicator, Alert, Image, Modal } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { View, ScrollView, Pressable, ActivityIndicator, Alert, Image, Modal, RefreshControl } from "react-native";
 import { Text } from "@/components/Typography";
 import Svg, { Path, Circle, Line, Defs, LinearGradient, Stop } from "react-native-svg";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -202,6 +202,26 @@ export default function Istatistikler() {
   // işlemdeyken başka bir güne basmak sessizce yok sayılıyordu. Bunun yerine sadece
   // işlemdeki günü kilitliyoruz, diğer günlere aynı anda basılabilsin.
   const [pendingDates, setPendingDates] = useState<Set<string>>(new Set());
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Aşağı çekince yenile: bu ekrandaki tüm sorguları geçersiz kılıp yeniden
+  // çekiyoruz. Özellikle measurement_series önemli — bir kaydın ölçümünü başka
+  // ekrandan (düzenleme) değiştirince grafik cache'ten eski değeri gösterebiliyor;
+  // bu, kullanıcının onu elle tazeleyebilmesini sağlıyor.
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["measurement_series"] }),
+        queryClient.invalidateQueries({ queryKey: ["currentWeek"] }),
+        queryClient.invalidateQueries({ queryKey: ["shareablePhotos"] }),
+        queryClient.invalidateQueries({ queryKey: ["measurement_types"] }),
+        queryClient.invalidateQueries({ queryKey: ["profile"] }),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [queryClient]);
 
   const toggleOffDayMutation = useMutation({
     mutationFn: async ({ date, currentType }: { date: string; currentType: string | null }) => {
@@ -396,7 +416,18 @@ export default function Istatistikler() {
   }, [week, currentStreak, notifSettings?.streak_enabled]);
 
   return (
-    <ScrollView className="flex-1 bg-bg" contentContainerStyle={{ paddingTop: 56, paddingBottom: 32 }}>
+    <ScrollView
+      className="flex-1 bg-bg"
+      contentContainerStyle={{ paddingTop: 56, paddingBottom: 32 }}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor="#8CE05A"
+          colors={["#8CE05A"]}
+        />
+      }
+    >
       <Text className="text-text text-3xl font-bold px-4 mb-4" accessibilityRole="header">
         İstatistikler
       </Text>

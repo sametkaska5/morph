@@ -117,6 +117,8 @@ export function registerEntryMutationDefaults(queryClient: QueryClient) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["entries"] });
       queryClient.invalidateQueries({ queryKey: ["profile"] });
+      // Yeni kayıt ölçüm de içerebilir — istatistik grafiği güncel kalsın.
+      queryClient.invalidateQueries({ queryKey: ["measurement_series"] });
     },
     onError: (err) => {
       // Bu, offline'da kuyruğa alınıp sonra resume edilen senkronları da kapsar —

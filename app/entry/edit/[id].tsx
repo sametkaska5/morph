@@ -330,6 +330,10 @@ export default function EditEntry() {
       queryClient.invalidateQueries({ queryKey: ["entries"] });
       queryClient.invalidateQueries({ queryKey: ["entry", id] });
       queryClient.invalidateQueries({ queryKey: ["entry", "edit", id] });
+      // Ölçüm değeri değişmiş olabilir — istatistik grafiği (measurement_series)
+      // cache'ten eski değeri göstermesin diye onu da tazeliyoruz. Eskiden bu
+      // invalidate edilmediği için grafik ancak elle yenileyince güncelleniyordu.
+      queryClient.invalidateQueries({ queryKey: ["measurement_series"] });
       router.back();
     },
   });

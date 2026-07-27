@@ -16,7 +16,11 @@ import { captureError } from "./monitoring";
  * kıyaslayıp eşleşmeyen ESKİ dosyaları siler.
  */
 
-const LAST_SWEEP_KEY = "remory-last-orphan-sweep";
+// Anahtardaki sürek (v2): süpürme mantığı/sorgusu değişince bunu artır — eski
+// (muhtemelen başarısız kalmış) zaman damgası geçersiz olur ve düzeltilmiş
+// süpürme bir sonraki açılışta yeniden çalışır. (_layout.tsx'teki
+// PERSIST_CACHE_BUSTER ile aynı desen.)
+const LAST_SWEEP_KEY = "remory-last-orphan-sweep-v2";
 const SWEEP_INTERVAL_MS = 1000 * 60 * 60 * 24; // günde en fazla bir kez süpür
 const SAFETY_WINDOW_MS = 1000 * 60 * 60 * 24; // son 24 saatte yüklenmişlere dokunma
 
@@ -58,9 +62,13 @@ async function collectReferencedPaths(userId: string): Promise<Set<string>> {
 
   // photos'ta user_id yok; entries üzerinden (inner join) kullanıcıya bağlanır.
   for (let from = 0; ; from += PAGE) {
+    // photos ile entries arasında İKİ foreign key var: normal photos.entry_id ->
+    // entries.id (photos_entry_id_fkey) ve ters entries.cover_photo_id -> photos.id
+    // (entries_cover_photo_fk). Sadece "entries" dersek PostgREST hangisini
+    // kastettiğimizi bilemeyip PGRST201 veriyor — FK adını açıkça belirtiyoruz.
     const { data, error } = await supabase
       .from("photos")
-      .select("storage_path, thumb_path, entries!inner(user_id)")
+      .select("storage_path, thumb_path, entries!photos_entry_id_fkey!inner(user_id)")
       .eq("entries.user_id", userId)
       .range(from, from + PAGE - 1);
     if (error) throw error;
@@ -147,12 +155,13 @@ export async function maybeSweepOrphans(userId: string): Promise<void> {
     const last = await AsyncStorage.getItem(LAST_SWEEP_KEY);
     if (last && Date.now() - Number(last) < SWEEP_INTERVAL_MS) return;
 
-    // Damgayı süpürmeden ÖNCE yazıyoruz: iş hata verse bile her açılışta yeniden
-    // denemek yerine bir sonraki pencereye bırakıyoruz (storage list'leri boşa
-    // harcamamak için).
+    const { scanned, deleted } = await sweepOrphanPhotos(userId);
+
+    // Damgayı yalnızca BAŞARILI süpürmeden sonra yazıyoruz: iş hata verirse damga
+    // yazılmaz, bir sonraki açılışta tekrar denenir (ve hata Sentry'ye düşer).
+    // Başarılıysa 24 saat boyunca tekrar süpürmez.
     await AsyncStorage.setItem(LAST_SWEEP_KEY, String(Date.now()));
 
-    const { scanned, deleted } = await sweepOrphanPhotos(userId);
     if (deleted > 0) {
       console.log(`[orphanSweep] ${deleted}/${scanned} yetim dosya temizlendi`);
     }

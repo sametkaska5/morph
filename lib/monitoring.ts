@@ -18,7 +18,10 @@ const DSN = process.env.EXPO_PUBLIC_SENTRY_DSN;
 let enabled = false;
 
 export function initMonitoring() {
-  if (!DSN) return; // DSN yok -> Sentry hiç başlatılmaz (no-op katman)
+  if (!DSN) {
+    console.log("[monitoring] DSN yok — Sentry devre dışı (yalnızca console).");
+    return; // DSN yok -> Sentry hiç başlatılmaz (no-op katman)
+  }
 
   try {
     Sentry.init({
@@ -27,6 +30,7 @@ export function initMonitoring() {
       sendDefaultPii: false,
     });
     enabled = true;
+    console.log("[monitoring] Sentry etkin — hatalar panoya gönderilecek.");
   } catch (err) {
     // İzleme opsiyonel bir özellik: init'in kendisi patlasa bile uygulama
     // açılışı ASLA bundan etkilenmemeli.

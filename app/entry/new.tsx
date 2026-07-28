@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { View, Image, Pressable, Platform, Alert, ScrollView } from "react-native";
+import { View, Image, Pressable, Platform, Alert, ScrollView, ActivityIndicator } from "react-native";
 import { Text, TextInput } from "@/components/Typography";
 import { router } from "expo-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -19,6 +19,9 @@ import type { EntryRow } from "@/app/(tabs)/index";
 export default function NewEntry() {
   const photo = useCaptureStore((s) => s.photo);
   const clearPhoto = useCaptureStore((s) => s.clear);
+  // Fotoğraf var ama base64'ü henüz üretilmedi (arka plan küçültme sürüyor).
+  // Bu sürede önizleme görünüyor ama kaydetme beklemeli.
+  const photoProcessing = !!photo && !photo.base64;
   const { user } = useAuth();
   const { data: types } = useMeasurementTypes(user?.id);
   const { data: unitPref = "metric" } = useUnitPreference(user?.id);
@@ -82,6 +85,11 @@ export default function NewEntry() {
     if (!user) return;
     if (!photo) {
       Alert.alert("Fotoğraf bulunamadı", "Kaydetmeden önce bir fotoğraf çekmen/seçmen gerekiyor.");
+      return;
+    }
+    if (!photo.base64) {
+      // Arka plan küçültme henüz bitmedi — birkaç saniye içinde hazır olur.
+      Alert.alert("Fotoğraf hazırlanıyor", "Fotoğraf işleniyor, bir saniye sonra tekrar dene.");
       return;
     }
     // Geçersiz / negatif / makul olmayan yüksek bir değer varsa kaydetme —
@@ -252,12 +260,20 @@ export default function NewEntry() {
           iki kardeş ekranda kaydetmenin yeri ve görünümü artık ayrışmıyor. */}
       <Pressable
         onPress={handleSave}
-        style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+        disabled={photoProcessing}
+        style={({ pressed }) => ({ opacity: pressed ? 0.85 : photoProcessing ? 0.7 : 1 })}
         accessibilityRole="button"
         accessibilityLabel="Kaydı kaydet"
-        className="bg-accent p-4 rounded-button items-center mt-6"
+        className="bg-accent p-4 rounded-button items-center mt-6 flex-row justify-center gap-2"
       >
-        <Text className="text-bg text-base font-bold">Kaydet</Text>
+        {photoProcessing ? (
+          <>
+            <ActivityIndicator color="#0B0D0A" />
+            <Text className="text-bg text-base font-bold">Hazırlanıyor…</Text>
+          </>
+        ) : (
+          <Text className="text-bg text-base font-bold">Kaydet</Text>
+        )}
       </Pressable>
 
       <Pressable

@@ -56,7 +56,12 @@ async function pickFromCamera() {
     warnPermissionDenied("kamera");
     return;
   }
-  return ImagePicker.launchCameraAsync({ allowsEditing: false, quality: 0.9 });
+  // quality düşük tutuluyor: deklanşörden sonra cihaz tam çözünürlüklü JPEG'i
+  // encode edip döndürene kadar kamera ekranı bekliyor — 0.9'da bu belirgin bir
+  // duraksama yaratıyordu. Fotoğrafı zaten sonra 1280px/0.75'e küçültüp yeniden
+  // sıkıştırdığımız için yüksek kaynak kalitesi son görüntüye yansımıyordu; 0.5
+  // ile kamera çok daha hızlı geri dönüyor, çıktı görsel olarak aynı kalıyor.
+  return ImagePicker.launchCameraAsync({ allowsEditing: false, quality: 0.5 });
 }
 
 async function pickFromLibrary() {
@@ -85,15 +90,31 @@ function parseExifDateTime(exif: Record<string, any> | undefined | null): string
 async function handleResult(result: ImagePicker.ImagePickerResult | undefined) {
   if (result && !result.canceled && result.assets?.[0]?.uri) {
     const asset = result.assets[0];
+    const takenAt = parseExifDateTime(asset.exif);
+
+    // 1) HAM fotoğrafla ANINDA kayıt ekranına geç — önizleme hemen görünsün.
+    //    Eskiden ağır küçültme + base64 üretimi burada await ediliyordu; kamera
+    //    kapandıktan sonra kullanıcı bu iş bitene kadar (birkaç saniye) boş
+    //    bekliyordu. Artık ekran hemen açılıyor, işleme arka planda dönüyor.
+    useCaptureStore.getState().setPhoto({ uri: asset.uri, takenAt, processing: true });
+    router.push("/entry/new");
+
+    // 2) Küçültme/base64'ü arka planda üret; bitince store'u güncelle. base64
+    //    hazır olana kadar new.tsx "Kaydet"i bekletiyor (genelde kullanıcı notu/
+    //    ölçüyü yazarken çoktan hazır oluyor). uri'yi DEĞİŞTİRMİYORUZ ki önizleme
+    //    titremesin — kayıt zaten base64 üzerinden yapılıyor.
     try {
       const resized = await resizeAndCompress(asset.uri);
-      const takenAt = parseExifDateTime(asset.exif);
-      useCaptureStore.getState().setPhoto({ ...resized, takenAt });
-      router.push("/entry/new");
+      useCaptureStore.getState().patchPhoto({
+        base64: resized.base64,
+        thumbBase64: resized.thumbBase64,
+        processing: false,
+      });
     } catch (err) {
-      // resizeAndCompress patlarsa (bozuk/desteklenmeyen görsel, bellek yetersiz)
-      // eskiden bu promise hiç await edilmediği için hata yakalanmadan yutuluyor,
-      // kullanıcı da neden kayıt ekranına geçmediğini göremiyordu.
+      // Bozuk/desteklenmeyen görsel ya da bellek yetersizliği: kaydetme
+      // yapılamaz. processing'i kapatıyoruz; new.tsx base64 yoksa zaten
+      // kaydetmeyi engelliyor.
+      useCaptureStore.getState().patchPhoto({ processing: false });
       Alert.alert("Fotoğraf işlenemedi", (err as Error).message);
     }
   }

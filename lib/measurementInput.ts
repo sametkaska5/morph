@@ -19,3 +19,60 @@ export function parseMeasurementInput(raw: string): number | null {
   if (!Number.isFinite(num)) return null;
   return num;
 }
+
+/**
+ * Formlarda kullanılan ZENGİN doğrulama. parseMeasurementInput sadece "sayı mı"
+ * diye bakar; bu ise kullanıcıya neden geçersiz olduğunu söyleyebilmek ve makul
+ * olmayan (negatif / saçma yüksek) değerleri kayıttan önce engellemek için
+ * durumu ayrıntılı döndürür.
+ *
+ * `displayUnit`: değerin GÖSTERİM birimi (kg/lb/cm/in/%). Üst sınır buna göre
+ * seçilir — kilo 1000, boy 400 gibi. Bilinmeyen/özel birimlerde yalnızca bariz
+ * çöpü (yazım hatası) eleyen çok yüksek bir genel sınır uygulanır.
+ */
+export const MEASUREMENT_MAX_BY_UNIT: Record<string, number> = {
+  kg: 1000,
+  lb: 2200,
+  cm: 400,
+  in: 160,
+  "%": 100,
+};
+/** Bilinmeyen/özel birimler için: sadece açıkça saçma (yazım hatası) değerleri ele. */
+export const MEASUREMENT_GENERIC_MAX = 1_000_000;
+
+export type MeasurementValidation =
+  | { status: "empty" | "invalid" | "negative"; value: null }
+  | { status: "too_high"; value: null; max: number }
+  | { status: "ok"; value: number };
+
+export function validateMeasurementInput(raw: string, displayUnit?: string): MeasurementValidation {
+  const trimmed = raw.trim();
+  if (trimmed === "") return { status: "empty", value: null };
+  const num = parseFloat(trimmed.replace(",", "."));
+  if (!Number.isFinite(num)) return { status: "invalid", value: null };
+  if (num < 0) return { status: "negative", value: null };
+  const max =
+    displayUnit && displayUnit in MEASUREMENT_MAX_BY_UNIT
+      ? MEASUREMENT_MAX_BY_UNIT[displayUnit]
+      : MEASUREMENT_GENERIC_MAX;
+  if (num > max) return { status: "too_high", value: null, max };
+  return { status: "ok", value: num };
+}
+
+/**
+ * Doğrulama sonucundan kullanıcıya gösterilecek kısa uyarı metni. "empty" ve
+ * "ok" için null (uyarı yok). new + edit ekranları aynı metinleri kullansın diye
+ * burada tutuluyor.
+ */
+export function measurementErrorText(v: MeasurementValidation): string | null {
+  switch (v.status) {
+    case "invalid":
+      return "Sayı gir";
+    case "negative":
+      return "Negatif olamaz";
+    case "too_high":
+      return `Çok yüksek (en fazla ${v.max})`;
+    default:
+      return null;
+  }
+}

@@ -12,7 +12,7 @@ import { saveEntry, SAVE_ENTRY_MUTATION_KEY, type SaveEntryPayload } from "@/lib
 import { useMeasurementTypes } from "@/lib/measurementTypes";
 import { useKeyboardFocus } from "@/lib/useKeyboardFocus";
 import { useUnitPreference, displayUnit, toMetricValue } from "@/lib/units";
-import { parseMeasurementInput } from "@/lib/measurementInput";
+import { validateMeasurementInput, measurementErrorText } from "@/lib/measurementInput";
 import { captureError } from "@/lib/monitoring";
 import type { EntryRow } from "@/app/(tabs)/index";
 
@@ -84,14 +84,26 @@ export default function NewEntry() {
       Alert.alert("Fotoğraf bulunamadı", "Kaydetmeden önce bir fotoğraf çekmen/seçmen gerekiyor.");
       return;
     }
+    // Geçersiz / negatif / makul olmayan yüksek bir değer varsa kaydetme —
+    // kullanıcı hangi alanın sorunlu olduğunu satır altındaki kırmızı uyarıdan
+    // görüyor. Sessizce düşürmek yerine engelliyoruz ki yanlışlıkla "kaydettim"
+    // sanmasın.
+    const hasInvalid = (types ?? []).some((t) => {
+      const s = validateMeasurementInput(values[t.id] ?? "", displayUnit(t.unit, unitPref)).status;
+      return s === "invalid" || s === "negative" || s === "too_high";
+    });
+    if (hasInvalid) {
+      Alert.alert("Geçersiz ölçüm", "Bazı ölçüm değerleri geçerli değil. Kırmızı uyarıları düzeltip tekrar dene.");
+      return;
+    }
+
     // Kullanıcı imperial tercih ettiyse girdiği değerler lb/inch cinsinden — DB'ye
     // her zaman metrik yazıldığı için kaydetmeden önce kg/cm'ye çeviriyoruz.
     const metricValues: Record<string, string> = {};
-    for (const [typeId, raw] of Object.entries(values)) {
-      const num = parseMeasurementInput(raw);
-      const type = types?.find((t) => t.id === typeId);
-      if (num === null || !type) continue;
-      metricValues[typeId] = String(toMetricValue(num, type.unit, unitPref));
+    for (const t of types ?? []) {
+      const v = validateMeasurementInput(values[t.id] ?? "", displayUnit(t.unit, unitPref));
+      if (v.status !== "ok") continue;
+      metricValues[t.id] = String(toMetricValue(v.value, t.unit, unitPref));
     }
 
     // İnternet olsun olmasın kayıt anında Ana Ekran'a dönüyoruz — foto zaten optimistic
@@ -166,47 +178,57 @@ export default function NewEntry() {
 
       <View className="bg-surface border border-border rounded-card p-4 mb-3">
         <Text className="text-textFaint text-sm font-semibold mb-2 tracking-wide">ÖLÇÜMLER</Text>
-        {types?.map((t, i) => (
-          <View key={t.id} className="flex-row items-center justify-between py-2">
-            {/* Ölçüm adı ikincil bir etiket değil, girilen değerin ne olduğunu
-                söyleyen asıl metin — 14pt gri yerine 16pt gövde boyutu. */}
-            <Text className="text-textMuted text-base capitalize">{t.name}</Text>
-            <View className="flex-row items-center gap-2">
-              <TextInput
-                ref={(el) => { inputRefs.current[i] = el; }}
-                value={values[t.id] ?? ""}
-                onChangeText={(v) => setValues((prev) => ({ ...prev, [t.id]: v }))}
-                keyboardType="decimal-pad"
-                placeholder={`— ${displayUnit(t.unit, unitPref)}`}
-                placeholderTextColor="#8B8A82"
-                returnKeyType="next"
-                blurOnSubmit={false}
-                // Klavye açıkken odak buraya geçtiğinde kendiliğinden kaydırma
-                // olmadığı için alanı elle görünür alana taşıyoruz.
-                onFocus={() => revealField(inputRefs.current[i])}
-                onSubmitEditing={() => {
-                  const next = inputRefs.current[i + 1];
-                  if (next) next.focus();
-                  else noteRef.current?.focus();
-                }}
-                className="text-text text-base font-semibold text-right w-20"
-              />
-              <Pressable
-                hitSlop={8}
-                accessibilityRole="button"
-                accessibilityLabel="Sonraki alana geç"
-                style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-                onPress={() => {
-                  const next = inputRefs.current[i + 1];
-                  if (next) next.focus();
-                  else noteRef.current?.focus();
-                }}
-              >
-                <Feather name="chevron-right" size={16} color="#8B8A82" />
-              </Pressable>
+        {types?.map((t, i) => {
+          const errorText = measurementErrorText(
+            validateMeasurementInput(values[t.id] ?? "", displayUnit(t.unit, unitPref))
+          );
+          return (
+            <View key={t.id} className="py-2">
+              <View className="flex-row items-center justify-between">
+                {/* Ölçüm adı ikincil bir etiket değil, girilen değerin ne olduğunu
+                    söyleyen asıl metin — 14pt gri yerine 16pt gövde boyutu. */}
+                <Text className="text-textMuted text-base capitalize">{t.name}</Text>
+                <View className="flex-row items-center gap-2">
+                  <TextInput
+                    ref={(el) => { inputRefs.current[i] = el; }}
+                    value={values[t.id] ?? ""}
+                    onChangeText={(v) => setValues((prev) => ({ ...prev, [t.id]: v }))}
+                    keyboardType="decimal-pad"
+                    placeholder={`— ${displayUnit(t.unit, unitPref)}`}
+                    placeholderTextColor="#8B8A82"
+                    returnKeyType="next"
+                    blurOnSubmit={false}
+                    // Klavye açıkken odak buraya geçtiğinde kendiliğinden kaydırma
+                    // olmadığı için alanı elle görünür alana taşıyoruz.
+                    onFocus={() => revealField(inputRefs.current[i])}
+                    onSubmitEditing={() => {
+                      const next = inputRefs.current[i + 1];
+                      if (next) next.focus();
+                      else noteRef.current?.focus();
+                    }}
+                    className={`text-base font-semibold text-right w-20 ${errorText ? "text-danger" : "text-text"}`}
+                  />
+                  <Pressable
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel="Sonraki alana geç"
+                    style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+                    onPress={() => {
+                      const next = inputRefs.current[i + 1];
+                      if (next) next.focus();
+                      else noteRef.current?.focus();
+                    }}
+                  >
+                    <Feather name="chevron-right" size={16} color="#8B8A82" />
+                  </Pressable>
+                </View>
+              </View>
+              {errorText ? (
+                <Text className="text-danger text-xs mt-1 text-right">{errorText}</Text>
+              ) : null}
             </View>
-          </View>
-        ))}
+          );
+        })}
       </View>
 
       <View className="bg-surface border border-border rounded-card p-4">

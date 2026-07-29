@@ -110,6 +110,8 @@ export default function RootLayout() {
             <Stack.Screen name="terms" options={{ presentation: "modal" }} />
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="entry/new" options={{ presentation: "modal" }} />
+            <Stack.Screen name="entry/workout" options={{ presentation: "modal" }} />
+            <Stack.Screen name="entry/program" options={{ presentation: "modal" }} />
             <Stack.Screen name="entry/off-day" options={{ presentation: "modal" }} />
             <Stack.Screen name="entry/[id]" />
             <Stack.Screen name="entry/edit/[id]" options={{ presentation: "modal" }} />

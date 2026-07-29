@@ -46,6 +46,14 @@ function ActionMenuOption({
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const IMAGE_HEIGHT = SCREEN_WIDTH * 1.25;
 
+/** Bir seti "60 kg × 8" biçiminde yazar; boş alanları atlar. */
+function workoutSetLabel(s: { reps: number | null; weight: number | null }): string {
+  const weight = s.weight != null ? `${s.weight} kg` : "";
+  const reps = s.reps != null ? `${s.reps} tekrar` : "";
+  if (weight && reps) return `${s.weight} kg × ${s.reps}`;
+  return weight || reps || "—";
+}
+
 /* ---------------- DATA ---------------- */
 
 function useEntryDetail(entryId: string) {
@@ -55,7 +63,7 @@ function useEntryDetail(entryId: string) {
       const { data, error } = await supabase
         .from("entries")
         .select(
-          "id, date, note, photos!cover_photo_id(storage_path), measurement_values(value, measurement_types(name, unit))"
+          "id, date, note, photos!cover_photo_id(storage_path), measurement_values(value, measurement_types(name, unit)), workout_items(name, order_index, workout_sets(reps, weight, order_index))"
         )
         .eq("id", entryId)
         .single();
@@ -200,6 +208,34 @@ function EntryPage({ entryId }: { entryId: string }) {
                 </Text>
               </View>
             ))}
+          </View>
+        )}
+
+        {(data as any)?.workout_items?.length > 0 && (
+          <View className="bg-surface border border-border rounded-card p-4 mb-4">
+            <Text className="text-textFaint text-sm font-semibold mb-3 tracking-wide">ANTRENMAN PROGRAMI</Text>
+            {[...(data as any).workout_items]
+              .sort((a: any, b: any) => a.order_index - b.order_index)
+              .map((wi: any, i: number) => {
+                const sets = [...(wi.workout_sets ?? [])].sort(
+                  (a: any, b: any) => a.order_index - b.order_index
+                );
+                return (
+                  <View key={i} className={i > 0 ? "mt-3 pt-3 border-t border-border" : ""}>
+                    <Text className="text-text text-base font-semibold capitalize mb-1">{wi.name}</Text>
+                    {sets.length > 0 ? (
+                      sets.map((s: any, j: number) => (
+                        <View key={j} className="flex-row justify-between py-0.5">
+                          <Text className="text-textFaint text-sm">{j + 1}. set</Text>
+                          <Text className="text-textMuted text-base">{workoutSetLabel(s)}</Text>
+                        </View>
+                      ))
+                    ) : (
+                      <Text className="text-textFaint text-sm">Set girilmemiş</Text>
+                    )}
+                  </View>
+                );
+              })}
           </View>
         )}
 

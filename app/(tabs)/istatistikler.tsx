@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { View, ScrollView, Pressable, ActivityIndicator, Alert, Image, Modal, RefreshControl } from "react-native";
 import { Text } from "@/components/Typography";
 import Svg, { Path, Circle, Line, Defs, LinearGradient, Stop } from "react-native-svg";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
 import { captureRef } from "react-native-view-shot";
@@ -16,7 +16,6 @@ import { useNotificationSettings } from "@/lib/notificationSettings";
 import { useMeasurementTypes } from "@/lib/measurementTypes";
 import { useUnitPreference, displayUnit, toDisplayValue } from "@/lib/units";
 import { getPhotoUrls } from "@/lib/storage";
-import { nextOffDayState } from "@/lib/offDay";
 
 let MediaLibrary: typeof MediaLibraryType | null = null;
 try {
@@ -53,7 +52,9 @@ function useMeasurementSeries(userId: string | undefined, typeId: string | undef
         .select("value, entries!inner(date, type, user_id)")
         .eq("measurement_type_id", typeId)
         .eq("entries.user_id", userId)
-        .eq("entries.type", "log");
+        // Fotoğrafsız günlerde (workout) girilen ölçümler de grafikte görünsün —
+        // eskiden yalnızca 'log' okunuyordu, foto çekilmeyen günün ölçümü kaybolurdu.
+        .in("entries.type", ["log", "workout"]);
       if (error) throw error;
       // Sıralamayı JS'te yapıyoruz. entries bu sorguda to-one bir ilişki olduğu
       // için PostgREST'in foreignTable order'ı ANA satırları (measurement_values)
@@ -385,11 +386,6 @@ export default function Istatistikler() {
   const [selectedSharePhotoId, setSelectedSharePhotoId] = useState<string | null>(null);
   const [sharePendingAction, setSharePendingAction] = useState<"save" | "share" | null>(null);
   const shareCardRef = useRef<View>(null);
-  // Hangi günlerin şu an sunucuya yazılmakta olduğunu izler. toggleOffDayMutation.isPending
-  // TEK bir mutation nesnesine ait olduğu için tüm haftayı birden kilitlerdi — biri
-  // işlemdeyken başka bir güne basmak sessizce yok sayılıyordu. Bunun yerine sadece
-  // işlemdeki günü kilitliyoruz, diğer günlere aynı anda basılabilsin.
-  const [pendingDates, setPendingDates] = useState<Set<string>>(new Set());
   const [refreshing, setRefreshing] = useState(false);
 
   // Aşağı çekince yenile: bu ekrandaki tüm sorguları geçersiz kılıp yeniden
@@ -411,87 +407,32 @@ export default function Istatistikler() {
     }
   }, [queryClient]);
 
-  const toggleOffDayMutation = useMutation({
-    mutationFn: async ({ date, currentType }: { date: string; currentType: string | null }) => {
-      if (!user) throw new Error("Giriş yapılmamış");
-      const next = nextOffDayState(currentType);
-
-      if (next === null) {
-        // entryId'ye göre değil (user_id, date) eşleşmesine göre siliyoruz: optimistic
-        // güncelleme gerçek id'yi cache'e henüz yazmadan (refetch tamamlanmadan) kullanıcı
-        // tekrar basarsa entryId hâlâ null oluyordu ve id'ye bağlı silme sessizce
-        // hiçbir şey yapmıyordu — off day sunucudan değişmeden geri geliyordu.
-        const { error } = await supabase
-          .from("entries")
-          .delete()
-          .eq("user_id", user.id)
-          .eq("date", date)
-          .in("type", ["off_day", "workout"]);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("entries")
-          .upsert({ user_id: user.id, date, type: next, note: null }, { onConflict: "user_id,date" });
-        if (error) throw error;
-      }
-    },
-    onMutate: async ({ date, currentType }) => {
-      await queryClient.cancelQueries({ queryKey: ["currentWeek", user?.id] });
-      const next = nextOffDayState(currentType);
-      queryClient.setQueryData<any[]>(["currentWeek", user?.id], (old) =>
-        old?.map((d) => (d.date === date ? { ...d, type: next } : d))
-      );
-    },
-    onError: (err, variables) => {
-      // Sadece hata veren günü eski haline döndürüyoruz — tüm haftanın eski kopyasını
-      // geri yüklemek, aynı anda başarıyla işlenmiş BAŞKA bir günün optimistic
-      // güncellemesini de silip yanlış günün değişmiş gibi görünmesine yol açıyordu.
-      queryClient.setQueryData<any[]>(["currentWeek", user?.id], (old) =>
-        old?.map((d) => (d.date === variables.date ? { ...d, type: variables.currentType } : d))
-      );
-      Alert.alert("İşlem başarısız", (err as Error).message);
-    },
-    onSettled: (_data, _error, variables) => {
-      // toggleOffDayMutation tüm günler arasında TEK bir useMutation örneği —
-      // kilidi burada (hook seviyesi onSettled) açıyoruz çünkü bu callback her
-      // mutate() çağrısı için variables ile birlikte güvenilir şekilde çalışır.
-      // .mutate(vars, { onSettled }) şeklinde per-call verilen callback'ler ise
-      // React Query içinde aynı mutation nesnesinde üzerine yazılıyor — art arda
-      // farklı günlere hızlı basılınca önceki günün kilidi hiç açılmıyor, o gün
-      // sonsuza kadar kilitli kalıyordu.
-      queryClient.invalidateQueries({ queryKey: ["currentWeek"] });
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
-      setPendingDates((prev) => {
-        const next = new Set(prev);
-        next.delete(variables.date);
-        return next;
-      });
-    },
-  });
-
   function dayAccessibilityLabel(day: { date: string; type: string | null; isFuture: boolean; isToday: boolean }) {
     const dateLabel = new Date(day.date).toLocaleDateString("tr-TR", { day: "numeric", month: "long", weekday: "long" });
     if (day.isFuture) return `${dateLabel}, henüz gelmedi`;
     const statusLabel =
       day.type === "log"
-        ? "kayıt var, açmak için dokun"
+        ? "fotoğraflı kayıt var, açmak için dokun"
         : day.type === "off_day"
-        ? "off day olarak işaretli, antrenman yapmak için dokun"
+        ? "off day olarak işaretli, düzenlemek için dokun"
         : day.type === "workout"
-        ? "antrenman olarak işaretli, işareti kaldırmak için dokun"
-        : "boş, off day olarak işaretlemek için dokun";
+        ? "antrenman günü, düzenlemek için dokun"
+        : "boş, ölçüm veya program eklemek için dokun";
     return `${dateLabel}${day.isToday ? ", bugün" : ""}, ${statusLabel}`;
   }
 
+  // Fotoğraflı gün → o kaydı aç. Diğer tüm günler (boş / off_day / workout) →
+  // fotoğrafsız gün ekranı, o tarih ön-doldurulmuş olarak. Eskiden buradaki
+  // dokunma boş→off_day→workout→boş şeklinde hızlı döngü yapıyordu; artık ölçüm
+  // ve program da girilebildiği için tam ekrana yönlendiriyoruz (off-day işaretleme
+  // o ekranın içindeki seçimle korunuyor).
   function handleDayPress(day: { date: string; id: string | null; type: string | null; isFuture: boolean }) {
     if (day.isFuture) return;
     if (day.type === "log" && day.id) {
       router.push(`/entry/${day.id}`);
       return;
     }
-    if (pendingDates.has(day.date)) return; // aynı güne art arda basmayı engelle
-    setPendingDates((prev) => new Set(prev).add(day.date));
-    toggleOffDayMutation.mutate({ date: day.date, currentType: day.type });
+    router.push(`/entry/workout?date=${day.date}`);
   }
 
   const currentTypeId = activeTypeId ?? types?.[0]?.id;
@@ -637,6 +578,25 @@ export default function Istatistikler() {
       <Text className="text-text text-3xl font-bold px-4 mb-4" accessibilityRole="header">
         İstatistikler
       </Text>
+
+      {/* Antrenman sırasında hızlı erişim için ayrı kısayol: bugünün programını
+          (set logger) doğrudan açar. Tarih vermiyoruz → varsayılan bugün. */}
+      <Pressable
+        onPress={() => router.push("/entry/program")}
+        style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+        accessibilityRole="button"
+        accessibilityLabel="Bugünün antrenman programını aç"
+        className="mx-4 mb-4 bg-accentSoft border border-accent rounded-card p-4 flex-row items-center gap-3"
+      >
+        <View className="w-10 h-10 rounded-lg bg-accent/20 items-center justify-center">
+          <Feather name="list" size={20} color="#8CE05A" />
+        </View>
+        <View className="flex-1">
+          <Text className="text-text text-base font-semibold">Bugünün antrenmanı</Text>
+          <Text className="text-textFaint text-sm">Programı yaz — hareket ve setleri ekle</Text>
+        </View>
+        <Feather name="chevron-right" size={18} color="#8CE05A" />
+      </Pressable>
 
       <View className="flex-row gap-2 px-4 mb-4">
         {types?.map((t) => (
@@ -832,24 +792,21 @@ export default function Istatistikler() {
         ) : (
           <View className="flex-row justify-between">
             {week?.map((day) => {
-              const isPending = pendingDates.has(day.date);
               return (
                 <Pressable
                   key={day.date}
                   onPress={() => handleDayPress(day)}
-                  disabled={isPending || day.isFuture}
+                  disabled={day.isFuture}
                   hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
                   accessibilityRole="button"
-                  accessibilityLabel={isPending ? "işleniyor" : dayAccessibilityLabel(day)}
-                  accessibilityState={{ disabled: isPending || day.isFuture }}
+                  accessibilityLabel={dayAccessibilityLabel(day)}
+                  accessibilityState={{ disabled: day.isFuture }}
                   style={({ pressed }) => ({ opacity: pressed && !day.isFuture ? 0.7 : 1 })}
                   className="items-center gap-1"
                 >
                   <View
                     className={`w-8 h-8 rounded-md items-center justify-center ${
-                      isPending
-                        ? "bg-white/5 border border-border"
-                        : day.type === "log"
+                      day.type === "log"
                         ? "bg-accent"
                         : day.type === "off_day"
                         ? "bg-offDaySoft border border-offDay"
@@ -862,9 +819,7 @@ export default function Istatistikler() {
                         : "bg-white/5 border border-dashed border-white/20"
                     }`}
                   >
-                    {isPending ? (
-                      <ActivityIndicator size="small" color="#8CE05A" />
-                    ) : day.type === "log" ? (
+                    {day.type === "log" ? (
                       <Feather name="zap" size={14} color="#0B0D0A" />
                     ) : day.type === "off_day" ? (
                       <Feather name="moon" size={14} color="#B8C0E0" />

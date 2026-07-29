@@ -257,7 +257,7 @@ export default function WorkoutDayScreen() {
               className="bg-surface border border-border rounded-card p-4 mb-3 flex-row items-center gap-3"
             >
               <View className="w-9 h-9 rounded-lg bg-accentSoft items-center justify-center">
-                <Feather name="list" size={18} color="#8CE05A" />
+                <Feather name="clipboard" size={18} color="#8CE05A" />
               </View>
               <View className="flex-1">
                 <Text className="text-text text-base font-semibold">Antrenman programı</Text>

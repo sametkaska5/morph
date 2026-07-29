@@ -22,6 +22,7 @@ const PAGE_SIZE = 20;
 const TAB_BAR_HEIGHT = 84;
 
 type MeasurementEntry = { name: string; unit: string; value: number };
+type ProgramItem = { name: string; setCount: number };
 
 type CapsuleEntry = {
   id: string;
@@ -30,6 +31,7 @@ type CapsuleEntry = {
   photoUrl: string | null;
   photoPath: string | null; // sabit cache anahtarı
   measurements: MeasurementEntry[];
+  program: ProgramItem[];
 };
 
 function useCapsuleEntries() {
@@ -41,7 +43,7 @@ function useCapsuleEntries() {
       const { data, error } = await supabase
         .from("entries")
         .select(
-          "id, date, note, photos!cover_photo_id(storage_path), measurement_values(value, measurement_types(name, unit))"
+          "id, date, note, photos!cover_photo_id(storage_path), measurement_values(value, measurement_types(name, unit)), workout_items(name, order_index, workout_sets(reps, weight, order_index))"
         )
         .eq("type", "log")
         .order("date", { ascending: false })
@@ -65,6 +67,10 @@ function useCapsuleEntries() {
             unit: mv.measurement_types.unit,
             value: mv.value,
           })),
+        program: (e.workout_items ?? [])
+          .slice()
+          .sort((a: any, b: any) => a.order_index - b.order_index)
+          .map((wi: any) => ({ name: wi.name, setCount: (wi.workout_sets ?? []).length })),
       }));
     },
     getNextPageParam: (lastPage, allPages) =>
@@ -189,12 +195,45 @@ function CapsulePage({
               <Text className="text-text text-base leading-6">{entry.note}</Text>
             </View>
           ) : null}
+
+          {/* Antrenman programı özeti — yalnızca o güne program eklenmişse. Karta
+              basınca full set-logger ekranı açılır (o tarih ön-dolu). stopPropagation:
+              yoksa dokunuş kartı geri çevirirdi (sayfa Pressable'ı toggleFlip). */}
+          {/* program alanı, bu özellikten ÖNCE persist edilmiş (AsyncStorage) cache
+              kayıtlarında bulunmayabilir — undefined'a karşı savunmalı okuyoruz. */}
+          {(entry.program ?? []).length > 0 ? (
+            <Pressable
+              onPress={(e) => {
+                e.stopPropagation();
+                router.push(`/entry/program?date=${entry.date}`);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Antrenman programını aç"
+              style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+              className="bg-surface border border-border rounded-card p-4 mt-4"
+            >
+              <View className="flex-row items-center justify-between mb-1.5">
+                <Text className="text-textFaint text-sm font-semibold tracking-wide">ANTRENMAN PROGRAMI</Text>
+                <Feather name="chevron-right" size={16} color="#8B8A82" />
+              </View>
+              {(entry.program ?? []).slice(0, 4).map((p, i) => (
+                <View key={p.name + i} className="flex-row items-center justify-between py-1">
+                  <Text className="text-text text-base capitalize flex-1" numberOfLines={1}>
+                    {p.name}
+                  </Text>
+                  <Text className="text-textMuted text-sm ml-3">{p.setCount} set</Text>
+                </View>
+              ))}
+              {(entry.program ?? []).length > 4 ? (
+                <Text className="text-textFaint text-sm mt-1">+{(entry.program ?? []).length - 4} hareket daha</Text>
+              ) : null}
+            </Pressable>
+          ) : null}
         </View>
 
-        {/* Bu köşedeki buton eskiden kaydı BÜYÜTÜP detay ekranını açıyordu.
-            Büyütme şimdilik kaldırıldı; buton yerinde duruyor çünkü ileride
-            buraya ANTRENMAN eklenecek. O gelene kadar slot boş durmasın diye
-            düzenleme aksiyonunu buraya aldık — kart çevrildiğinde erişilebiliyor.
+        {/* Köşedeki buton: anıyı düzenle (fotoğraf/ölçüm/not). Antrenman programı
+            artık yukarıda, arka yüzde inline gösteriliyor — bu buton anının kendi
+            düzenlemesine ayrıldı.
 
             NOT: konum düz bir style objesiyle veriliyor, fonksiyon-biçimli
             style ile DEĞİL. Daha önce bu butonun tam olarak burada yanlış

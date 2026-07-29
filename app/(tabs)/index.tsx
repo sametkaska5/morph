@@ -174,6 +174,18 @@ export default function AnaEkran() {
           <Text className="text-textMuted text-sm mt-1 capitalize">{todayLabel}</Text>
         </View>
         <View className="flex-row gap-2">
+          {/* Antrenman programı kısayolu — arama/karşılaştır ile aynı yuvarlak
+              boyut ama accent tonlu: antrenmanda hızlı erişilen asıl aksiyon,
+              yer kaplamadan öne çıkıyor. */}
+          <Pressable
+            onPress={() => router.push("/entry/program")}
+            accessibilityRole="button"
+            accessibilityLabel="Bugünün antrenman programını aç"
+            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+            className="w-11 h-11 rounded-full bg-accentSoft border border-accent items-center justify-center"
+          >
+            <Feather name="clipboard" size={20} color="#8CE05A" />
+          </Pressable>
           <Pressable
             onPress={() => router.push("/search")}
             accessibilityRole="button"

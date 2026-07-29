@@ -589,7 +589,7 @@ export default function Istatistikler() {
         className="mx-4 mb-4 bg-accentSoft border border-accent rounded-card p-4 flex-row items-center gap-3"
       >
         <View className="w-10 h-10 rounded-lg bg-accent/20 items-center justify-center">
-          <Feather name="list" size={20} color="#8CE05A" />
+          <Feather name="clipboard" size={20} color="#8CE05A" />
         </View>
         <View className="flex-1">
           <Text className="text-text text-base font-semibold">Bugünün antrenmanı</Text>

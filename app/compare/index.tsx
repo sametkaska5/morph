@@ -26,6 +26,9 @@ function useComparison(a: string | undefined, b: string | undefined) {
   return useQuery({
     queryKey: ["comparison", a, b],
     enabled: !!a && !!b,
+    // İmzalı linkler 6 saat geçerli; aynı çifti tekrar açınca sıfırdan çekmek
+    // yerine cache'ten anında göster (uygulamanın geri kalanıyla aynı süre).
+    staleTime: 1000 * 60 * 30,
     queryFn: () => fetchComparisonBetween(a!, b!),
   });
 }

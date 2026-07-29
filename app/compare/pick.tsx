@@ -3,11 +3,12 @@ import { View, FlatList, Pressable, ActivityIndicator, Dimensions } from "react-
 import { Text } from "@/components/Typography";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Feather from "@expo/vector-icons/Feather";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
 import { getPhotoUrls, coverThumbPath, photoCacheKey } from "@/lib/storage";
+import { fetchComparisonBetween } from "@/lib/comparison";
 
 const { width } = Dimensions.get("window");
 const THUMB_SIZE = (width - 20 * 2 - 8 * 2) / 3;
@@ -48,6 +49,7 @@ function usePickableEntries() {
 
 export default function PickComparison() {
   const { data: entries, isLoading } = usePickableEntries();
+  const queryClient = useQueryClient();
   const [selected, setSelected] = useState<string[]>([]);
 
   function toggle(id: string) {
@@ -60,7 +62,16 @@ export default function PickComparison() {
 
   function handleContinue() {
     if (selected.length === 2) {
-      router.replace({ pathname: "/compare", params: { a: selected[0], b: selected[1] } });
+      const [a, b] = selected;
+      // Karşılaştırma verisini navigasyondan ÖNCE çekmeye başla — geçiş animasyonu
+      // sürerken sorgular/imzalama arka planda dönüyor, compare ekranı aynı
+      // queryKey'e bağlandığı için açıldığında veri çoğunlukla hazır oluyor.
+      queryClient.prefetchQuery({
+        queryKey: ["comparison", a, b],
+        queryFn: () => fetchComparisonBetween(a, b),
+        staleTime: 1000 * 60 * 30,
+      });
+      router.replace({ pathname: "/compare", params: { a, b } });
     }
   }
 

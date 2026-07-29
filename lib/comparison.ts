@@ -16,7 +16,11 @@ export type ComparisonData = {
 };
 
 async function loadSide(entryRow: any): Promise<ComparisonSide> {
-  const photoPath = entryRow.photos?.storage_path;
+  const photoRow = entryRow.photos;
+  // Karşılaştırma fotoğrafları yan yana YARIM genişlikte gösteriliyor — tam boy
+  // (1280px) yerine küçük kopya (thumb, 400px) hem yeterli hem kat kat hızlı
+  // iniyor. thumb yoksa (eski kayıt) tam boya geri düşüyoruz.
+  const photoPath = photoRow?.thumb_path ?? photoRow?.storage_path ?? null;
   const measurements: Record<string, number> = {};
   for (const mv of entryRow.measurement_values ?? []) {
     measurements[mv.measurement_type_id] = mv.value;
@@ -31,37 +35,21 @@ async function loadSide(entryRow: any): Promise<ComparisonSide> {
 
 export async function fetchDefaultComparison(userId: string): Promise<ComparisonData | null> {
   const selectStr =
-    "id, date, photos!cover_photo_id(storage_path), measurement_values(measurement_type_id, value)";
+    "id, date, photos!cover_photo_id(storage_path, thumb_path), measurement_values(measurement_type_id, value)";
 
-  const { data: firstEntry } = await supabase
-    .from("entries")
-    .select(selectStr)
-    .eq("user_id", userId)
-    .eq("type", "log")
-    .order("date", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  const { data: lastEntry } = await supabase
-    .from("entries")
-    .select(selectStr)
-    .eq("user_id", userId)
-    .eq("type", "log")
-    .order("date", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  // İlk kayıt, son kayıt ve ölçüm tipleri BİRBİRİNDEN BAĞIMSIZ — sıralı beklemek
+  // yerine tek seferde paralel çekiyoruz (is_default filtresi yok; RLS zaten
+  // sistem varsayılanları + kullanıcının özel tiplerini döndürüyor).
+  const [{ data: firstEntry }, { data: lastEntry }, { data: types }] = await Promise.all([
+    supabase.from("entries").select(selectStr).eq("user_id", userId).eq("type", "log").order("date", { ascending: true }).limit(1).maybeSingle(),
+    supabase.from("entries").select(selectStr).eq("user_id", userId).eq("type", "log").order("date", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("measurement_types").select("id, name, unit, target_direction").order("sort_order"),
+  ]);
 
   if (!firstEntry || !lastEntry || firstEntry.id === lastEntry.id) return null;
 
-  // is_default filtresi yok — RLS ("user_id is null or auth.uid() = user_id")
-  // zaten sistem varsayılanları + kullanıcının kendi özel tiplerini döndürüyor.
-  const { data: types } = await supabase
-    .from("measurement_types")
-    .select("id, name, unit, target_direction")
-    .order("sort_order");
-
-  const start = await loadSide(firstEntry);
-  const end = await loadSide(lastEntry);
+  // İki tarafın fotoğrafını da paralel imzalıyoruz.
+  const [start, end] = await Promise.all([loadSide(firstEntry), loadSide(lastEntry)]);
 
   const daysBetween = Math.round(
     (new Date(end.date).getTime() - new Date(start.date).getTime()) / 86400000
@@ -77,23 +65,21 @@ export async function fetchDefaultComparison(userId: string): Promise<Comparison
 
 export async function fetchComparisonBetween(entryIdA: string, entryIdB: string): Promise<ComparisonData | null> {
   const selectStr =
-    "id, date, photos!cover_photo_id(storage_path), measurement_values(measurement_type_id, value)";
+    "id, date, photos!cover_photo_id(storage_path, thumb_path), measurement_values(measurement_type_id, value)";
 
-  const { data: a } = await supabase.from("entries").select(selectStr).eq("id", entryIdA).maybeSingle();
-  const { data: b } = await supabase.from("entries").select(selectStr).eq("id", entryIdB).maybeSingle();
+  // İki kayıt ve ölçüm tipleri bağımsız — paralel çekiyoruz (eskiden sıralıydı,
+  // "Karşılaştır"a basınca 3 ayrı gidiş-dönüş art arda bekleniyordu).
+  const [{ data: a }, { data: b }, { data: types }] = await Promise.all([
+    supabase.from("entries").select(selectStr).eq("id", entryIdA).maybeSingle(),
+    supabase.from("entries").select(selectStr).eq("id", entryIdB).maybeSingle(),
+    supabase.from("measurement_types").select("id, name, unit, target_direction").order("sort_order"),
+  ]);
   if (!a || !b) return null;
 
   const [firstEntry, lastEntry] = new Date(a.date) <= new Date(b.date) ? [a, b] : [b, a];
 
-  // is_default filtresi yok — RLS ("user_id is null or auth.uid() = user_id")
-  // zaten sistem varsayılanları + kullanıcının kendi özel tiplerini döndürüyor.
-  const { data: types } = await supabase
-    .from("measurement_types")
-    .select("id, name, unit, target_direction")
-    .order("sort_order");
-
-  const start = await loadSide(firstEntry);
-  const end = await loadSide(lastEntry);
+  // İki tarafın fotoğrafını da paralel imzalıyoruz.
+  const [start, end] = await Promise.all([loadSide(firstEntry), loadSide(lastEntry)]);
   const daysBetween = Math.round(
     (new Date(end.date).getTime() - new Date(start.date).getTime()) / 86400000
   );

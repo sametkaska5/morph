@@ -2,20 +2,19 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { View, ScrollView, Pressable, ActivityIndicator, Alert, Image, Modal, RefreshControl } from "react-native";
 import { Text } from "@/components/Typography";
 import Svg, { Path, Circle, Line, Defs, LinearGradient, Stop } from "react-native-svg";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
 import { captureRef } from "react-native-view-shot";
 import * as Sharing from "expo-sharing";
 import type * as MediaLibraryType from "expo-media-library";
-import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
-import { toLocalDateKey, getMondayOfWeek, weekdayLetter } from "@/lib/date";
 import { scheduleStreakRiskNotification } from "@/lib/notifications";
 import { useNotificationSettings } from "@/lib/notificationSettings";
 import { useMeasurementTypes } from "@/lib/measurementTypes";
 import { useUnitPreference, displayUnit, toDisplayValue } from "@/lib/units";
-import { getPhotoUrls } from "@/lib/storage";
+import { useMeasurementSeries, useCurrentWeek, useShareablePhotoEntries } from "@/lib/stats";
+import { queryKeys } from "@/lib/queryKeys";
 
 let MediaLibrary: typeof MediaLibraryType | null = null;
 try {
@@ -40,104 +39,6 @@ const CHART_PAD_X = 16;
 const VISIBLE_POINTS = 7;
 
 type ChartPoint = { x: number; y: number };
-
-function useMeasurementSeries(userId: string | undefined, typeId: string | undefined) {
-  return useQuery({
-    // userId anahtarda yoksa, aynı cihazda hesap değiştirildiğinde önceki
-    // kullanıcının grafiği cache'ten okunabiliyordu.
-    queryKey: ["measurement_series", userId, typeId],
-    enabled: !!userId && !!typeId,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("measurement_values")
-        .select("value, entries!inner(date, type, user_id)")
-        .eq("measurement_type_id", typeId)
-        .eq("entries.user_id", userId)
-        // Fotoğrafsız günlerde (workout) girilen ölçümler de grafikte görünsün —
-        // eskiden yalnızca 'log' okunuyordu, foto çekilmeyen günün ölçümü kaybolurdu.
-        .in("entries.type", ["log", "workout"]);
-      if (error) throw error;
-      // Sıralamayı JS'te yapıyoruz. entries bu sorguda to-one bir ilişki olduğu
-      // için PostgREST'in foreignTable order'ı ANA satırları (measurement_values)
-      // güvenilir sıralamıyordu — değerler ekleme sırasında gelip grafik yanlış
-      // diziliyordu. Tarihe göre ARTAN sıralayınca en eski solda, en yeni sağda olur.
-      return (data ?? [])
-        .map((d: any) => ({ date: d.entries.date, value: d.value }))
-        .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
-    },
-  });
-}
-
-function useCurrentWeek(userId: string | undefined) {
-  return useQuery({
-    queryKey: ["currentWeek", userId],
-    enabled: !!userId,
-    queryFn: async () => {
-      const todayKey = toLocalDateKey(new Date());
-      const monday = getMondayOfWeek(new Date());
-
-      const days: { date: string; label: string; isFuture: boolean; isToday: boolean }[] = [];
-      for (let i = 0; i < 7; i++) {
-        const d = new Date(monday);
-        d.setDate(monday.getDate() + i);
-        const dateKey = toLocalDateKey(d);
-        days.push({
-          date: dateKey,
-          label: weekdayLetter(d),
-          isFuture: dateKey > todayKey,
-          isToday: dateKey === todayKey,
-        });
-      }
-
-      const { data, error } = await supabase
-        .from("entries")
-        .select("id, date, type")
-        .eq("user_id", userId)
-        .gte("date", days[0].date)
-        .lte("date", days[days.length - 1].date);
-      if (error) throw error;
-
-      const byDate = new Map((data ?? []).map((e) => [e.date, { id: e.id, type: e.type }]));
-      return days.map((d) => ({
-        ...d,
-        id: byDate.get(d.date)?.id ?? null,
-        type: byDate.get(d.date)?.type ?? null,
-      }));
-    },
-  });
-}
-
-function useShareablePhotoEntries(userId: string | undefined) {
-  return useQuery({
-    queryKey: ["shareablePhotos", userId],
-    enabled: !!userId,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("entries")
-        .select("id, date, photos!cover_photo_id(storage_path)")
-        .eq("user_id", userId)
-        .eq("type", "log")
-        .not("cover_photo_id", "is", null)
-        .order("date", { ascending: false })
-        .limit(12);
-      if (error) throw error;
-
-      const paths = (data ?? [])
-        .map((entry: any) => entry.photos?.storage_path)
-        .filter(Boolean) as string[];
-      const urlMap = await getPhotoUrls(paths);
-
-      return (data ?? [])
-        .map((entry: any) => ({
-          id: entry.id,
-          date: entry.date,
-          photoUrl: entry.photos?.storage_path ? urlMap.get(entry.photos.storage_path) ?? null : null,
-          photoPath: entry.photos?.storage_path ?? null,
-        }))
-        .filter((entry) => entry.photoUrl);
-    },
-  });
-}
 
 /**
  * Noktaları köşesiz bir eğriye çevirir (Catmull-Rom → kübik Bézier).
@@ -397,11 +298,11 @@ export default function Istatistikler() {
     setRefreshing(true);
     try {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["measurement_series"] }),
-        queryClient.invalidateQueries({ queryKey: ["currentWeek"] }),
-        queryClient.invalidateQueries({ queryKey: ["shareablePhotos"] }),
-        queryClient.invalidateQueries({ queryKey: ["measurement_types"] }),
-        queryClient.invalidateQueries({ queryKey: ["profile"] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.measurementSeries.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.currentWeek.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.shareablePhotos.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.measurementTypes.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.profile.all }),
       ]);
     } finally {
       setRefreshing(false);
@@ -479,9 +380,13 @@ export default function Istatistikler() {
     modalActiveIndex != null ? series?.[modalActiveIndex]?.date ?? null : null;
 
   // Başka bir ölçüme geçilince önceki serinin seçili noktası anlamsız kalıyor.
-  useEffect(() => {
+  // Effect yerine render sırasında senkronize ediyoruz — fazladan bir commit'lenmiş
+  // render turu olmadan (react.dev: you-might-not-need-an-effect).
+  const [prevTypeId, setPrevTypeId] = useState(currentTypeId);
+  if (prevTypeId !== currentTypeId) {
+    setPrevTypeId(currentTypeId);
     setSelectedIndex(null);
-  }, [currentTypeId]);
+  }
   const delta = currentValue != null && previousValue != null ? Number((currentValue - previousValue).toFixed(1)) : null;
   const isGoodDelta =
     delta != null && activeType
@@ -501,18 +406,11 @@ export default function Istatistikler() {
     return streak;
   })();
 
+  // Türetilmiş seçim: state'teki id listede yoksa (kayıt silindi / liste
+  // yenilendi) ilk fotoğrafa düşer. Eskiden bunu bir useEffect state'i
+  // düzelterek yapıyordu — ızgaradaki vurgu selectedSharePhoto.id'den okunduğu
+  // sürece ayrıca senkronize edilecek bir state kalmıyor.
   const selectedSharePhoto = shareablePhotos?.find((photo) => photo.id === selectedSharePhotoId) ?? shareablePhotos?.[0] ?? null;
-
-  useEffect(() => {
-    if (shareablePhotos && shareablePhotos.length > 0) {
-      const hasSelected = shareablePhotos.some((photo) => photo.id === selectedSharePhotoId);
-      if (!hasSelected) {
-        setSelectedSharePhotoId(shareablePhotos[0].id);
-      }
-    } else {
-      setSelectedSharePhotoId(null);
-    }
-  }, [shareablePhotos, selectedSharePhotoId]);
 
   const { data: notifSettings } = useNotificationSettings(user?.id);
 
@@ -861,7 +759,7 @@ export default function Istatistikler() {
                   <Text className="text-text text-sm font-semibold mb-2">Fotoğraf seç</Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
                     {shareablePhotos.map((photo) => {
-                      const isActive = selectedSharePhotoId === photo.id;
+                      const isActive = selectedSharePhoto?.id === photo.id;
                       return (
                         <Pressable
                           key={photo.id}

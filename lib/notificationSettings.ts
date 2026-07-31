@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "./supabase";
+import { queryKeys } from "./queryKeys";
 
 export type NotificationSettings = {
   user_id: string;
@@ -11,7 +12,7 @@ export type NotificationSettings = {
 
 export function useNotificationSettings(userId: string | undefined) {
   return useQuery({
-    queryKey: ["notification_settings", userId],
+    queryKey: queryKeys.notificationSettings(userId),
     enabled: !!userId,
     queryFn: async (): Promise<NotificationSettings> => {
       const { data, error } = await supabase
@@ -27,7 +28,7 @@ export function useNotificationSettings(userId: string | undefined) {
 
 export function useUpdateNotificationSettings(userId: string | undefined) {
   const queryClient = useQueryClient();
-  const key = ["notification_settings", userId];
+  const key = queryKeys.notificationSettings(userId);
   return useMutation({
     mutationFn: async (patch: Partial<Omit<NotificationSettings, "user_id">>) => {
       if (!userId) throw new Error("Giriş yapılmamış");

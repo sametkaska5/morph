@@ -2,12 +2,11 @@ import { useState } from "react";
 import { View, Pressable, FlatList, Dimensions, RefreshControl, ActivityIndicator } from "react-native";
 import { Text } from "@/components/Typography";
 import { Image } from "expo-image";
-import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
-import { supabase } from "@/lib/supabase";
-import { getPhotoUrls, coverThumbPath, photoCacheKey } from "@/lib/storage";
+import { photoCacheKey } from "@/lib/storage";
 import { openCapturePicker } from "@/lib/capture";
+import { useTimelineEntries, type EntryRow } from "@/lib/entries";
 
 const { width } = Dimensions.get("window");
 const GAP = 8;
@@ -15,51 +14,6 @@ const COLUMNS = 3;
 const H_PADDING = 16;
 const THUMB_W = (width - H_PADDING * 2 - GAP * (COLUMNS - 1)) / COLUMNS;
 const THUMB_H = THUMB_W * 1.5; // poster oranı (2:3)
-
-export type EntryRow = {
-  id: string;
-  date: string;
-  note: string | null;
-  cover_photo_url: string | null;
-  cover_photo_path: string | null; // sabit cache anahtarı için — link değişse de bu değişmiyor
-  pending?: boolean; // offline'da eklenip henüz Supabase'e senkronize olmamış kayıt
-};
-
-function useTimelineEntries() {
-  return useQuery({
-    queryKey: ["entries", "timeline"],
-    staleTime: 1000 * 60 * 30, // imzalı linkler 6 saat geçerli, yarım saat cache yeterli
-    queryFn: async (): Promise<EntryRow[]> => {
-      const { data, error } = await supabase
-        .from("entries")
-        .select("id, date, note, cover_photo_id, photos!entry_id(id, storage_path, thumb_path)")
-        .eq("type", "log")
-        .order("date", { ascending: false })
-        .limit(60);
-
-      if (error) throw error;
-
-      // 3 sütunlu ızgara: kare ~108pt. Yüklemede üretilen küçük kopyayı
-      // kullanıyoruz; olmayan (eski) kayıtlarda coverThumbPath tam boya düşer.
-      const paths = (data ?? []).map(coverThumbPath).filter(Boolean) as string[];
-      // Bilerek transform'suz (varyantsız) çağrı: yol zaten küçük kopyaya işaret
-      // ediyor, üstüne dönüşüm istemek path başına ayrı imzalama isteği demek
-      // olurdu — 60 kayıtlık ızgarada tek batch isteği çok daha hızlı.
-      const urlMap = await getPhotoUrls(paths);
-
-      return (data ?? []).map((e: any) => {
-        const path = coverThumbPath(e);
-        return {
-          id: e.id,
-          date: e.date,
-          note: e.note,
-          cover_photo_url: path ? urlMap.get(path) ?? null : null,
-          cover_photo_path: path ?? null,
-        };
-      });
-    },
-  });
-}
 
 function PosterThumb({ entry }: { entry: EntryRow }) {
   // Pressable'ın basınca-değişen style FONKSİYONU burada marginBottom'u (satır

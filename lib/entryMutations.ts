@@ -3,6 +3,7 @@ import { supabase } from "./supabase";
 import { uploadPhoto, uploadThumb } from "./storage";
 import { parseMeasurementInput } from "./measurementInput";
 import { captureError } from "./monitoring";
+import { queryKeys } from "./queryKeys";
 
 export const SAVE_ENTRY_MUTATION_KEY = ["saveEntry"] as const;
 
@@ -115,10 +116,10 @@ export function registerEntryMutationDefaults(queryClient: QueryClient) {
   queryClient.setMutationDefaults(SAVE_ENTRY_MUTATION_KEY, {
     mutationFn: saveEntry,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["entries"] });
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.entries.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.profile.all });
       // Yeni kayıt ölçüm de içerebilir — istatistik grafiği güncel kalsın.
-      queryClient.invalidateQueries({ queryKey: ["measurement_series"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.measurementSeries.all });
     },
     onError: (err) => {
       // Bu, offline'da kuyruğa alınıp sonra resume edilen senkronları da kapsar —

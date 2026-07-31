@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { View, Pressable, Platform, Alert, ScrollView, ActivityIndicator } from "react-native";
 import { Text, TextInput } from "@/components/Typography";
 import { router, useLocalSearchParams } from "expo-router";
@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/useAuth";
 import { toLocalDateKey } from "@/lib/date";
 import { useKeyboardFocus } from "@/lib/useKeyboardFocus";
 import { useProgramDay, saveProgram, type WorkoutItemDraft, type WorkoutSetDraft } from "@/lib/workout";
+import { queryKeys } from "@/lib/queryKeys";
 
 const EMPTY_SET: WorkoutSetDraft = { reps: "", weight: "" };
 const newExercise = (): WorkoutItemDraft => ({ name: "", sets: [{ ...EMPTY_SET }] });
@@ -33,39 +34,39 @@ export default function ProgramScreen() {
 
   // O tarihte program varsa bir kez doldur (düzenleme). Her (tarih, entry) için
   // tek sefer — kullanıcının aktif düzenlemesini geç gelen veri ezmesin.
-  const hydratedRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (isLoading) return;
-    const key = `${dateKey}:${existing?.entryId ?? "new"}`;
-    if (hydratedRef.current === key) return;
-    hydratedRef.current = key;
-
+  // Effect'te setState yerine render sırasında senkronizasyon: aynı "bir kez
+  // hydrate et" anahtarı state'te tutuluyor, veri hazır olur olmaz form tek
+  // geçişte doluyor (react.dev: you-might-not-need-an-effect).
+  const [hydratedKey, setHydratedKey] = useState<string | null>(null);
+  const hydrationKey = `${dateKey}:${existing?.entryId ?? "new"}`;
+  if (!isLoading && hydratedKey !== hydrationKey) {
+    setHydratedKey(hydrationKey);
     if (!existing || existing.items.length === 0) {
       setItems([]);
-      return;
+    } else {
+      setItems(
+        existing.items.map((it) => ({
+          name: it.name,
+          sets:
+            it.sets.length > 0
+              ? it.sets.map((s) => ({
+                  reps: s.reps != null ? String(s.reps) : "",
+                  weight: s.weight != null ? String(s.weight) : "",
+                }))
+              : [{ ...EMPTY_SET }],
+        }))
+      );
     }
-    setItems(
-      existing.items.map((it) => ({
-        name: it.name,
-        sets:
-          it.sets.length > 0
-            ? it.sets.map((s) => ({
-                reps: s.reps != null ? String(s.reps) : "",
-                weight: s.weight != null ? String(s.weight) : "",
-              }))
-            : [{ ...EMPTY_SET }],
-      }))
-    );
-  }, [existing, isLoading, dateKey]);
+  }
 
   const saveMutation = useMutation({
     mutationFn: saveProgram,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["programDay"] });
-      queryClient.invalidateQueries({ queryKey: ["entries"] });
-      queryClient.invalidateQueries({ queryKey: ["entry"] });
-      queryClient.invalidateQueries({ queryKey: ["currentWeek"] });
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.programDay.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.entries.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.entry.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.currentWeek.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.profile.all });
       router.back();
     },
     onError: (err) => Alert.alert("Kayıt başarısız", (err as Error).message),

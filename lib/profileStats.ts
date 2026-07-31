@@ -1,5 +1,7 @@
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 import { toLocalDateKey } from "./date";
+import { queryKeys } from "./queryKeys";
 
 /**
  * Tarihe göre ARTAN sıralı gün listesinden mevcut ve en uzun seriyi hesaplar.
@@ -107,4 +109,12 @@ export async function fetchProfileStats(userId: string) {
   }
 
   return { firstDate, totalMemories, current, longest, weightDiff, monthsSinceFirst };
+}
+
+export function useProfileStats(userId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.profile.stats(userId),
+    queryFn: () => fetchProfileStats(userId!),
+    enabled: !!userId,
+  });
 }

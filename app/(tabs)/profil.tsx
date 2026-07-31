@@ -2,25 +2,16 @@ import { useRef, useState } from "react";
 import { View, ScrollView, Pressable, ActivityIndicator, Modal, Alert } from "react-native";
 import { Text } from "@/components/Typography";
 import { Image } from "expo-image";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
 import { useAuth } from "@/lib/useAuth";
 import { supabase } from "@/lib/supabase";
 import { deleteAccount } from "@/lib/account";
-import { fetchProfileStats } from "@/lib/profileStats";
+import { useProfileStats } from "@/lib/profileStats";
 import { useProfile } from "@/lib/profile";
 import { useUnitPreference, useSetUnitPreference } from "@/lib/units";
 import { DraggableSheet } from "@/components/DraggableSheet";
-
-function useProfileStats() {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: ["profile", "stats", user?.id],
-    queryFn: () => fetchProfileStats(user!.id),
-    enabled: !!user,
-  });
-}
 
 function StatChip({ icon, label, value }: { icon: any; label: string; value: string }) {
   return (
@@ -79,7 +70,7 @@ function UnitOption({
 
 export default function Profil() {
   const { user } = useAuth();
-  const { data: stats, isLoading } = useProfileStats();
+  const { data: stats, isLoading } = useProfileStats(user?.id);
   const { data: profile } = useProfile(user?.id);
   const { data: unitPref = "metric" } = useUnitPreference(user?.id);
   const setUnitMutation = useSetUnitPreference(user?.id);

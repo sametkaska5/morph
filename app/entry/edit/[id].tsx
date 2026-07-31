@@ -12,130 +12,20 @@ import {
 import { Image } from "expo-image";
 import { Text, TextInput } from "@/components/Typography";
 import { useLocalSearchParams, router } from "expo-router";
-import { useState, useEffect, useRef } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useRef } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import * as ImagePicker from "expo-image-picker";
 import Feather from "@expo/vector-icons/Feather";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
-import { uploadPhoto, uploadThumb, getPhotoUrl, coverPhotoRow, photoCacheKey } from "@/lib/storage";
+import { uploadPhoto, uploadThumb, coverPhotoRow, photoCacheKey } from "@/lib/storage";
 import { resizeAndCompress } from "@/lib/capture";
 import { useKeyboardFocus } from "@/lib/useKeyboardFocus";
 import { useMeasurementTypes } from "@/lib/measurementTypes";
 import { useUnitPreference, displayUnit, toDisplayValue, toMetricValue } from "@/lib/units";
 import { validateMeasurementInput, measurementErrorText } from "@/lib/measurementInput";
-
-/* ---------------- FETCH ---------------- */
-
-/**
- * Düzenleme ekranı hemen HER ZAMAN başka bir ekrandan (anı akışı, detay, ana
- * ekran) açılıyor ve o ekranlar bu kaydı zaten çekmiş, fotoğrafını da diske
- * indirmiş oluyor. Ağ sorgusunu beklemek yerine o cache'lerden kaydı anında
- * bulup placeholder olarak veriyoruz: ekran spinner göstermeden açılıyor,
- * fotoğraf cacheKey ile diskten geliyor. Gerçek sorgu arka planda tamamlanıp
- * yerini alıyor (ölçüm değerleri gibi placeholder'da olmayan alanları doldurur).
- */
-type EntrySeed = {
-  note: string | null;
-  photoUrl: string | null; // tam boy
-  photoPath: string | null; // tam boy storage yolu (cacheKey path@full)
-  thumbUrl: string | null; // küçük kopya (anlık placeholder)
-  thumbPath: string | null; // küçük kopya yolu (cacheKey path@thumb)
-};
-
-function findEntryInCaches(
-  queryClient: ReturnType<typeof useQueryClient>,
-  entryId: string
-): EntrySeed | null {
-  const seed: EntrySeed = { note: null, photoUrl: null, photoPath: null, thumbUrl: null, thumbPath: null };
-  let found = false;
-
-  // Anı akışı (sonsuz sorgu) ve detay ekranı: TAM BOY photoUrl + photoPath.
-  const capsule = queryClient.getQueryData<{ pages: any[][] }>(["entries", "capsule"]);
-  for (const page of capsule?.pages ?? []) {
-    const hit = page.find((e: any) => e.id === entryId);
-    if (hit) {
-      seed.note = hit.note ?? null;
-      seed.photoUrl = hit.photoUrl ?? null;
-      seed.photoPath = hit.photoPath ?? null;
-      found = true;
-      break;
-    }
-  }
-  if (!seed.photoUrl) {
-    const detail = queryClient.getQueryData<any>(["entry", entryId]);
-    if (detail) {
-      seed.note = seed.note ?? detail.note ?? null;
-      seed.photoUrl = detail.photoUrl ?? null;
-      seed.photoPath = detail.photoPath ?? null;
-      found = true;
-    }
-  }
-
-  // Ana ekran ızgarası: KÜÇÜK kopya (thumb). Tam boy diskte olmasa da bu genelde
-  // cache'te oluyor ve anlık placeholder olarak gösterilebiliyor.
-  const timeline = queryClient.getQueryData<any[]>(["entries", "timeline"]);
-  const gridHit = timeline?.find((e: any) => e.id === entryId);
-  if (gridHit?.cover_photo_url) {
-    seed.thumbUrl = gridHit.cover_photo_url;
-    seed.thumbPath = gridHit.cover_photo_path ?? null;
-    found = true;
-  }
-
-  return found ? seed : null;
-}
-
-function useEntry(entryId: string) {
-  const queryClient = useQueryClient();
-  return useQuery({
-    queryKey: ["entry", "edit", entryId],
-    // İmzalı linkler 6 saat geçerli; ekranı her açışta sıfırdan çekmek yerine
-    // cache'ten anında gösteriyoruz (uygulamanın geri kalanıyla aynı süre).
-    staleTime: 1000 * 60 * 30,
-    // Fotoğrafı ve notu anında gösterebilmek için başka ekranların cache'inden
-    // tohumla; gerçek fetch tamamlanınca ölçümlerle birlikte tam veri gelir.
-    placeholderData: () => {
-      const seed = findEntryInCaches(queryClient, entryId);
-      if (!seed) return undefined;
-      return {
-        id: entryId,
-        note: seed.note,
-        photoUrl: seed.photoUrl,
-        photoPath: seed.photoPath,
-        thumbUrl: seed.thumbUrl,
-        thumbPath: seed.thumbPath,
-        measurement_values: [],
-      } as any;
-    },
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("entries")
-        .select(
-          "id, note, cover_photo_id, photos!entry_id(id, storage_path, thumb_path), measurement_values(id, value, measurement_type_id, measurement_types(name, unit))"
-        )
-        .eq("id", entryId)
-        .single();
-
-      if (error) throw error;
-
-      // İmzalı linkleri BURADA üretiyoruz. Eskiden bu iş render sonrası bir
-      // useEffect'te yapılıyordu: kayıt sorgusu bitiyor → efekt çalışıyor →
-      // imzalama isteği gidiyor → ancak ondan sonra fotoğraf inmeye başlıyordu.
-      // Tam boy VE küçük kopyayı paralel imzalıyoruz; küçük kopya, tam boy diskte
-      // yoksa anlık placeholder olarak gösterilip "boş kare" beklemesini önlüyor.
-      const coverRow = coverPhotoRow<{ storage_path: string; thumb_path?: string | null }>(data);
-      const photoPath = coverRow?.storage_path ?? null;
-      const thumbPath = coverRow?.thumb_path ?? null;
-
-      const [photoUrl, thumbUrl] = await Promise.all([
-        photoPath ? getPhotoUrl(photoPath, "full").catch(() => null) : Promise.resolve(null),
-        thumbPath ? getPhotoUrl(thumbPath).catch(() => null) : Promise.resolve(null),
-      ]);
-
-      return { ...data, photoUrl, photoPath, thumbUrl, thumbPath };
-    },
-  });
-}
+import { useEditableEntry } from "@/lib/entries";
+import { queryKeys } from "@/lib/queryKeys";
 
 /* ---------------- PAGE ---------------- */
 
@@ -145,7 +35,7 @@ export default function EditEntry() {
 
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { data, isLoading } = useEntry(id);
+  const { data, isLoading } = useEditableEntry(id);
   const { data: allTypes } = useMeasurementTypes(user?.id);
   const { data: unitPref = "metric" } = useUnitPreference(user?.id);
 
@@ -189,10 +79,19 @@ export default function EditEntry() {
         }
       : undefined;
 
-  /* INIT */
-  useEffect(() => {
+  /* INIT — form alanlarını sorgu verisiyle doldur.
+     Effect'te setState yapmak veri geldikten sonra fazladan bir tam render
+     turu (boş form → dolu form) demekti; render sırasında "önceki değerle
+     karşılaştır" kalıbı aynı senkronizasyonu commit öncesinde yapıyor
+     (react.dev: you-might-not-need-an-effect). Davranış birebir aynı:
+     placeholder → gerçek veri geçişinde de yeniden doldurulur. */
+  const [prevInit, setPrevInit] = useState<{ data: unknown; unitPref: unknown }>({
+    data: undefined,
+    unitPref: undefined,
+  });
+  if (prevInit.data !== data || prevInit.unitPref !== unitPref) {
+    setPrevInit({ data, unitPref });
     if (data?.note) setNote(data.note);
-
     if (data?.measurement_values) {
       const initial: Record<string, string> = {};
       for (const mv of data.measurement_values as any[]) {
@@ -201,7 +100,7 @@ export default function EditEntry() {
       }
       setValues(initial);
     }
-  }, [data, unitPref]);
+  }
 
   /* ---------------- PICK IMAGE (kırp / kırpmadan seç) ---------------- */
 
@@ -329,13 +228,13 @@ export default function EditEntry() {
     },
 
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["entries"] });
-      queryClient.invalidateQueries({ queryKey: ["entry", id] });
-      queryClient.invalidateQueries({ queryKey: ["entry", "edit", id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.entries.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.entry.detail(id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.entry.edit(id) });
       // Ölçüm değeri değişmiş olabilir — istatistik grafiği (measurement_series)
       // cache'ten eski değeri göstermesin diye onu da tazeliyoruz. Eskiden bu
       // invalidate edilmediği için grafik ancak elle yenileyince güncelleniyordu.
-      queryClient.invalidateQueries({ queryKey: ["measurement_series"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.measurementSeries.all });
       router.back();
     },
   });

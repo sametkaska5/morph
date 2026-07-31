@@ -2,11 +2,10 @@ import { useState } from "react";
 import { View, ScrollView, Pressable, ActivityIndicator } from "react-native";
 import { Text } from "@/components/Typography";
 import { router } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
 import Feather from "@expo/vector-icons/Feather";
-import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
 import { toLocalDateKey } from "@/lib/date";
+import { useYearEntries } from "@/lib/entries";
 
 const MONTH_NAMES = [
   "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
@@ -28,32 +27,6 @@ function getMonthGrid(year: number, monthIndex: number) {
   const weeks: (string | null)[][] = [];
   for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
   return weeks;
-}
-
-function useYearEntries(userId: string | undefined, year: number) {
-  return useQuery({
-    queryKey: ["yearEntries", userId, year],
-    enabled: !!userId,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("entries")
-        .select("date, type")
-        .eq("user_id", userId)
-        .gte("date", `${year}-01-01`)
-        .lte("date", `${year}-12-31`);
-      if (error) throw error;
-
-      // Map yerine düz obje: sorgu sonucu AsyncStorage'a JSON olarak kalıcı
-      // hale getiriliyor (bkz. app/_layout.tsx PersistQueryClientProvider) — Map
-      // JSON'a çevrilemediği için geri yüklendiğinde düz {} objesine dönüşüyor
-      // ve .get() çağrısı "undefined is not a function" ile patlıyordu.
-      const map: Record<string, string> = {};
-      (data ?? []).forEach((e) => {
-        map[e.date] = e.type;
-      });
-      return map;
-    },
-  });
 }
 
 function MonthCalendar({ year, monthIndex, statusMap }: { year: number; monthIndex: number; statusMap: Record<string, string> }) {

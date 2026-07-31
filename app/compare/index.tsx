@@ -2,12 +2,11 @@ import { useRef, useState } from "react";
 import { View, Image, ScrollView, Pressable, ActivityIndicator, Alert } from "react-native";
 import { Text } from "@/components/Typography";
 import { router, useLocalSearchParams } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
 import Feather from "@expo/vector-icons/Feather";
 import { captureRef } from "react-native-view-shot";
 import type * as MediaLibraryType from "expo-media-library";
 import * as Sharing from "expo-sharing";
-import { fetchComparisonBetween } from "@/lib/comparison";
+import { useComparison, type ComparisonData } from "@/lib/comparison";
 import { useAuth } from "@/lib/useAuth";
 import { useUnitPreference, displayUnit, toDisplayValue } from "@/lib/units";
 
@@ -21,17 +20,6 @@ try {
   MediaLibrary = require("expo-media-library");
 } catch {
   MediaLibrary = null;
-}
-
-function useComparison(a: string | undefined, b: string | undefined) {
-  return useQuery({
-    queryKey: ["comparison", a, b],
-    enabled: !!a && !!b,
-    // İmzalı linkler 6 saat geçerli; aynı çifti tekrar açınca sıfırdan çekmek
-    // yerine cache'ten anında göster (uygulamanın geri kalanıyla aynı süre).
-    staleTime: 1000 * 60 * 30,
-    queryFn: () => fetchComparisonBetween(a!, b!),
-  });
 }
 
 function fmtDate(d: string) {
@@ -86,7 +74,7 @@ export default function Compare() {
   );
 }
 
-function ComparisonBody({ data }: { data: NonNullable<Awaited<ReturnType<typeof fetchComparisonBetween>>> }) {
+function ComparisonBody({ data }: { data: ComparisonData }) {
   const { start, end, daysBetween, types } = data;
   const photoBlockRef = useRef<View>(null);
   const [pendingAction, setPendingAction] = useState<"save" | "share" | null>(null);

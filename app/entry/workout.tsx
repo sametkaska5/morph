@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ComponentProps } from "react";
+import { useRef, useState, type ComponentProps } from "react";
 import { View, Pressable, Platform, Alert, ScrollView, ActivityIndicator } from "react-native";
 import { Text, TextInput } from "@/components/Typography";
 import { router, useLocalSearchParams } from "expo-router";
@@ -12,6 +12,7 @@ import { useKeyboardFocus } from "@/lib/useKeyboardFocus";
 import { useUnitPreference, displayUnit, toDisplayValue, toMetricValue } from "@/lib/units";
 import { validateMeasurementInput, measurementErrorText } from "@/lib/measurementInput";
 import { useWorkoutDay, saveWorkoutDay, type WorkoutDayType } from "@/lib/workout";
+import { queryKeys } from "@/lib/queryKeys";
 
 export default function WorkoutDayScreen() {
   const params = useLocalSearchParams();
@@ -43,41 +44,39 @@ export default function WorkoutDayScreen() {
 
   // O tarihte kayıt varsa alanları bir kez doldur (düzenleme). Her (tarih, entry)
   // için tek sefer — sonradan allTypes/unitPref geç yüklenip kullanıcının
-  // düzenlediği alanları ezmesin diye hydratedRef ile kilitliyoruz. allTypes
+  // düzenlediği alanları ezmesin diye hydration anahtarıyla kilitliyoruz. allTypes
   // gelmeden hydrate etmiyoruz ki imperial'de ölçümler doğru birime çevrilsin.
-  const hydratedRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (existingLoading || !allTypes) return;
-    const key = `${dateKey}:${existing?.id ?? "new"}`;
-    if (hydratedRef.current === key) return;
-    hydratedRef.current = key;
-
+  // Effect'te setState yerine render sırasında senkronizasyon — form, veri hazır
+  // olur olmaz tek geçişte dolar (react.dev: you-might-not-need-an-effect).
+  const [hydratedKey, setHydratedKey] = useState<string | null>(null);
+  const hydrationKey = `${dateKey}:${existing?.id ?? "new"}`;
+  if (!existingLoading && allTypes && hydratedKey !== hydrationKey) {
+    setHydratedKey(hydrationKey);
     if (!existing) {
       setDayType("workout");
       setValues({});
       setNote("");
-      return;
-    }
+    } else {
+      setDayType(existing.type === "off_day" ? "off_day" : "workout");
+      setNote(existing.note ?? "");
 
-    setDayType(existing.type === "off_day" ? "off_day" : "workout");
-    setNote(existing.note ?? "");
-
-    const v: Record<string, string> = {};
-    for (const mv of existing.measurement_values) {
-      const baseUnit = allTypes.find((t) => t.id === mv.measurement_type_id)?.unit ?? "";
-      v[mv.measurement_type_id] = String(toDisplayValue(mv.value, baseUnit, unitPref));
+      const v: Record<string, string> = {};
+      for (const mv of existing.measurement_values) {
+        const baseUnit = allTypes.find((t) => t.id === mv.measurement_type_id)?.unit ?? "";
+        v[mv.measurement_type_id] = String(toDisplayValue(mv.value, baseUnit, unitPref));
+      }
+      setValues(v);
     }
-    setValues(v);
-  }, [existing, existingLoading, allTypes, unitPref, dateKey]);
+  }
 
   const saveMutation = useMutation({
     mutationFn: saveWorkoutDay,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["entries"] });
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
-      queryClient.invalidateQueries({ queryKey: ["currentWeek"] });
-      queryClient.invalidateQueries({ queryKey: ["measurement_series"] });
-      queryClient.invalidateQueries({ queryKey: ["workoutDay"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.entries.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.profile.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.currentWeek.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.measurementSeries.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.workoutDay.all });
       router.back();
     },
     onError: (err) => Alert.alert("Kayıt başarısız", (err as Error).message),

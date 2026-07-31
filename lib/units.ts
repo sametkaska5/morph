@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "./supabase";
+import { queryKeys } from "./queryKeys";
 
 export type UnitPref = "metric" | "imperial";
 
@@ -8,7 +9,7 @@ const CM_TO_IN = 0.393701;
 
 export function useUnitPreference(userId: string | undefined) {
   return useQuery({
-    queryKey: ["profile", "unit_pref", userId],
+    queryKey: queryKeys.profile.unitPref(userId),
     enabled: !!userId,
     queryFn: async (): Promise<UnitPref> => {
       const { data, error } = await supabase.from("profiles").select("unit_pref").eq("id", userId!).single();
@@ -27,7 +28,7 @@ export function useSetUnitPreference(userId: string | undefined) {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["profile", "unit_pref", userId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.profile.unitPref(userId) });
     },
   });
 }

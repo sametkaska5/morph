@@ -8,6 +8,7 @@ import Feather from "@expo/vector-icons/Feather";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
 import { toLocalDateKey } from "@/lib/date";
+import { queryKeys } from "@/lib/queryKeys";
 
 export default function OffDayScreen() {
   const { user } = useAuth();
@@ -27,8 +28,8 @@ export default function OffDayScreen() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["entries"] });
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.entries.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.profile.all });
       router.back();
     },
   });

@@ -1,5 +1,7 @@
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 import { getPhotoUrl } from "./storage";
+import { queryKeys } from "./queryKeys";
 
 export type ComparisonSide = {
   entryId: string;
@@ -90,4 +92,15 @@ export async function fetchComparisonBetween(entryIdA: string, entryIdB: string)
     daysBetween,
     types: (types ?? []).map((t) => ({ id: t.id, name: t.name, unit: t.unit, targetDirection: t.target_direction })),
   };
+}
+
+export function useComparison(a: string | undefined, b: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.comparison(a, b),
+    enabled: !!a && !!b,
+    // Imzali linkler 6 saat gecerli; ayni cifti tekrar acinca sifirdan cekmek
+    // yerine cache'ten aninda goster (uygulamanin geri kalaniyla ayni sure).
+    staleTime: 1000 * 60 * 30,
+    queryFn: () => fetchComparisonBetween(a!, b!),
+  });
 }

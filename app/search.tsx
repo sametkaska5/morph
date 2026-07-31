@@ -2,48 +2,11 @@ import { useMemo, useState } from "react";
 import { View, Pressable, FlatList, ActivityIndicator } from "react-native";
 import { Text, TextInput } from "@/components/Typography";
 import { Image } from "expo-image";
-import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
-import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
-import { getPhotoUrls, coverThumbPath, photoCacheKey } from "@/lib/storage";
-
-type SearchEntry = {
-  id: string;
-  date: string;
-  note: string | null;
-  photoUrl: string | null;
-  photoPath: string | null;
-};
-
-function useSearchIndex(userId: string | undefined) {
-  return useQuery({
-    queryKey: ["entries", "search-index", userId],
-    enabled: !!userId,
-    staleTime: 1000 * 60 * 30,
-    queryFn: async (): Promise<SearchEntry[]> => {
-      const { data, error } = await supabase
-        .from("entries")
-        .select("id, date, note, cover_photo_id, photos!entry_id(id, storage_path, thumb_path)")
-        .eq("user_id", userId!)
-        .eq("type", "log")
-        .order("date", { ascending: false });
-
-      if (error) throw error;
-
-      // Küçük liste thumb'ları: yüklemede üretilen kopyayı tercih et.
-      // Varyantsız: yol zaten küçük kopya, tek batch isteği yeterli.
-      const paths = (data ?? []).map(coverThumbPath).filter(Boolean) as string[];
-      const urlMap = await getPhotoUrls(paths);
-
-      return (data ?? []).map((e: any) => {
-        const path = coverThumbPath(e);
-        return { id: e.id, date: e.date, note: e.note, photoUrl: path ? urlMap.get(path) ?? null : null, photoPath: path ?? null };
-      });
-    },
-  });
-}
+import { photoCacheKey } from "@/lib/storage";
+import { useSearchIndex, type SearchEntry } from "@/lib/entries";
 
 function ResultRow({ entry }: { entry: SearchEntry }) {
   const dateLabel = new Date(entry.date).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" });

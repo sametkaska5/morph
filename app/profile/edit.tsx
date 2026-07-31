@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { View, Pressable, ActivityIndicator, Image, Alert } from "react-native";
 import { Text, TextInput } from "@/components/Typography";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
@@ -21,12 +21,17 @@ export default function EditProfileScreen() {
   const [displayUri, setDisplayUri] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  useEffect(() => {
-    if (!profile) return;
+  // Form alanlarını profil verisiyle doldur. Effect'te setState yapmak veri
+  // geldikten sonra fazladan bir tam render turu demekti; render sırasında
+  // "önceki değerle karşılaştır" kalıbı aynı işi commit öncesinde yapıyor
+  // (react.dev: you-might-not-need-an-effect).
+  const [prevProfile, setPrevProfile] = useState<typeof profile>(undefined);
+  if (profile && profile !== prevProfile) {
+    setPrevProfile(profile);
     setName(profile.name ?? "");
     setAvatarPath(profile.avatarPath);
     setDisplayUri(profile.avatarUrl);
-  }, [profile]);
+  }
 
   async function pickAvatar() {
     if (!user) return;

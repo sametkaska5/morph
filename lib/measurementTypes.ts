@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "./supabase";
+import { queryKeys } from "./queryKeys";
 
 export type TargetDirection = "decrease_is_good" | "increase_is_good";
 
@@ -12,10 +13,6 @@ export type MeasurementType = {
   sort_order: number;
 };
 
-export function measurementTypesQueryKey(userId: string | undefined) {
-  return ["measurement_types", userId] as const;
-}
-
 /**
  * Sistem varsayılanları (user_id null) + kullanıcının kendi özel ölçüm tiplerini
  * birlikte döner. Ayrıca bir .eq("is_default", ...) filtresi GEREKMİYOR — RLS
@@ -24,7 +21,7 @@ export function measurementTypesQueryKey(userId: string | undefined) {
  */
 export function useMeasurementTypes(userId: string | undefined) {
   return useQuery({
-    queryKey: measurementTypesQueryKey(userId),
+    queryKey: queryKeys.measurementTypes.byUser(userId),
     enabled: !!userId,
     queryFn: async (): Promise<MeasurementType[]> => {
       const { data, error } = await supabase
@@ -53,7 +50,7 @@ export function useAddMeasurementType(userId: string | undefined) {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: measurementTypesQueryKey(userId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.measurementTypes.byUser(userId) });
     },
   });
 }
@@ -66,7 +63,7 @@ export function useDeleteMeasurementType(userId: string | undefined) {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: measurementTypesQueryKey(userId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.measurementTypes.byUser(userId) });
     },
   });
 }

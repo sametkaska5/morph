@@ -2,81 +2,22 @@ import { useState } from "react";
 import { View, FlatList, Dimensions, Pressable, ActivityIndicator } from "react-native";
 import { Text } from "@/components/Typography";
 import { Image } from "expo-image";
-import { useInfiniteQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Feather from "@expo/vector-icons/Feather";
-import { supabase } from "@/lib/supabase";
-import { getPhotoUrls, photoCacheKey } from "@/lib/storage";
+import { photoCacheKey } from "@/lib/storage";
 import { useAuth } from "@/lib/useAuth";
 import { useUnitPreference, displayUnit, toDisplayValue, type UnitPref } from "@/lib/units";
 import { openCapturePicker } from "@/lib/capture";
+import { useCapsuleEntries, type CapsuleEntry } from "@/lib/entries";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
-const PAGE_SIZE = 20;
 // (tabs)/_layout.tsx'teki tabBarStyle.height ile eşleşmeli — FlatList'in gerçek
 // görünür alanı SCREEN_HEIGHT değil, tab bar'ın kapladığı kadar eksiği; sayfa
 // yüksekliği (pageHeight) bunu hesaba katmazsa pagingEnabled snap noktaları
 // gerçek viewport ile uyuşmayıp kaydırmada bir seferde 2-3 sayfa atlıyordu.
 const TAB_BAR_HEIGHT = 84;
-
-type MeasurementEntry = { name: string; unit: string; value: number };
-type ProgramItem = { name: string; setCount: number };
-
-type CapsuleEntry = {
-  id: string;
-  date: string;
-  note: string | null;
-  photoUrl: string | null;
-  photoPath: string | null; // sabit cache anahtarı
-  measurements: MeasurementEntry[];
-  program: ProgramItem[];
-};
-
-function useCapsuleEntries() {
-  return useInfiniteQuery({
-    queryKey: ["entries", "capsule"],
-    staleTime: 1000 * 60 * 30,
-    initialPageParam: 0,
-    queryFn: async ({ pageParam }): Promise<CapsuleEntry[]> => {
-      const { data, error } = await supabase
-        .from("entries")
-        .select(
-          "id, date, note, photos!cover_photo_id(storage_path), measurement_values(value, measurement_types(name, unit)), workout_items(name, order_index, workout_sets(reps, weight, order_index))"
-        )
-        .eq("type", "log")
-        .order("date", { ascending: false })
-        .range(pageParam, pageParam + PAGE_SIZE - 1);
-
-      if (error) throw error;
-
-      const paths = (data ?? []).map((e: any) => e.photos?.storage_path).filter(Boolean) as string[];
-      const urlMap = await getPhotoUrls(paths, "full");
-
-      return (data ?? []).map((e: any) => ({
-        id: e.id,
-        date: e.date,
-        note: e.note,
-        photoUrl: e.photos?.storage_path ? urlMap.get(e.photos.storage_path) ?? null : null,
-        photoPath: e.photos?.storage_path ?? null,
-        measurements: (e.measurement_values ?? [])
-          .filter((mv: any) => mv.measurement_types)
-          .map((mv: any) => ({
-            name: mv.measurement_types.name,
-            unit: mv.measurement_types.unit,
-            value: mv.value,
-          })),
-        program: (e.workout_items ?? [])
-          .slice()
-          .sort((a: any, b: any) => a.order_index - b.order_index)
-          .map((wi: any) => ({ name: wi.name, setCount: (wi.workout_sets ?? []).length })),
-      }));
-    },
-    getNextPageParam: (lastPage, allPages) =>
-      lastPage.length === PAGE_SIZE ? allPages.length * PAGE_SIZE : undefined,
-  });
-}
 
 function CapsulePage({
   entry,

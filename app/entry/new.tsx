@@ -14,7 +14,8 @@ import { useKeyboardFocus } from "@/lib/useKeyboardFocus";
 import { useUnitPreference, displayUnit, toMetricValue } from "@/lib/units";
 import { validateMeasurementInput, measurementErrorText } from "@/lib/measurementInput";
 import { captureError } from "@/lib/monitoring";
-import type { EntryRow } from "@/app/(tabs)/index";
+import type { EntryRow } from "@/lib/entries";
+import { queryKeys } from "@/lib/queryKeys";
 
 export default function NewEntry() {
   const photo = useCaptureStore((s) => s.photo);
@@ -49,8 +50,8 @@ export default function NewEntry() {
       // Offline'da bile kaydı hemen Ana Ekran'da görebilmek için timeline cache'ine
       // "senkronize edilecek" işaretli bir kayıt ekliyoruz — gerçek satır Supabase'e
       // yazılınca (online olduğunda) invalidate ile yerini gerçek veriye bırakıyor.
-      await queryClient.cancelQueries({ queryKey: ["entries", "timeline"] });
-      const previous = queryClient.getQueryData<EntryRow[]>(["entries", "timeline"]);
+      await queryClient.cancelQueries({ queryKey: queryKeys.entries.timeline() });
+      const previous = queryClient.getQueryData<EntryRow[]>(queryKeys.entries.timeline());
 
       const optimisticEntry: EntryRow = {
         id: `pending-${payload.date}`,
@@ -65,7 +66,7 @@ export default function NewEntry() {
         pending: true,
       };
 
-      queryClient.setQueryData<EntryRow[]>(["entries", "timeline"], (old) => {
+      queryClient.setQueryData<EntryRow[]>(queryKeys.entries.timeline(), (old) => {
         const rest = (old ?? []).filter((e) => e.date !== payload.date);
         return [optimisticEntry, ...rest].sort((a, b) => (a.date < b.date ? 1 : -1));
       });
@@ -74,7 +75,7 @@ export default function NewEntry() {
     },
     onError: (err, _payload, context) => {
       if (context?.previous) {
-        queryClient.setQueryData(["entries", "timeline"], context.previous);
+        queryClient.setQueryData(queryKeys.entries.timeline(), context.previous);
       }
       captureError(err, { where: "new.saveEntry" });
       Alert.alert("Kayıt başarısız", (err as Error).message);

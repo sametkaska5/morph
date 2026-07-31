@@ -10,11 +10,10 @@ import {
 import { Text } from "@/components/Typography";
 import { Image } from "expo-image";
 import { useLocalSearchParams, router } from "expo-router";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Feather from "@expo/vector-icons/Feather";
-import { supabase } from "@/lib/supabase";
-import { getPhotoUrl, photoCacheKey } from "@/lib/storage";
+import { photoCacheKey } from "@/lib/storage";
+import { useEntryDetail, useEntryOrder, useDeleteEntry } from "@/lib/entries";
 
 function ActionMenuOption({
   icon,
@@ -52,86 +51,6 @@ function workoutSetLabel(s: { reps: number | null; weight: number | null }): str
   const reps = s.reps != null ? `${s.reps} tekrar` : "";
   if (weight && reps) return `${s.weight} kg × ${s.reps}`;
   return weight || reps || "—";
-}
-
-/* ---------------- DATA ---------------- */
-
-function useEntryDetail(entryId: string) {
-  return useQuery({
-    queryKey: ["entry", entryId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("entries")
-        .select(
-          "id, date, note, photos!cover_photo_id(storage_path), measurement_values(value, measurement_types(name, unit)), workout_items(name, order_index, workout_sets(reps, weight, order_index))"
-        )
-        .eq("id", entryId)
-        .single();
-
-      if (error) throw error;
-
-      const photoPath = (data as any)?.photos?.storage_path;
-      const photoUrl = photoPath ? await getPhotoUrl(photoPath, "full") : null;
-
-      return { ...data, photoUrl, photoPath };
-    },
-  });
-}
-
-/**
- * Yan yana kaydırılabilecek kayıtların SIRASI.
- *
- * Ana ekran ızgarasıyla aynı sıralama ve aynı limit kullanılıyor (type=log,
- * tarihe göre yeniden eskiye, 60) — böylece ızgarada gördüğün sıra ile
- * kaydırdığında geldiğin sıra birebir aynı oluyor. user_id filtresi yok;
- * ızgara sorgusunda olduğu gibi RLS hallediyor.
- */
-function useEntryOrder() {
-  return useQuery({
-    queryKey: ["entries", "order"],
-    staleTime: 1000 * 60 * 30,
-    queryFn: async (): Promise<string[]> => {
-      const { data, error } = await supabase
-        .from("entries")
-        .select("id")
-        .eq("type", "log")
-        .order("date", { ascending: false })
-        .limit(60);
-      if (error) throw error;
-      return (data ?? []).map((e: any) => e.id as string);
-    },
-  });
-}
-
-/* ---------------- DELETE ---------------- */
-
-async function deleteEntry(entryId: string) {
-  const { data: photos, error: photoError } = await supabase
-    .from("photos")
-    .select("storage_path, thumb_path")
-    .eq("entry_id", entryId);
-
-  if (photoError) throw photoError;
-
-  // Tam boy kopyanın yanında küçük kopyayı da siliyoruz, yoksa storage'da
-  // yetim thumbnail dosyaları birikir.
-  const paths = (photos ?? []).flatMap(
-    (p: any) => [p.storage_path, p.thumb_path].filter(Boolean) as string[]
-  );
-
-  if (paths.length > 0) {
-    // cover_photo_id, entries'i referans aldığı için önce onu temizlemek gerekiyor,
-    // yoksa foreign key kısıtı silmeyi engelleyebilir
-    await supabase.from("entries").update({ cover_photo_id: null }).eq("id", entryId);
-
-    const { error: storageError } = await supabase.storage.from("photos").remove(paths);
-    if (storageError) throw storageError;
-  }
-
-  const { error } = await supabase.from("entries").delete().eq("id", entryId);
-  if (error) throw error;
-
-  return true;
 }
 
 /* ---------------- TEK KAYIT SAYFASI ---------------- */
@@ -260,7 +179,6 @@ export default function EntryDetail() {
     return raw ?? "";
   }, [params.id]);
 
-  const queryClient = useQueryClient();
   const { data: orderIds, isLoading: orderLoading } = useEntryOrder();
   const [showActionMenu, setShowActionMenu] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -276,25 +194,21 @@ export default function EntryDetail() {
 
   const initialIndex = Math.max(0, ids.indexOf(id));
 
-  useEffect(() => {
+  // Sıra verisi gelince (initialIndex değişince) aktif sayfayı ona eşitle.
+  // Effect'te setState yapmak fazladan bir tam render turu demekti; React'in
+  // "render sırasında önceki değerle karşılaştır" kalıbı aynı işi commit
+  // öncesinde, tek geçişte yapıyor (react.dev: you-might-not-need-an-effect).
+  const [prevInitialIndex, setPrevInitialIndex] = useState(initialIndex);
+  if (prevInitialIndex !== initialIndex) {
+    setPrevInitialIndex(initialIndex);
     setActiveIndex(initialIndex);
-  }, [initialIndex]);
+  }
 
   // Düzenle/sil her zaman EKRANDA GÖRÜNEN kayda uygulanmalı — kaydırdıktan
   // sonra hâlâ URL'deki ilk id'ye işlem yapmak sessizce yanlış kaydı silerdi.
   const activeId = ids[activeIndex] ?? id;
 
-  const deleteMutation = useMutation({
-    mutationFn: (entryId: string) => deleteEntry(entryId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["entries"] });
-      // Silinen kayıt "Toplam Anı"/seri sayaçlarını da değiştiriyor — profil
-      // istatistikleri invalidate edilmeyince eski sayılar ekranda kalıyordu.
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
-      queryClient.invalidateQueries({ queryKey: ["currentWeek"] });
-      router.back();
-    },
-  });
+  const deleteMutation = useDeleteEntry();
 
   /* ---------------- LOADING ---------------- */
 
@@ -451,7 +365,8 @@ export default function EntryDetail() {
             <Pressable
               onPress={() => {
                 setShowDeleteConfirm(false);
-                deleteMutation.mutate(activeId);
+                // Navigasyon ekranın işi — invalidation'lar hook'un içinde.
+                deleteMutation.mutate(activeId, { onSuccess: () => router.back() });
               }}
               style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
               className="flex-1 py-4 rounded-button items-center bg-danger"

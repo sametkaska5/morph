@@ -3,52 +3,20 @@ import { View, FlatList, Pressable, ActivityIndicator, Dimensions } from "react-
 import { Text } from "@/components/Typography";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import Feather from "@expo/vector-icons/Feather";
-import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
-import { getPhotoUrls, coverThumbPath, photoCacheKey } from "@/lib/storage";
+import { photoCacheKey } from "@/lib/storage";
 import { fetchComparisonBetween } from "@/lib/comparison";
+import { usePickableEntries } from "@/lib/entries";
+import { queryKeys } from "@/lib/queryKeys";
 
 const { width } = Dimensions.get("window");
 const THUMB_SIZE = (width - 20 * 2 - 8 * 2) / 3;
 
-function usePickableEntries() {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: ["entries", "pickable", user?.id],
-    enabled: !!user,
-    staleTime: 1000 * 60 * 30,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("entries")
-        .select("id, date, photos!cover_photo_id(storage_path, thumb_path)")
-        .eq("user_id", user!.id)
-        .eq("type", "log")
-        .order("date", { ascending: false })
-        .limit(60);
-      if (error) throw error;
-
-      // Izgara görünümü: küçük kopyayı tercih et, yoksa tam boya düş.
-      // Varyantsız: yol zaten küçük kopya, tek batch isteği yeterli.
-      const paths = (data ?? []).map(coverThumbPath).filter(Boolean) as string[];
-      const urlMap = await getPhotoUrls(paths);
-
-      return (data ?? []).map((e: any) => {
-        const path = coverThumbPath(e);
-        return {
-          id: e.id,
-          date: e.date,
-          photoUrl: path ? urlMap.get(path) ?? null : null,
-          photoPath: path ?? null,
-        };
-      });
-    },
-  });
-}
-
 export default function PickComparison() {
-  const { data: entries, isLoading } = usePickableEntries();
+  const { user } = useAuth();
+  const { data: entries, isLoading } = usePickableEntries(user?.id);
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<string[]>([]);
 
@@ -67,7 +35,7 @@ export default function PickComparison() {
       // sürerken sorgular/imzalama arka planda dönüyor, compare ekranı aynı
       // queryKey'e bağlandığı için açıldığında veri çoğunlukla hazır oluyor.
       queryClient.prefetchQuery({
-        queryKey: ["comparison", a, b],
+        queryKey: queryKeys.comparison(a, b),
         queryFn: () => fetchComparisonBetween(a, b),
         staleTime: 1000 * 60 * 30,
       });

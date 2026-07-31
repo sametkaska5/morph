@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 import { parseMeasurementInput } from "./measurementInput";
+import { queryKeys } from "./queryKeys";
 
 /**
  * Fotoğrafsız gün + antrenman programı veri katmanı.
@@ -30,7 +31,7 @@ export type WorkoutDayData = {
 /** Belirli tarihteki günü (ölçüm/off-day) düzenleme için yükler. Yoksa null. */
 export function useWorkoutDay(userId: string | undefined, date: string) {
   return useQuery<WorkoutDayData | null>({
-    queryKey: ["workoutDay", userId, date],
+    queryKey: queryKeys.workoutDay.byDate(userId, date),
     enabled: !!userId && !!date,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -117,7 +118,7 @@ export type ProgramData = {
 /** Belirli tarihteki programı (varsa) yükler. Yoksa null. */
 export function useProgramDay(userId: string | undefined, date: string) {
   return useQuery<ProgramData | null>({
-    queryKey: ["programDay", userId, date],
+    queryKey: queryKeys.programDay.byDate(userId, date),
     enabled: !!userId && !!date,
     queryFn: async () => {
       const { data, error } = await supabase

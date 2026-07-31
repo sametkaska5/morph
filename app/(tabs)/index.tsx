@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useCallback, useState } from "react";
 import { View, Pressable, FlatList, Dimensions, RefreshControl, ActivityIndicator } from "react-native";
 import { Text } from "@/components/Typography";
 import { Image } from "expo-image";
@@ -15,7 +15,11 @@ const H_PADDING = 16;
 const THUMB_W = (width - H_PADDING * 2 - GAP * (COLUMNS - 1)) / COLUMNS;
 const THUMB_H = THUMB_W * 1.5; // poster oranı (2:3)
 
-function PosterThumb({ entry }: { entry: EntryRow }) {
+// memo: ekran her render olduğunda (örn. aşağı çekip yenilerken isRefetching
+// değişince) 60 hücrenin hepsi yeniden çiziliyordu. React Query yenilemede
+// değişmeyen kayıtların obje kimliğini korur (structural sharing) — memo
+// sayesinde yalnızca gerçekten değişen hücreler render olur.
+const PosterThumb = memo(function PosterThumb({ entry }: { entry: EntryRow }) {
   // Pressable'ın basınca-değişen style FONKSİYONU burada marginBottom'u (satır
   // arası boşluk) uygulamıyordu — daha önce FAB ve Anı Akışı genişletme butonunda
   // gördüğümüz aynı sorun. Düz stil objesine geri dönüp basma efektini elle
@@ -84,7 +88,7 @@ function PosterThumb({ entry }: { entry: EntryRow }) {
       </View>
     </Pressable>
   );
-}
+});
 
 function EmptyState() {
   return (
@@ -111,6 +115,11 @@ function EmptyState() {
 export default function AnaEkran() {
   const { data: entries, isLoading, isRefetching, error, refetch } = useTimelineEntries();
   const isEmpty = entries?.length === 0;
+
+  // Sabit renderItem: her render'da yeni closure üretmek FlatList'in satır
+  // karşılaştırmasını boşa düşürüyordu; memo'lu PosterThumb ancak sabit bir
+  // renderItem ile birlikte işe yarar.
+  const renderPoster = useCallback(({ item }: { item: EntryRow }) => <PosterThumb entry={item} />, []);
 
   const todayLabel = new Date().toLocaleDateString("tr-TR", {
     weekday: "long",
@@ -194,7 +203,7 @@ export default function AnaEkran() {
           }
           contentContainerStyle={{ paddingHorizontal: H_PADDING, paddingBottom: 24 }}
           columnWrapperStyle={{ gap: GAP }}
-          renderItem={({ item }) => <PosterThumb entry={item} />}
+          renderItem={renderPoster}
         />
       )}
     </View>

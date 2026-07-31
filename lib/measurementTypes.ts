@@ -29,7 +29,9 @@ export function useMeasurementTypes(userId: string | undefined) {
         .select("id, name, unit, target_direction, is_default, sort_order")
         .order("sort_order");
       if (error) throw error;
-      return data ?? [];
+      // DB'de target_direction düz text kolonu ama check constraint yalnızca bu
+      // iki değere izin veriyor (0001_init.sql) — daraltma güvenli.
+      return (data ?? []) as MeasurementType[];
     },
   });
 }

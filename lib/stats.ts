@@ -22,8 +22,8 @@ export function useMeasurementSeries(userId: string | undefined, typeId: string 
       const { data, error } = await supabase
         .from("measurement_values")
         .select("value, entries!inner(date, type, user_id)")
-        .eq("measurement_type_id", typeId)
-        .eq("entries.user_id", userId)
+        .eq("measurement_type_id", typeId!)
+        .eq("entries.user_id", userId!)
         // Fotoğrafsız günlerde (workout) girilen ölçümler de grafikte görünsün —
         // eskiden yalnızca 'log' okunuyordu, foto çekilmeyen günün ölçümü kaybolurdu.
         .in("entries.type", ["log", "workout"]);
@@ -72,7 +72,7 @@ export function useCurrentWeek(userId: string | undefined) {
       const { data, error } = await supabase
         .from("entries")
         .select("id, date, type")
-        .eq("user_id", userId)
+        .eq("user_id", userId!)
         .gte("date", days[0].date)
         .lte("date", days[days.length - 1].date);
       if (error) throw error;
@@ -142,7 +142,7 @@ export function useShareablePhotoEntries(userId: string | undefined) {
       const { data, error } = await supabase
         .from("entries")
         .select("id, date, photos!cover_photo_id(storage_path)")
-        .eq("user_id", userId)
+        .eq("user_id", userId!)
         .eq("type", "log")
         .not("cover_photo_id", "is", null)
         .order("date", { ascending: false })

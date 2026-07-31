@@ -451,7 +451,7 @@ export function useYearEntries(userId: string | undefined, year: number) {
       const { data, error } = await supabase
         .from("entries")
         .select("date, type")
-        .eq("user_id", userId)
+        .eq("user_id", userId!)
         .gte("date", `${year}-01-01`)
         .lte("date", `${year}-12-31`);
       if (error) throw error;

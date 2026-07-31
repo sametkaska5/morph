@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, ScrollView, Pressable, ActivityIndicator, Alert, Image, Modal, RefreshControl } from "react-native";
 import { Text } from "@/components/Typography";
 import { useQueryClient } from "@tanstack/react-query";
@@ -104,9 +104,16 @@ export default function Istatistikler() {
   const { data: shareablePhotos, isLoading: sharePhotosLoading } = useShareablePhotoEntries(user?.id);
   const { data: unitPref = "metric" } = useUnitPreference(user?.id);
 
-  const values = activeType
-    ? (series?.map((s) => toDisplayValue(s.value, activeType.unit, unitPref)) ?? [])
-    : series?.map((s) => s.value) ?? [];
+  // Kimliği sabit values dizisi: her render'da yeni dizi üretmek
+  // MeasurementChart'taki path memo'sunu boşa düşürürdü (her nokta seçiminde
+  // path yeniden kurulurdu).
+  const values = useMemo(
+    () =>
+      activeType
+        ? (series?.map((s) => toDisplayValue(s.value, activeType.unit, unitPref)) ?? [])
+        : (series?.map((s) => s.value) ?? []),
+    [series, activeType, unitPref]
+  );
   const unitLabel = activeType ? displayUnit(activeType.unit, unitPref) : "";
 
   // Seçili nokta ölçüm tipi değişince geçersizleşiyor (yeni serinin uzunluğu

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { View, Pressable, FlatList, ActivityIndicator } from "react-native";
 import { Text, TextInput } from "@/components/Typography";
 import { Image } from "expo-image";
@@ -8,7 +8,10 @@ import { useAuth } from "@/lib/useAuth";
 import { photoCacheKey } from "@/lib/storage";
 import { useSearchIndex, type SearchEntry } from "@/lib/entries";
 
-function ResultRow({ entry }: { entry: SearchEntry }) {
+// memo: her tuş vuruşu sonuç listesini yeniden filtreliyor ama satır objeleri
+// aynı kalıyor — memo olmadan görünür tüm satırlar (expo-image dahil) her
+// harfte yeniden çiziliyordu.
+const ResultRow = memo(function ResultRow({ entry }: { entry: SearchEntry }) {
   const dateLabel = new Date(entry.date).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" });
 
   return (
@@ -35,7 +38,7 @@ function ResultRow({ entry }: { entry: SearchEntry }) {
       <Feather name="chevron-right" size={15} color="#8B8A82" />
     </Pressable>
   );
-}
+});
 
 export default function SearchScreen() {
   const { user } = useAuth();

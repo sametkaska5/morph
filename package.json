@@ -12,7 +12,8 @@
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write \"{app,components,lib}/**/*.{ts,tsx}\"",
-    "format:check": "prettier --check \"{app,components,lib}/**/*.{ts,tsx}\""
+    "format:check": "prettier --check \"{app,components,lib}/**/*.{ts,tsx}\"",
+    "gen:types": "supabase gen types typescript --linked --schema public > lib/database.types.ts"
   },
   "jest": {
     "preset": "jest-expo",

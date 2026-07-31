@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 import { View, FlatList, Dimensions, Pressable, ActivityIndicator } from "react-native";
 import { Text } from "@/components/Typography";
 import { Image } from "expo-image";
@@ -19,7 +19,10 @@ const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 // gerçek viewport ile uyuşmayıp kaydırmada bir seferde 2-3 sayfa atlıyordu.
 const TAB_BAR_HEIGHT = 84;
 
-function CapsulePage({
+// memo: sayfalama yeni sayfa eklediğinde ya da layout ölçümü değiştiğinde
+// liste yeniden render oluyor — memo sayesinde prop'ları değişmeyen monte
+// sayfalar (tam boy fotoğraf + flip animasyonu) baştan çizilmiyor.
+const CapsulePage = memo(function CapsulePage({
   entry,
   index,
   total,
@@ -207,7 +210,7 @@ function CapsulePage({
       </View>
     </Pressable>
   );
-}
+});
 
 export default function ZamanKapsulu() {
   const { user } = useAuth();

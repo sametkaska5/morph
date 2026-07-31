@@ -10,7 +10,7 @@ import {
 import { Text } from "@/components/Typography";
 import { Image } from "expo-image";
 import { useLocalSearchParams, router } from "expo-router";
-import { useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import Feather from "@expo/vector-icons/Feather";
 import { photoCacheKey } from "@/lib/storage";
 import { useEntryDetail, useEntryOrder, useDeleteEntry } from "@/lib/entries";
@@ -59,8 +59,13 @@ function workoutSetLabel(s: { reps: number | null; weight: number | null }): str
  * Yatay sayfalayıcının tek bir sayfası. Üstteki geri/işlem butonları burada
  * DEĞİL — onlar ekran seviyesinde sabit duruyor, yoksa her sayfada bir kopyası
  * olur ve kaydırırken beraber kayarlardı.
+ *
+ * memo: her kaydırmada activeIndex state'i değişiyor ve ekran yeniden render
+ * oluyor — memo olmadan monte 3 sayfanın hepsi (tam boy fotoğraf + ölçüm
+ * listesi) her kaydırmada baştan çiziliyordu. entryId sabit string olduğu
+ * için sayfalar artık tamamen atlanıyor.
  */
-function EntryPage({ entryId }: { entryId: string }) {
+const EntryPage = memo(function EntryPage({ entryId }: { entryId: string }) {
   const { data, isLoading, error } = useEntryDetail(entryId);
 
   // DİKKAT: Bu kaplarda `flex-1` KULLANILMAZ.
@@ -166,7 +171,7 @@ function EntryPage({ entryId }: { entryId: string }) {
       </View>
     </ScrollView>
   );
-}
+});
 
 /* ---------------- PAGE ---------------- */
 

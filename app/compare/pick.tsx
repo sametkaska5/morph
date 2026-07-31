@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useCallback, useState } from "react";
 import { View, FlatList, Pressable, ActivityIndicator, Dimensions } from "react-native";
 import { Text } from "@/components/Typography";
 import { Image } from "expo-image";
@@ -8,11 +8,72 @@ import Feather from "@expo/vector-icons/Feather";
 import { useAuth } from "@/lib/useAuth";
 import { photoCacheKey } from "@/lib/storage";
 import { fetchComparisonBetween } from "@/lib/comparison";
-import { usePickableEntries } from "@/lib/entries";
+import { usePickableEntries, type PickableEntry } from "@/lib/entries";
 import { queryKeys } from "@/lib/queryKeys";
 
 const { width } = Dimensions.get("window");
 const THUMB_SIZE = (width - 20 * 2 - 8 * 2) / 3;
+
+// memo: seçim her değiştiğinde ekran state'i yenileniyor ve memo olmadan
+// ızgaradaki 60 hücrenin hepsi (expo-image dahil) yeniden çiziliyordu.
+// isSelected/order ilkel prop'lar olduğu için yalnızca seçimi değişen
+// hücreler render olur.
+const PickThumb = memo(function PickThumb({
+  item,
+  isSelected,
+  order,
+  onToggle,
+}: {
+  item: PickableEntry;
+  isSelected: boolean;
+  /** Seçiliyse 0 ya da 1 (rozetteki "1."/"2."), değilse -1. */
+  order: number;
+  onToggle: (id: string) => void;
+}) {
+  const dateLabel = new Date(item.date).toLocaleDateString("tr-TR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  return (
+    <Pressable
+      onPress={() => onToggle(item.id)}
+      accessibilityRole="button"
+      accessibilityLabel={`${dateLabel} tarihli anı${isSelected ? `, ${order + 1}. seçim olarak işaretli` : ""}`}
+      accessibilityState={{ selected: isSelected }}
+      style={{ width: THUMB_SIZE, height: THUMB_SIZE }}
+    >
+      <View className="flex-1 rounded-lg overflow-hidden bg-surface relative">
+        {item.photoUrl ? (
+          <Image
+            // cacheKey stabil path'e bağlı: imzalı URL token dönse de
+            // disk cache path'e göre isabet eder, yeniden indirmez.
+            source={{
+              uri: item.photoUrl,
+              cacheKey: item.photoPath ? photoCacheKey(item.photoPath, "thumb") : undefined,
+            }}
+            style={{ flex: 1 }}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            recyclingKey={item.photoPath ?? undefined}
+          />
+        ) : null}
+        {isSelected ? (
+          <View className="absolute inset-0 bg-black/30 border-2 border-accent rounded-lg items-center justify-center">
+            <View className="w-6 h-6 rounded-full bg-accent items-center justify-center">
+              <Text className="text-bg text-xs font-bold">{order + 1}</Text>
+            </View>
+          </View>
+        ) : null}
+        <View className="absolute bottom-1 left-1 bg-black/75 rounded px-1.5 py-0.5">
+          <Text className="text-text text-xs">
+            {new Date(item.date).toLocaleDateString("tr-TR", { day: "numeric", month: "short" })}
+          </Text>
+        </View>
+      </View>
+    </Pressable>
+  );
+});
 
 export default function PickComparison() {
   const { user } = useAuth();
@@ -20,13 +81,16 @@ export default function PickComparison() {
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<string[]>([]);
 
-  function toggle(id: string) {
+  // Sabit referans: memo'lu PickThumb'a prop olarak iniyor — her render'da yeni
+  // fonksiyon üretilseydi memo hiç işe yaramazdı. Fonksiyonel setState sayesinde
+  // bağımlılığı yok.
+  const toggle = useCallback((id: string) => {
     setSelected((prev) => {
       if (prev.includes(id)) return prev.filter((x) => x !== id);
       if (prev.length >= 2) return [prev[1], id]; // en eski seçimi at, yenisini ekle
       return [...prev, id];
     });
-  }
+  }, []);
 
   function handleContinue() {
     if (selected.length === 2) {
@@ -71,49 +135,14 @@ export default function PickComparison() {
           numColumns={3}
           contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
           columnWrapperStyle={{ gap: 8 }}
-          renderItem={({ item }) => {
-            const isSelected = selected.includes(item.id);
-            const order = selected.indexOf(item.id);
-            const dateLabel = new Date(item.date).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" });
-            return (
-              <Pressable
-                onPress={() => toggle(item.id)}
-                accessibilityRole="button"
-                accessibilityLabel={`${dateLabel} tarihli anı${isSelected ? `, ${order + 1}. seçim olarak işaretli` : ""}`}
-                accessibilityState={{ selected: isSelected }}
-                style={{ width: THUMB_SIZE, height: THUMB_SIZE }}
-              >
-                <View className="flex-1 rounded-lg overflow-hidden bg-surface relative">
-                  {item.photoUrl ? (
-                    <Image
-                      // cacheKey stabil path'e bağlı: imzalı URL token dönse de
-                      // disk cache path'e göre isabet eder, yeniden indirmez.
-                      source={{
-                        uri: item.photoUrl,
-                        cacheKey: item.photoPath ? photoCacheKey(item.photoPath, "thumb") : undefined,
-                      }}
-                      style={{ flex: 1 }}
-                      contentFit="cover"
-                      cachePolicy="memory-disk"
-                      recyclingKey={item.photoPath ?? undefined}
-                    />
-                  ) : null}
-                  {isSelected ? (
-                    <View className="absolute inset-0 bg-black/30 border-2 border-accent rounded-lg items-center justify-center">
-                      <View className="w-6 h-6 rounded-full bg-accent items-center justify-center">
-                        <Text className="text-bg text-xs font-bold">{order + 1}</Text>
-                      </View>
-                    </View>
-                  ) : null}
-                  <View className="absolute bottom-1 left-1 bg-black/75 rounded px-1.5 py-0.5">
-                    <Text className="text-text text-xs">
-                      {new Date(item.date).toLocaleDateString("tr-TR", { day: "numeric", month: "short" })}
-                    </Text>
-                  </View>
-                </View>
-              </Pressable>
-            );
-          }}
+          renderItem={({ item }) => (
+            <PickThumb
+              item={item}
+              isSelected={selected.includes(item.id)}
+              order={selected.indexOf(item.id)}
+              onToggle={toggle}
+            />
+          )}
         />
       )}
 

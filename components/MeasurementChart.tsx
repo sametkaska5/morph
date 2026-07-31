@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { View, Pressable, ScrollView } from "react-native";
 import Svg, { Path, Circle, Line, Defs, LinearGradient, Stop } from "react-native-svg";
 import { Text } from "@/components/Typography";
@@ -48,7 +48,14 @@ export function MeasurementChart({
       ? CHART_PAD_X * 2 + (values.length - 1) * scrollStep
       : viewportW;
 
-  const { line, area, points } = buildChartPath(values, contentW, height);
+  // Nokta seçimi her değiştiğinde bileşen yeniden render oluyor; path'i yalnızca
+  // veri ya da boyut değişince kurmak hem O(n) string üretimini hem de SVG diff
+  // maliyetini (d prop'ları aynı kalır) seçim dokunuşlarından çıkarıyor.
+  // values'un kimliği ekran tarafında useMemo ile sabitleniyor.
+  const { line, area, points } = useMemo(
+    () => buildChartPath(values, contentW, height),
+    [values, contentW, height]
+  );
 
   const activeIndex = selectedIndex != null && selectedIndex < values.length ? selectedIndex : null;
   const selectedPoint = activeIndex != null ? points[activeIndex] : null;

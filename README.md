@@ -26,6 +26,14 @@ supabase db push
 
 Migration'lar `supabase/migrations/` altında sırayla uygulanır (`0001_init.sql` temel ERD + RLS, sonrakiler auth trigger, storage politikaları, ölçüm tipleri, avatar, hesap silme vb.).
 
+Şemayı değiştiren bir migration eklediğinde TypeScript tiplerini de yenile — `lib/database.types.ts` client'a `createClient<Database>` ile bağlı, bayat kalırsa derleme hataları yanlış yerden çıkar:
+
+```bash
+npm run gen:types
+```
+
+(Proje link'li değilse dosyayı elle güncelle; format `supabase gen types` çıktısıyla birebir aynı.)
+
 Çalıştır:
 
 ```bash

@@ -28,7 +28,7 @@ export default function ProgramScreen() {
 
   const [items, setItems] = useState<WorkoutItemDraft[]>([]);
 
-  const nameRefs = useRef<Array<TextInput | null>>([]);
+  const nameRefs = useRef<(TextInput | null)[]>([]);
   const { scrollRef, onScroll, revealField, keyboardPadding } = useKeyboardFocus();
 
   // O tarihte program varsa bir kez doldur (düzenleme). Her (tarih, entry) için

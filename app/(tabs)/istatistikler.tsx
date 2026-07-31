@@ -19,6 +19,7 @@ import { getPhotoUrls } from "@/lib/storage";
 
 let MediaLibrary: typeof MediaLibraryType | null = null;
 try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- Expo Go'da native modül eksik; statik import her koşulda evaluate edilirdi
   MediaLibrary = require("expo-media-library");
 } catch {
   MediaLibrary = null;

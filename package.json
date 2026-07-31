@@ -8,7 +8,11 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "lint": "expo lint",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write \"{app,components,lib}/**/*.{ts,tsx}\"",
+    "format:check": "prettier --check \"{app,components,lib}/**/*.{ts,tsx}\""
   },
   "jest": {
     "preset": "jest-expo",
@@ -64,7 +68,11 @@
     "@react-native/jest-preset": "^0.86.1",
     "@types/jest": "^29.5.14",
     "@types/react": "~19.2.4",
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "^57.0.1",
+    "eslint-config-prettier": "^10.1.8",
     "jest": "^29.7.0",
+    "prettier": "^3.9.6",
     "typescript": "~6.0.3"
   },
   "private": true

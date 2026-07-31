@@ -21,6 +21,7 @@ import { registerEntryMutationDefaults, QUERY_CACHE_STORAGE_KEY } from "@/lib/en
 import { maybeSweepOrphans } from "@/lib/orphanSweep";
 import { initMonitoring } from "@/lib/monitoring";
 import { CaptureOptionsSheet } from "@/components/CaptureOptionsSheet";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // NOT: Buradaki varsayılan font ataması eskiden `Text.defaultProps` ile yapılıyordu.
 // React 19 fonksiyon bileşenlerinde defaultProps desteğini kaldırdığı için o kod
@@ -64,13 +65,14 @@ const PERSIST_CACHE_BUSTER = "2";
 // geciktiriyoruz — asıl veri yüklemesi ve resumePausedMutations öne geçsin.
 function OrphanSweeper() {
   const { user } = useAuth();
+  const userId = user?.id;
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
     const t = setTimeout(() => {
-      maybeSweepOrphans(user.id);
+      maybeSweepOrphans(userId);
     }, 5000);
     return () => clearTimeout(t);
-  }, [user?.id]);
+  }, [userId]);
   return null;
 }
 
@@ -90,43 +92,49 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <PersistQueryClientProvider
-        client={queryClient}
-        persistOptions={{ persister, maxAge: 1000 * 60 * 60 * 24 * 7, buster: PERSIST_CACHE_BUSTER }}
-        onSuccess={() => {
-          // Uygulama kapalıyken kuyruğa alınmış (offline'da eklenmiş) kayıtları,
-          // restore tamamlanır tamamlanmaz senkronize etmeyi dener.
-          queryClient.resumePausedMutations();
-        }}
-      >
-        <AuthProvider>
-          <OrphanSweeper />
-          <StatusBar style="light" />
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(onboarding)/welcome" />
-            <Stack.Screen name="(auth)" />
-            <Stack.Screen name="forgot-password" options={{ presentation: "modal" }} />
-            <Stack.Screen name="privacy-policy" options={{ presentation: "modal" }} />
-            <Stack.Screen name="terms" options={{ presentation: "modal" }} />
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="entry/new" options={{ presentation: "modal" }} />
-            <Stack.Screen name="entry/workout" options={{ presentation: "modal" }} />
-            <Stack.Screen name="entry/program" options={{ presentation: "modal" }} />
-            <Stack.Screen name="entry/off-day" options={{ presentation: "modal" }} />
-            <Stack.Screen name="entry/[id]" />
-            <Stack.Screen name="entry/edit/[id]" options={{ presentation: "modal" }} />
-            <Stack.Screen name="compare/pick" options={{ presentation: "modal" }} />
-            <Stack.Screen name="compare" options={{ presentation: "modal" }} />
-            <Stack.Screen name="calendar-year" />
-            <Stack.Screen name="search" options={{ presentation: "modal" }} />
-            <Stack.Screen name="profile/edit" options={{ presentation: "modal" }} />
-            <Stack.Screen name="settings/notifications" options={{ presentation: "modal" }} />
-            <Stack.Screen name="settings/measurements" options={{ presentation: "modal" }} />
-            <Stack.Screen name="settings/help" options={{ presentation: "modal" }} />
-          </Stack>
-          <CaptureOptionsSheet />
-        </AuthProvider>
-      </PersistQueryClientProvider>
+      <ErrorBoundary>
+        <PersistQueryClientProvider
+          client={queryClient}
+          persistOptions={{
+            persister,
+            maxAge: 1000 * 60 * 60 * 24 * 7,
+            buster: PERSIST_CACHE_BUSTER,
+          }}
+          onSuccess={() => {
+            // Uygulama kapalıyken kuyruğa alınmış (offline'da eklenmiş) kayıtları,
+            // restore tamamlanır tamamlanmaz senkronize etmeyi dener.
+            queryClient.resumePausedMutations();
+          }}
+        >
+          <AuthProvider>
+            <OrphanSweeper />
+            <StatusBar style="light" />
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="(onboarding)/welcome" />
+              <Stack.Screen name="(auth)" />
+              <Stack.Screen name="forgot-password" options={{ presentation: "modal" }} />
+              <Stack.Screen name="privacy-policy" options={{ presentation: "modal" }} />
+              <Stack.Screen name="terms" options={{ presentation: "modal" }} />
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="entry/new" options={{ presentation: "modal" }} />
+              <Stack.Screen name="entry/workout" options={{ presentation: "modal" }} />
+              <Stack.Screen name="entry/program" options={{ presentation: "modal" }} />
+              <Stack.Screen name="entry/off-day" options={{ presentation: "modal" }} />
+              <Stack.Screen name="entry/[id]" />
+              <Stack.Screen name="entry/edit/[id]" options={{ presentation: "modal" }} />
+              <Stack.Screen name="compare/pick" options={{ presentation: "modal" }} />
+              <Stack.Screen name="compare" options={{ presentation: "modal" }} />
+              <Stack.Screen name="calendar-year" />
+              <Stack.Screen name="search" options={{ presentation: "modal" }} />
+              <Stack.Screen name="profile/edit" options={{ presentation: "modal" }} />
+              <Stack.Screen name="settings/notifications" options={{ presentation: "modal" }} />
+              <Stack.Screen name="settings/measurements" options={{ presentation: "modal" }} />
+              <Stack.Screen name="settings/help" options={{ presentation: "modal" }} />
+            </Stack>
+            <CaptureOptionsSheet />
+          </AuthProvider>
+        </PersistQueryClientProvider>
+      </ErrorBoundary>
     </GestureHandlerRootView>
   );
 }

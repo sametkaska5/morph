@@ -37,7 +37,7 @@ export default function WorkoutDayScreen() {
   const [values, setValues] = useState<Record<string, string>>({});
   const [note, setNote] = useState("");
 
-  const measureRefs = useRef<Array<TextInput | null>>([]);
+  const measureRefs = useRef<(TextInput | null)[]>([]);
   const noteRef = useRef<TextInput | null>(null);
   const { scrollRef, onScroll, revealField, keyboardPadding } = useKeyboardFocus();
 

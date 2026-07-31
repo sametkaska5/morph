@@ -47,5 +47,7 @@ export function TextInput({ className, ...props }: TextInputProps) {
  * Aynı isimde bir tip diğer adı veriyoruz — değer ve tip ayrı bildirim alanlarında
  * yaşadığı için yukarıdaki fonksiyonla çakışmıyor.
  */
+// eslint-disable-next-line @typescript-eslint/no-redeclare -- bilinçli değer+tip ikilisi (yukarıdaki açıklama)
 export type Text = ComponentRef<typeof RNText>;
+// eslint-disable-next-line @typescript-eslint/no-redeclare -- bilinçli değer+tip ikilisi (yukarıdaki açıklama)
 export type TextInput = ComponentRef<typeof RNTextInput>;

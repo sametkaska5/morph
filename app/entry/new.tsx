@@ -33,7 +33,7 @@ export default function NewEntry() {
   // parseExifDateTime) tarihi otomatik ona ayarlıyoruz — kullanıcı tekrar elle seçmesin.
   const [date, setDate] = useState(() => (photo?.takenAt ? new Date(photo.takenAt) : new Date()));
   const [showPicker, setShowPicker] = useState(false);
-  const inputRefs = useRef<Array<TextInput | null>>([]);
+  const inputRefs = useRef<(TextInput | null)[]>([]);
   const noteRef = useRef<TextInput | null>(null);
   const { scrollRef, onScroll, revealField, keyboardPadding } = useKeyboardFocus();
 

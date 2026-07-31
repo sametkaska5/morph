@@ -163,7 +163,7 @@ export default function EditEntry() {
   // measurement_type_id -> girilen değer (string, boş olabilir)
   const [values, setValues] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState(false);
-  const inputRefs = useRef<Array<TextInput | null>>([]);
+  const inputRefs = useRef<(TextInput | null)[]>([]);
   const noteRef = useRef<TextInput | null>(null);
   const { scrollRef, onScroll, revealField, keyboardPadding } = useKeyboardFocus();
 

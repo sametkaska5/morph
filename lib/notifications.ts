@@ -7,7 +7,10 @@ import { supabase } from "./supabase";
 // import Babel tarafından her koşulda çalıştırıldığı için, modülü sadece Expo Go
 // DIŞINDAYKEN require ile yüklüyoruz — bu şekilde Expo Go'da hiç evaluate edilmiyor.
 const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
-const Notifications: typeof NotificationsType | null = isExpoGo ? null : require("expo-notifications");
+ 
+const Notifications: typeof NotificationsType | null = isExpoGo
+  ? null
+  : require("expo-notifications"); // eslint-disable-line @typescript-eslint/no-require-imports -- Expo Go'da native modül eksik; statik import her koşulda evaluate edilirdi
 
 // Ekranların (örn. Bildirimler ayarları) modül yokken sessizce başarısız olmak yerine
 // kullanıcıya "development build gerekiyor" gibi açıklayıcı bir mesaj gösterebilmesi için.

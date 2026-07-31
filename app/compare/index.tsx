@@ -17,6 +17,7 @@ import { useUnitPreference, displayUnit, toDisplayValue } from "@/lib/units";
 // özelliği sessizce devre dışı kalıyor, "Paylaş" (expo-sharing, ayrı native modül) etkilenmiyor.
 let MediaLibrary: typeof MediaLibraryType | null = null;
 try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- Expo Go'da native modül eksik; statik import her koşulda evaluate edilirdi
   MediaLibrary = require("expo-media-library");
 } catch {
   MediaLibrary = null;

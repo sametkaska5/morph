@@ -40,12 +40,17 @@ export function DraggableSheet({
     }
   }, [visible, translateY, backdropOpacity]);
 
+  // Not: aşağıdaki eslint-disable'lar yanlış pozitif — Reanimated shared value'ya
+  // (.value) worklet içinden yazmak kütüphanenin standart kullanımı; react-hooks'un
+  // yeni immutability kuralı bunu "effect'te kullanılan değeri mutasyon" sanıyor.
   const panGesture = Gesture.Pan()
     .onUpdate((e) => {
+      // eslint-disable-next-line react-hooks/immutability
       if (e.translationY > 0) translateY.value = e.translationY;
     })
     .onEnd((e) => {
       if (e.translationY > DISMISS_DISTANCE || e.velocityY > DISMISS_VELOCITY) {
+        // eslint-disable-next-line react-hooks/immutability
         translateY.value = withTiming(600, { duration: 150 }, (finished) => {
           if (finished) runOnJS(onClose)();
         });

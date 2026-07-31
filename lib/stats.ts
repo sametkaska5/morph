@@ -87,6 +87,46 @@ export function useCurrentWeek(userId: string | undefined) {
   });
 }
 
+/**
+ * Bu haftanın gün listesinden mevcut seriyi sayar: bugünden (gelecek günler
+ * atlanarak) geriye doğru, tipi olan her gün seriyi büyütür; ilk boş gün keser.
+ * Saf fonksiyon — istatistik ekranındaki IIFE'den test edilebilsin diye çıkarıldı.
+ */
+export function computeWeekStreak(week: Pick<WeekDayStatus, "isFuture" | "type">[]): number {
+  let streak = 0;
+  for (let i = week.length - 1; i >= 0; i--) {
+    if (week[i].isFuture) continue;
+    if (week[i].type) streak++;
+    else break;
+  }
+  return streak;
+}
+
+export type Trend = { delta: number | null; isGood: boolean };
+
+/**
+ * İki ölçüm arasındaki değişim + bunun "iyi" olup olmadığı (hedef yönüne göre:
+ * kilo düşsün, kas ölçüsü artsın). Ekranda hem satır içi grafik başlığı hem
+ * büyütme modalı aynı hesabı kopyalıyordu — tek kaynağa indirildi.
+ */
+export function computeTrend(
+  currentValue: number | undefined,
+  previousValue: number | undefined,
+  targetDirection: "decrease_is_good" | "increase_is_good" | undefined
+): Trend {
+  const delta =
+    currentValue != null && previousValue != null
+      ? Number((currentValue - previousValue).toFixed(1))
+      : null;
+  const isGood =
+    delta != null && targetDirection
+      ? targetDirection === "decrease_is_good"
+        ? delta <= 0
+        : delta >= 0
+      : true;
+  return { delta, isGood };
+}
+
 export type ShareablePhotoEntry = {
   id: string;
   date: string;

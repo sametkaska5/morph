@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { View, ScrollView, Pressable, ActivityIndicator, Alert, Image, Modal, RefreshControl } from "react-native";
 import { Text } from "@/components/Typography";
-import Svg, { Path, Circle, Line, Defs, LinearGradient, Stop } from "react-native-svg";
 import { useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
@@ -13,8 +12,15 @@ import { scheduleStreakRiskNotification } from "@/lib/notifications";
 import { useNotificationSettings } from "@/lib/notificationSettings";
 import { useMeasurementTypes } from "@/lib/measurementTypes";
 import { useUnitPreference, displayUnit, toDisplayValue } from "@/lib/units";
-import { useMeasurementSeries, useCurrentWeek, useShareablePhotoEntries } from "@/lib/stats";
+import {
+  useMeasurementSeries,
+  useCurrentWeek,
+  useShareablePhotoEntries,
+  computeWeekStreak,
+  computeTrend,
+} from "@/lib/stats";
 import { queryKeys } from "@/lib/queryKeys";
+import { MeasurementChart, VISIBLE_POINTS } from "@/components/MeasurementChart";
 
 let MediaLibrary: typeof MediaLibraryType | null = null;
 try {
@@ -24,255 +30,8 @@ try {
   MediaLibrary = null;
 }
 
+/** Karttaki satır içi grafiğin yüksekliği (büyütme modalı 280 kullanıyor). */
 const CHART_H = 110;
-/** Çizgi yumuşatma gücü. Fazlası veriyi çarpıtan taşmalara yol açıyor. */
-const SMOOTHING = 0.18;
-/** Bu sayıdan fazla veri noktası varsa tek tek noktalar çizgiyi boğuyor. */
-const MAX_VISIBLE_DOTS = 24;
-const TOOLTIP_W = 96;
-/** Grafiğin yatay iç boşluğu. İlk/son nokta eskiden x=0 ve x=width'te, yani tam
- *  kenarda kalıyordu — hem basılması zordu hem ekran kenarı hareketleriyle
- *  çakışıyordu. Noktaları bu kadar içeri alıyoruz. */
-const CHART_PAD_X = 16;
-/** Büyütme ekranında aynı anda görünecek en fazla nokta sayısı. Daha fazlası
- *  varsa grafik genişleyip yatayda kaydırılabilir olur (gerisi kaydırınca gelir). */
-const VISIBLE_POINTS = 7;
-
-type ChartPoint = { x: number; y: number };
-
-/**
- * Noktaları köşesiz bir eğriye çevirir (Catmull-Rom → kübik Bézier).
- * Eskiden düz `L` segmentleriyle çiziliyordu; her veri noktasında keskin bir
- * köşe oluşuyordu.
- */
-function smoothLine(points: ChartPoint[]) {
-  if (points.length === 0) return "";
-  if (points.length === 1) return `M${points[0].x},${points[0].y}`;
-
-  let d = `M${points[0].x},${points[0].y}`;
-  for (let i = 0; i < points.length - 1; i++) {
-    // Uçlarda komşu nokta olmadığı için noktanın kendisini kullanıyoruz —
-    // böylece ilk/son segment dışarı taşmadan düzleşiyor.
-    const prev = points[i - 1] ?? points[i];
-    const curr = points[i];
-    const next = points[i + 1];
-    const after = points[i + 2] ?? next;
-
-    const cp1x = curr.x + (next.x - prev.x) * SMOOTHING;
-    const cp1y = curr.y + (next.y - prev.y) * SMOOTHING;
-    const cp2x = next.x - (after.x - curr.x) * SMOOTHING;
-    const cp2y = next.y - (after.y - curr.y) * SMOOTHING;
-
-    d += ` C${cp1x},${cp1y} ${cp2x},${cp2y} ${next.x},${next.y}`;
-  }
-  return d;
-}
-
-/**
- * Grafiği ölçülen GERÇEK genişliğe göre kurar. Eskiden sabit bir viewBox (300)
- * vardı ve preserveAspectRatio yüzünden kart daha genişse grafik ortada dar
- * kalıyordu. Gerçek genişlikle SVG birimi = ekran noktası oluyor, bu da hem
- * grafiğin tam yayılmasını hem de dokunma baloncuğunun koordinat dönüşümü
- * olmadan konumlandırılmasını sağlıyor.
- */
-function buildChartPath(values: number[], width: number, height: number) {
-  if (values.length === 0 || width <= 0) {
-    return { line: "", area: "", points: [] as ChartPoint[] };
-  }
-
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min || 1;
-  // Noktalar kenara yapışmasın diye iki yandan CHART_PAD_X kadar içeride kalır.
-  const usableW = Math.max(width - CHART_PAD_X * 2, 1);
-  const stepX = values.length > 1 ? usableW / (values.length - 1) : 0;
-
-  const points: ChartPoint[] = values.map((v, i) => ({
-    // Tek veri varsa ortala, yoksa sola yapışık tek bir nokta kalıyor.
-    x: values.length === 1 ? width / 2 : CHART_PAD_X + i * stepX,
-    y: height - ((v - min) / range) * (height - 20) - 10,
-  }));
-
-  const line = smoothLine(points);
-  const first = points[0];
-  const last = points[points.length - 1];
-  const area = `${line} L${last.x},${height} L${first.x},${height} Z`;
-
-  return { line, area, points };
-}
-
-/**
- * Ölçüm serisini çizen interaktif grafik. Hem karttaki KÜÇÜK hâlde hem de
- * "büyüt" modalındaki BÜYÜK hâlde kullanılıyor — bu yüzden yükseklik ve seçili
- * nokta dışarıdan (controlled) veriliyor; genişliği kendisi ölçüyor.
- */
-function MeasurementChart({
-  values,
-  series,
-  unitLabel,
-  height,
-  selectedIndex,
-  onSelect,
-  scrollable = false,
-}: {
-  values: number[];
-  series: { date: string; value: number }[] | undefined;
-  unitLabel: string;
-  height: number;
-  selectedIndex: number | null;
-  onSelect: (index: number | null) => void;
-  /** true ise nokta sayısı ekranı aşınca grafik yatayda kaydırılabilir olur. */
-  scrollable?: boolean;
-}) {
-  // viewportW: bileşene ayrılan görünür genişlik. contentW: grafiğin ASIL çizim
-  // genişliği — kaydırmalı modda nokta başına en az MIN_SCROLL_STEP düşecek
-  // şekilde viewport'u aşabilir; aşarsa aşağıda yatay ScrollView'a sarılıyor.
-  const [viewportW, setViewportW] = useState(0);
-  // Kaydırmalı modda adım, viewport'a tam VISIBLE_POINTS nokta sığacak şekilde
-  // seçiliyor; nokta sayısı bunu aşarsa contentW viewport'tan geniş olur ve
-  // aşağıda yatay ScrollView devreye girer (ekranda hep ~7 nokta, gerisi kaydırma).
-  const scrollStep = viewportW > 0 ? (viewportW - CHART_PAD_X * 2) / (VISIBLE_POINTS - 1) : 0;
-  const contentW =
-    scrollable && values.length > VISIBLE_POINTS
-      ? CHART_PAD_X * 2 + (values.length - 1) * scrollStep
-      : viewportW;
-
-  const { line, area, points } = buildChartPath(values, contentW, height);
-
-  const activeIndex = selectedIndex != null && selectedIndex < values.length ? selectedIndex : null;
-  const selectedPoint = activeIndex != null ? points[activeIndex] : null;
-  const lastPoint = points[points.length - 1];
-  const selectedDate = activeIndex != null ? series?.[activeIndex]?.date ?? null : null;
-  const selectedValue = activeIndex != null ? values[activeIndex] : null;
-
-  // Çizim gövdesi: Svg + dokunma katmanı + baloncuk. Kaydırmalı modda bunu
-  // contentW genişliğinde bir ScrollView içine koyuyoruz; locationX ve baloncuğun
-  // absolute konumu bu gövdeye göre olduğu için kaydırınca da doğru çalışıyor.
-  const chartBody = (
-    <View style={{ width: contentW, height }}>
-      <Svg width={contentW} height={height}>
-        <Defs>
-          <LinearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0%" stopColor="#8CE05A" stopOpacity={0.35} />
-            <Stop offset="100%" stopColor="#8CE05A" stopOpacity={0} />
-          </LinearGradient>
-        </Defs>
-        <Path d={area} fill="url(#areaGrad)" />
-        <Path d={line} fill="none" stroke="#8CE05A" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
-
-        {selectedPoint ? (
-          <Line
-            x1={selectedPoint.x}
-            y1={0}
-            x2={selectedPoint.x}
-            y2={height}
-            stroke="#8CE05A"
-            strokeOpacity={0.35}
-            strokeWidth={1}
-            strokeDasharray="3 4"
-          />
-        ) : null}
-
-        {/* Küçük noktalar dokunulabilir olduğunu belli ediyor; kalabalıkta
-            çizgiyi boğmasın diye gizleniyor. Dolu accent + koyu kontur:
-            nokta çizgiyle aynı renk olduğu için ince halka olmadan çizgiye
-            karışıyordu. */}
-        {scrollable || points.length <= MAX_VISIBLE_DOTS
-          ? points.map((p, i) =>
-              i === activeIndex ? null : (
-                <Circle
-                  key={`dot-${i}`}
-                  cx={p.x}
-                  cy={p.y}
-                  r={3.5}
-                  fill="#8CE05A"
-                  stroke="#0B0D0A"
-                  strokeWidth={1.5}
-                />
-              )
-            )
-          : null}
-
-        {/* Son ve seçili nokta içi boş halka — dolu noktalardan ayrışıp
-            hiyerarşiyi koruyor. */}
-        {activeIndex == null && lastPoint ? (
-          <Circle cx={lastPoint.x} cy={lastPoint.y} r={5} fill="#0B0D0A" stroke="#8CE05A" strokeWidth={2.5} />
-        ) : null}
-
-        {selectedPoint ? (
-          <Circle cx={selectedPoint.x} cy={selectedPoint.y} r={6} fill="#0B0D0A" stroke="#8CE05A" strokeWidth={3} />
-        ) : null}
-      </Svg>
-
-      {/* Dokunmayı SVG şekilleri yerine üstteki bu katman yakalıyor:
-          react-native-svg'de şeffaf dolgulu şekillerin isabet algılaması
-          platforma göre değişebiliyor. Tam noktaya basmak gerekmiyor —
-          en yakın nokta seçiliyor. */}
-      <Pressable
-        onPress={(e) => {
-          const x = e.nativeEvent.locationX;
-          let nearest = 0;
-          let bestDistance = Infinity;
-          points.forEach((p, i) => {
-            const distance = Math.abs(p.x - x);
-            if (distance < bestDistance) {
-              bestDistance = distance;
-              nearest = i;
-            }
-          });
-          onSelect(selectedIndex === nearest ? null : nearest);
-        }}
-        accessibilityRole="button"
-        accessibilityLabel="Grafikte bir güne dokunarak o günün değerini gör"
-        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
-      />
-
-      {selectedPoint && selectedDate ? (
-        <View
-          pointerEvents="none"
-          style={{
-            position: "absolute",
-            width: TOOLTIP_W,
-            // Baloncuk grafiğin dışına taşmasın diye yatayda sınırlanıyor.
-            left: Math.min(Math.max(selectedPoint.x - TOOLTIP_W / 2, 0), Math.max(contentW - TOOLTIP_W, 0)),
-            // Nokta tepedeyse baloncuk yukarı sığmıyor, altına alıyoruz.
-            top: selectedPoint.y > 48 ? selectedPoint.y - 48 : selectedPoint.y + 14,
-          }}
-        >
-          <View className="bg-bg border border-accent rounded-lg px-2 py-1.5 items-center">
-            <Text className="text-textFaint text-xs">
-              {new Date(selectedDate).toLocaleDateString("tr-TR", { day: "numeric", month: "short" })}
-            </Text>
-            <Text className="text-text text-sm font-semibold">
-              {selectedValue} {unitLabel}
-            </Text>
-          </View>
-        </View>
-      ) : null}
-    </View>
-  );
-
-  return (
-    <View onLayout={(e) => setViewportW(e.nativeEvent.layout.width)} style={{ height }}>
-      {viewportW > 0 && points.length > 0 ? (
-        scrollable && contentW > viewportW ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={{ height }}
-            // Grafik son (en yeni) noktadan başlasın — kullanıcı çoğunlukla
-            // son değerlerle ilgileniyor, gerisini geriye kaydırarak görür.
-            contentOffset={{ x: Math.max(contentW - viewportW, 0), y: 0 }}
-          >
-            {chartBody}
-          </ScrollView>
-        ) : (
-          chartBody
-        )
-      ) : null}
-    </View>
-  );
-}
 
 export default function Istatistikler() {
   const { user } = useAuth();
@@ -365,16 +124,11 @@ export default function Istatistikler() {
     modalActiveIndex != null ? values[modalActiveIndex] : values[values.length - 1];
   const modalPreviousValue =
     modalActiveIndex != null ? values[modalActiveIndex - 1] : values[values.length - 2];
-  const modalDelta =
-    modalCurrentValue != null && modalPreviousValue != null
-      ? Number((modalCurrentValue - modalPreviousValue).toFixed(1))
-      : null;
-  const modalIsGoodDelta =
-    modalDelta != null && activeType
-      ? activeType.target_direction === "decrease_is_good"
-        ? modalDelta <= 0
-        : modalDelta >= 0
-      : true;
+  const { delta: modalDelta, isGood: modalIsGoodDelta } = computeTrend(
+    modalCurrentValue,
+    modalPreviousValue,
+    activeType?.target_direction
+  );
   // Seçili gün etiketi (yoksa "Son değer").
   const modalSelectedDate =
     modalActiveIndex != null ? series?.[modalActiveIndex]?.date ?? null : null;
@@ -387,24 +141,13 @@ export default function Istatistikler() {
     setPrevTypeId(currentTypeId);
     setSelectedIndex(null);
   }
-  const delta = currentValue != null && previousValue != null ? Number((currentValue - previousValue).toFixed(1)) : null;
-  const isGoodDelta =
-    delta != null && activeType
-      ? activeType.target_direction === "decrease_is_good"
-        ? delta <= 0
-        : delta >= 0
-      : true;
+  const { delta, isGood: isGoodDelta } = computeTrend(
+    currentValue,
+    previousValue,
+    activeType?.target_direction
+  );
 
-  const currentStreak = (() => {
-    if (!week) return 0;
-    let streak = 0;
-    for (let i = week.length - 1; i >= 0; i--) {
-      if (week[i].isFuture) continue;
-      if (week[i].type) streak++;
-      else break;
-    }
-    return streak;
-  })();
+  const currentStreak = week ? computeWeekStreak(week) : 0;
 
   // Türetilmiş seçim: state'teki id listede yoksa (kayıt silindi / liste
   // yenilendi) ilk fotoğrafa düşer. Eskiden bunu bir useEffect state'i

@@ -7,6 +7,8 @@ import { captureRef } from "react-native-view-shot";
 import type * as MediaLibraryType from "expo-media-library";
 import * as Sharing from "expo-sharing";
 import { useComparison, type ComparisonData } from "@/lib/comparison";
+import { ErrorState } from "@/components/ErrorState";
+import { alertError } from "@/lib/alerts";
 import { useAuth } from "@/lib/useAuth";
 import { useUnitPreference, displayUnit, toDisplayValue } from "@/lib/units";
 
@@ -28,7 +30,7 @@ function fmtDate(d: string) {
 
 export default function Compare() {
   const { a, b } = useLocalSearchParams<{ a: string; b: string }>();
-  const { data, isLoading, error } = useComparison(a, b);
+  const { data, isLoading, error, refetch } = useComparison(a, b);
 
   return (
     <ScrollView className="flex-1 bg-bg" contentContainerStyle={{ paddingTop: 56, paddingBottom: 30 }}>
@@ -52,7 +54,9 @@ export default function Compare() {
       {isLoading ? (
         <ActivityIndicator color="#8CE05A" className="mt-10" />
       ) : error ? (
-        <Text className="text-danger text-base text-center mt-6 px-6">{(error as Error).message}</Text>
+        <View className="mt-6">
+          <ErrorState error={error} onRetry={() => refetch()} />
+        </View>
       ) : !data ? (
         <Text className="text-textMuted text-base text-center mt-10 px-8">
           Karşılaştırma yüklenemedi.
@@ -104,7 +108,7 @@ function ComparisonBody({ data }: { data: ComparisonData }) {
       await MediaLibrary.saveToLibraryAsync(uri);
       Alert.alert("Kaydedildi", "Karşılaştırma görseli galerine kaydedildi.");
     } catch (err) {
-      Alert.alert("Kaydetme başarısız", (err as Error).message);
+      alertError("Kaydetme başarısız", err, "compare.saveToLibrary");
     } finally {
       setPendingAction(null);
     }
@@ -121,7 +125,7 @@ function ComparisonBody({ data }: { data: ComparisonData }) {
       }
       await Sharing.shareAsync(uri, { mimeType: "image/png" });
     } catch (err) {
-      Alert.alert("Paylaşım başarısız", (err as Error).message);
+      alertError("Paylaşım başarısız", err, "compare.share");
     } finally {
       setPendingAction(null);
     }

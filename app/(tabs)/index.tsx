@@ -7,6 +7,7 @@ import Feather from "@expo/vector-icons/Feather";
 import { photoCacheKey } from "@/lib/storage";
 import { openCapturePicker } from "@/lib/capture";
 import { useTimelineEntries, type EntryRow } from "@/lib/entries";
+import { ErrorState } from "@/components/ErrorState";
 
 const { width } = Dimensions.get("window");
 const GAP = 8;
@@ -184,7 +185,9 @@ export default function AnaEkran() {
           <ActivityIndicator color="#8CE05A" />
         </View>
       ) : error ? (
-        <Text className="text-danger text-base px-4 mb-2">{(error as Error).message}</Text>
+        <View className="flex-1 items-center justify-center" style={{ marginTop: -40 }}>
+          <ErrorState error={error} onRetry={() => refetch()} />
+        </View>
       ) : isEmpty ? (
         <EmptyState />
       ) : (

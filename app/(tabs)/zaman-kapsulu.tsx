@@ -11,6 +11,7 @@ import { useAuth } from "@/lib/useAuth";
 import { useUnitPreference, displayUnit, toDisplayValue, type UnitPref } from "@/lib/units";
 import { openCapturePicker } from "@/lib/capture";
 import { useCapsuleEntries, type CapsuleEntry } from "@/lib/entries";
+import { ErrorState } from "@/components/ErrorState";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 // (tabs)/_layout.tsx'teki tabBarStyle.height ile eşleşmeli — FlatList'in gerçek
@@ -222,7 +223,8 @@ export default function ZamanKapsulu() {
   const [measuredHeight, setMeasuredHeight] = useState(0);
   const pageHeight = measuredHeight || SCREEN_HEIGHT - TAB_BAR_HEIGHT - insets.bottom;
   const { data: unitPref = "metric" } = useUnitPreference(user?.id);
-  const { data, isLoading, error, fetchNextPage, hasNextPage, isFetchingNextPage } = useCapsuleEntries();
+  const { data, isLoading, error, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useCapsuleEntries();
   const entries = data?.pages.flat();
 
   if (isLoading) {
@@ -231,8 +233,8 @@ export default function ZamanKapsulu() {
 
   if (error) {
     return (
-      <View className="flex-1 bg-bg items-center justify-center px-6">
-        <Text className="text-danger text-base text-center">{(error as Error).message}</Text>
+      <View className="flex-1 bg-bg items-center justify-center">
+        <ErrorState error={error} onRetry={() => refetch()} />
       </View>
     );
   }

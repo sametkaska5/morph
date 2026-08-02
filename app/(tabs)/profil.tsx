@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { View, ScrollView, Pressable, ActivityIndicator, Modal, Alert } from "react-native";
+import { View, ScrollView, Pressable, ActivityIndicator, Modal } from "react-native";
 import { Text } from "@/components/Typography";
 import { Image } from "expo-image";
 import { useMutation } from "@tanstack/react-query";
@@ -12,6 +12,7 @@ import { useProfileStats } from "@/lib/profileStats";
 import { useProfile } from "@/lib/profile";
 import { useUnitPreference, useSetUnitPreference } from "@/lib/units";
 import { DraggableSheet } from "@/components/DraggableSheet";
+import { alertError } from "@/lib/alerts";
 
 /** Feather ikon adları — yanlış yazılmış bir ad artık derlemede yakalanıyor. */
 type FeatherIcon = keyof typeof Feather.glyphMap;
@@ -102,7 +103,7 @@ export default function Profil() {
 
   const deleteAccountMutation = useMutation({
     mutationFn: () => deleteAccount(user!.id),
-    onError: (err) => Alert.alert("Hesap silinemedi", (err as Error).message),
+    onError: (err) => alertError("Hesap silinemedi", err, "profile.deleteAccount"),
   });
 
   async function handleSignOut() {

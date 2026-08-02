@@ -13,6 +13,7 @@ import { useUnitPreference, displayUnit, toDisplayValue, toMetricValue } from "@
 import { validateMeasurementInput, measurementErrorText } from "@/lib/measurementInput";
 import { useWorkoutDay, saveWorkoutDay, type WorkoutDayType } from "@/lib/workout";
 import { queryKeys } from "@/lib/queryKeys";
+import { alertError } from "@/lib/alerts";
 
 export default function WorkoutDayScreen() {
   const params = useLocalSearchParams();
@@ -79,7 +80,7 @@ export default function WorkoutDayScreen() {
       queryClient.invalidateQueries({ queryKey: queryKeys.workoutDay.all });
       router.back();
     },
-    onError: (err) => Alert.alert("Kayıt başarısız", (err as Error).message),
+    onError: (err) => alertError("Kayıt başarısız", err, "workout.saveWorkoutDay"),
   });
 
   function handleSave() {

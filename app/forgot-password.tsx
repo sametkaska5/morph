@@ -4,6 +4,8 @@ import { Text, TextInput } from "@/components/Typography";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
 import { supabase } from "@/lib/supabase";
+import { authErrorMessage } from "@/lib/errors";
+import { captureError } from "@/lib/monitoring";
 
 export default function ForgotPasswordScreen() {
   const [step, setStep] = useState<"request" | "reset">("request");
@@ -24,7 +26,8 @@ export default function ForgotPasswordScreen() {
     const { error } = await supabase.auth.resetPasswordForEmail(email);
     setLoading(false);
     if (error) {
-      setErrorMsg(error.message);
+      setErrorMsg(authErrorMessage(error));
+      captureError(error, { where: "auth.resetPasswordForEmail" });
       return;
     }
     setInfoMsg(`${email} adresine bir doğrulama kodu gönderdik.`);
@@ -46,14 +49,16 @@ export default function ForgotPasswordScreen() {
     const { error: verifyError } = await supabase.auth.verifyOtp({ email, token: code, type: "recovery" });
     if (verifyError) {
       setLoading(false);
-      setErrorMsg(verifyError.message);
+      setErrorMsg(authErrorMessage(verifyError));
+      captureError(verifyError, { where: "auth.verifyOtp" });
       return;
     }
 
     const { error: updateError } = await supabase.auth.updateUser({ password });
     setLoading(false);
     if (updateError) {
-      setErrorMsg(updateError.message);
+      setErrorMsg(authErrorMessage(updateError));
+      captureError(updateError, { where: "auth.updateUser" });
       return;
     }
 

@@ -13,7 +13,7 @@ import { useMeasurementTypes } from "@/lib/measurementTypes";
 import { useKeyboardFocus } from "@/lib/useKeyboardFocus";
 import { useUnitPreference, displayUnit, toMetricValue } from "@/lib/units";
 import { validateMeasurementInput, measurementErrorText } from "@/lib/measurementInput";
-import { captureError } from "@/lib/monitoring";
+import { alertError } from "@/lib/alerts";
 import type { EntryRow } from "@/lib/entries";
 import { queryKeys } from "@/lib/queryKeys";
 
@@ -77,8 +77,9 @@ export default function NewEntry() {
       if (context?.previous) {
         queryClient.setQueryData(queryKeys.entries.timeline(), context.previous);
       }
-      captureError(err, { where: "new.saveEntry" });
-      Alert.alert("Kayıt başarısız", (err as Error).message);
+      // alertError hem bildirir hem captureError'a raporlar — ayrıca
+      // çağırmıyoruz, yoksa aynı hata Sentry'ye iki kez giderdi.
+      alertError("Kayıt başarısız", err, "new.saveEntry");
     },
   });
 

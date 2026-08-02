@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Pressable, ActivityIndicator, Image, Alert } from "react-native";
+import { View, Pressable, ActivityIndicator, Image } from "react-native";
 import { Text, TextInput } from "@/components/Typography";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { router } from "expo-router";
@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/useAuth";
 import { useProfile, useUpdateProfile } from "@/lib/profile";
 import { uploadAvatar } from "@/lib/storage";
 import { supabase } from "@/lib/supabase";
+import { alertError } from "@/lib/alerts";
 
 export default function EditProfileScreen() {
   const { user } = useAuth();
@@ -62,7 +63,7 @@ export default function EditProfileScreen() {
       setAvatarPath(path);
       setDisplayUri(manipulated.uri);
     } catch (err) {
-      Alert.alert("Fotoğraf yüklenemedi", (err as Error).message);
+      alertError("Fotoğraf yüklenemedi", err, "profile.pickAvatar");
     } finally {
       setUploading(false);
     }
@@ -73,7 +74,7 @@ export default function EditProfileScreen() {
       { name: name.trim() || null, avatar_path: avatarPath },
       {
         onSuccess: () => router.back(),
-        onError: (err) => Alert.alert("Kaydedilemedi", (err as Error).message),
+        onError: (err) => alertError("Kaydedilemedi", err, "profile.update"),
       }
     );
   }

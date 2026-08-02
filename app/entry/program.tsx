@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { View, Pressable, Platform, Alert, ScrollView, ActivityIndicator } from "react-native";
+import { View, Pressable, Platform, ScrollView, ActivityIndicator } from "react-native";
 import { Text, TextInput } from "@/components/Typography";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -10,6 +10,7 @@ import { toLocalDateKey } from "@/lib/date";
 import { useKeyboardFocus } from "@/lib/useKeyboardFocus";
 import { useProgramDay, saveProgram, type WorkoutItemDraft, type WorkoutSetDraft } from "@/lib/workout";
 import { queryKeys } from "@/lib/queryKeys";
+import { alertError } from "@/lib/alerts";
 
 const EMPTY_SET: WorkoutSetDraft = { reps: "", weight: "" };
 const newExercise = (): WorkoutItemDraft => ({ name: "", sets: [{ ...EMPTY_SET }] });
@@ -69,7 +70,7 @@ export default function ProgramScreen() {
       queryClient.invalidateQueries({ queryKey: queryKeys.profile.all });
       router.back();
     },
-    onError: (err) => Alert.alert("Kayıt başarısız", (err as Error).message),
+    onError: (err) => alertError("Kayıt başarısız", err, "program.saveProgram"),
   });
 
   function updateExercise(exIndex: number, patch: Partial<WorkoutItemDraft>) {

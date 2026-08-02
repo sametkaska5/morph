@@ -11,6 +11,7 @@ import { Text, TextInput } from "@/components/Typography";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
 import { useAuth } from "@/lib/useAuth";
+import { alertError } from "@/lib/alerts";
 import {
   useMeasurementTypes,
   useAddMeasurementType,
@@ -52,7 +53,7 @@ export default function MeasurementSettingsScreen() {
           setUnit("");
           setDirection("decrease_is_good");
         },
-        onError: (err) => Alert.alert("Eklenemedi", (err as Error).message),
+        onError: (err) => alertError("Eklenemedi", err, "measurements.add"),
       }
     );
   }
@@ -65,7 +66,7 @@ export default function MeasurementSettingsScreen() {
         style: "destructive",
         onPress: () =>
           deleteMutation.mutate(id, {
-            onError: (err) => Alert.alert("Silinemedi", (err as Error).message),
+            onError: (err) => alertError("Silinemedi", err, "measurements.delete"),
           }),
       },
     ]);

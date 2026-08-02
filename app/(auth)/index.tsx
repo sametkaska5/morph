@@ -4,6 +4,8 @@ import { Text, TextInput } from "@/components/Typography";
 import { Redirect, router } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
+import { authErrorMessage } from "@/lib/errors";
+import { captureError } from "@/lib/monitoring";
 
 export default function AuthScreen() {
   const { session, loading: authLoading } = useAuth();
@@ -35,7 +37,9 @@ export default function AuthScreen() {
     setLoading(false);
 
     if (error) {
-      setErrorMsg(error.message);
+      // Kullanıcı anlaşılır Türkçe metni görür; teknik ayrıntı Sentry'ye gider.
+      setErrorMsg(authErrorMessage(error));
+      captureError(error, { where: mode === "login" ? "auth.signIn" : "auth.signUp" });
     }
     // Başarılıysa useAuth hook'u session değişikliğini otomatik yakalayıp yönlendirir
   }

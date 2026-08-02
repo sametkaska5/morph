@@ -14,6 +14,7 @@ import { memo, useMemo, useState } from "react";
 import Feather from "@expo/vector-icons/Feather";
 import { photoCacheKey } from "@/lib/storage";
 import { useEntryDetail, useEntryOrder, useDeleteEntry } from "@/lib/entries";
+import { ErrorState } from "@/components/ErrorState";
 
 function ActionMenuOption({
   icon,
@@ -66,7 +67,7 @@ function workoutSetLabel(s: { reps: number | null; weight: number | null }): str
  * için sayfalar artık tamamen atlanıyor.
  */
 const EntryPage = memo(function EntryPage({ entryId }: { entryId: string }) {
-  const { data, isLoading, error } = useEntryDetail(entryId);
+  const { data, isLoading, error, refetch } = useEntryDetail(entryId);
 
   // DİKKAT: Bu kaplarda `flex-1` KULLANILMAZ.
   // Yatay listede iç kap satır yönünde dizilir; orada `flex-1` (flexBasis: 0)
@@ -85,8 +86,8 @@ const EntryPage = memo(function EntryPage({ entryId }: { entryId: string }) {
 
   if (error) {
     return (
-      <View style={{ width: SCREEN_WIDTH }} className="bg-bg justify-center items-center px-6">
-        <Text className="text-danger text-base text-center">{(error as Error).message}</Text>
+      <View style={{ width: SCREEN_WIDTH }} className="bg-bg justify-center items-center">
+        <ErrorState error={error} onRetry={() => refetch()} />
       </View>
     );
   }

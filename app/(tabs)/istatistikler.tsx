@@ -20,6 +20,7 @@ import {
   computeTrend,
 } from "@/lib/stats";
 import { queryKeys } from "@/lib/queryKeys";
+import { alertError } from "@/lib/alerts";
 import { MeasurementChart, VISIBLE_POINTS } from "@/components/MeasurementChart";
 
 let MediaLibrary: typeof MediaLibraryType | null = null;
@@ -199,7 +200,11 @@ export default function Istatistikler() {
         await Sharing.shareAsync(uri, { mimeType: "image/png" });
       }
     } catch (err) {
-      Alert.alert(kind === "save" ? "Kaydetme başarısız" : "Paylaşım başarısız", (err as Error).message);
+      alertError(
+        kind === "save" ? "Kaydetme başarısız" : "Paylaşım başarısız",
+        err,
+        `stats.shareCard.${kind}`
+      );
     } finally {
       setSharePendingAction(null);
     }

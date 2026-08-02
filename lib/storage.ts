@@ -75,24 +75,48 @@ export async function deleteAllUserPhotos(userId: string) {
 }
 
 /**
+ * Kapak seçicilerinin kabul ettiği en az alan kümesi.
+ *
+ * Neden somut bir satır tipi değil: sorgular photos ilişkisini farklı şekillerde
+ * seçiyor — `photos!entry_id(...)` bir DİZİ, `photos!cover_photo_id(...)` ise
+ * TEKİL bir satır döndürüyor; seçilen kolonlar da çağrı yerine göre değişiyor
+ * (kimi yerde thumb_path var, kimi yerde yok). Bu yüzden yapısal bir tip
+ * kullanıyoruz. Eskiden burada `any` vardı ve yanlış yazılmış bir alan adı
+ * sessizce undefined dönüyordu.
+ */
+export type PhotoRowLike = {
+  id?: string | null;
+  storage_path?: string | null;
+  thumb_path?: string | null;
+};
+
+export type EntryRowWithPhotos<T extends PhotoRowLike = PhotoRowLike> = {
+  cover_photo_id?: string | null;
+  photos?: T | T[] | null;
+};
+
+/**
  * Bir entry satırının KAPAK fotoğrafı SATIRINI ({ id, storage_path, ... }) döner.
  * `photos!entry_id(...)` ilişkisi bir DİZİ döndürüyor ve dizinin sırası garanti
  * değil — körlemesine photos[0] almak, aynı güne ikinci kez kayıt yapıldığında (ya
  * da fotoğraf değiştirildiğinde) eski fotoğrafı seçebiliyor. cover_photo_id ile
  * eşleşeni seçiyoruz; kapağı olmayan eski kayıtlar için ilk fotoğrafa geri düşüyoruz.
  */
-export function coverPhotoRow<T extends { id?: string; storage_path?: string }>(entryRow: any): T | null {
+export function coverPhotoRow<T extends PhotoRowLike = PhotoRowLike>(
+  entryRow: EntryRowWithPhotos<T> | null | undefined
+): T | null {
   const photos = entryRow?.photos;
-  if (!Array.isArray(photos)) return photos ?? null;
+  if (photos == null) return null;
+  if (!Array.isArray(photos)) return photos;
   if (photos.length === 0) return null;
-  const cover = photos.find((p: any) => p.id === entryRow?.cover_photo_id);
-  return (cover ?? photos[0]) ?? null;
+  const cover = photos.find((p) => p.id === entryRow?.cover_photo_id);
+  return cover ?? photos[0] ?? null;
 }
 
 /**
  * Bir entry satırının KAPAK fotoğrafının storage yolunu döner (bkz. coverPhotoRow).
  */
-export function coverPhotoPath(entryRow: any): string | null {
+export function coverPhotoPath(entryRow: EntryRowWithPhotos | null | undefined): string | null {
   const photos = entryRow?.photos;
   if (!Array.isArray(photos)) return photos?.storage_path ?? null;
   return coverPhotoRow(entryRow)?.storage_path ?? null;
@@ -104,9 +128,9 @@ export function coverPhotoPath(entryRow: any): string | null {
  * storage_path'e geri düşer — eski kayıtlar bozulmaz, sadece büyük iner.
  * Sorguda `photos(...)` içine thumb_path'i eklemeyi unutma.
  */
-export function coverThumbPath(entryRow: any): string | null {
+export function coverThumbPath(entryRow: EntryRowWithPhotos | null | undefined): string | null {
   const photos = entryRow?.photos;
-  const row: any = Array.isArray(photos) ? coverPhotoRow(entryRow) : photos;
+  const row = Array.isArray(photos) ? coverPhotoRow(entryRow) : photos;
   return row?.thumb_path ?? row?.storage_path ?? null;
 }
 

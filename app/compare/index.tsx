@@ -142,7 +142,9 @@ function ComparisonBody({ data }: { data: ComparisonData }) {
         delta == null ? true : t.targetDirection === "decrease_is_good" ? delta <= 0 : delta >= 0;
       return { ...t, unit: displayUnit(t.unit, unitPref), startVal, endVal, delta, isGood };
     })
-    .filter(Boolean) as any[];
+    // Tip koruyucu (type predicate): `filter(Boolean)` TypeScript'e null'ların
+    // elendiğini anlatamadığı için eskiden `as any[]` ile susturuluyordu.
+    .filter((row): row is NonNullable<typeof row> => row !== null);
 
   return (
     <View className="mt-3">

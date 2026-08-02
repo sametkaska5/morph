@@ -132,21 +132,25 @@ export function useProgramDay(userId: string | undefined, date: string) {
       if (error) throw error;
       if (!data) return null;
 
-      const items = ((data as any).workout_items ?? [])
-        .map((it: any) => ({
-          name: it.name as string,
-          order_index: it.order_index as number,
-          sets: ((it.workout_sets ?? []) as any[])
+      // Sıralamayı JS'te yapıyoruz: PostgREST iç içe gömülü ilişkilerde
+      // (workout_items → workout_sets) sıra garantisi vermiyor. sort yerinde
+      // çalışır ama önceki map zaten yeni bir dizi ürettiği için cache'teki
+      // veri mutasyona uğramıyor.
+      const items = (data.workout_items ?? [])
+        .map((it) => ({
+          name: it.name,
+          order_index: it.order_index,
+          sets: (it.workout_sets ?? [])
             .map((s) => ({
-              reps: s.reps as number | null,
-              weight: s.weight as number | null,
-              order_index: s.order_index as number,
+              reps: s.reps,
+              weight: s.weight,
+              order_index: s.order_index,
             }))
-            .sort((a: any, b: any) => a.order_index - b.order_index),
+            .sort((a, b) => a.order_index - b.order_index),
         }))
-        .sort((a: any, b: any) => a.order_index - b.order_index);
+        .sort((a, b) => a.order_index - b.order_index);
 
-      return { entryId: (data as any).id as string, items };
+      return { entryId: data.id, items };
     },
   });
 }

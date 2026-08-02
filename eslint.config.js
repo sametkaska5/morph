@@ -14,11 +14,16 @@ module.exports = defineConfig([
       // JSX içinde &apos; kaçışları okunabilirliği bitirir, RN'de bunun bir güvenlik
       // karşılığı da yok (web'deki HTML-entity sorunu burada geçerli değil).
       "react/no-unescaped-entities": "off",
-      // Gerçek bir kod kokusu ama düzeltmesi ekran başına dikkatli refactor istiyor
-      // (türetilmiş state'i render sırasında hesaplamak / key ile resetlemek).
-      // Mevcut 8 kullanım veri katmanı refactor'ünde (Faz B) ele alınacak; o yüzden
-      // build'i kırmasın ama görünür kalsın diye warn. Yeni kodda yazma.
-      "react-hooks/set-state-in-effect": "warn",
+      // Bir zamanlar 7 ihlal vardı ve geçici olarak warn'a düşürülmüştü; hepsi
+      // render sırasında senkronizasyon kalıbına çevrildi (react.dev:
+      // you-might-not-need-an-effect). Artık sıfır — geri sızmasın diye error.
+      "react-hooks/set-state-in-effect": "error",
+      // Supabase client tipli (createClient<Database>) ve veri katmanı tam
+      // tiplenmiş durumda; koddaki 52 `any` temizlendi. `any` tek bir yerde bile
+      // geri gelirse o noktadan sonraki tüm tip denetimi sessizce kayboluyor,
+      // bu yüzden hata seviyesinde tutuyoruz. Gerçekten kaçınılmazsa
+      // eslint-disable-next-line + GEREKÇE yaz.
+      "@typescript-eslint/no-explicit-any": "error",
     },
   },
   {

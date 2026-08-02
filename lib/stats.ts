@@ -33,7 +33,7 @@ export function useMeasurementSeries(userId: string | undefined, typeId: string 
       // güvenilir sıralamıyordu — değerler ekleme sırasında gelip grafik yanlış
       // diziliyordu. Tarihe göre ARTAN sıralayınca en eski solda, en yeni sağda olur.
       return (data ?? [])
-        .map((d: any) => ({ date: d.entries.date, value: d.value }))
+        .map((d) => ({ date: d.entries.date, value: d.value }))
         .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
     },
   });
@@ -150,12 +150,12 @@ export function useShareablePhotoEntries(userId: string | undefined) {
       if (error) throw error;
 
       const paths = (data ?? [])
-        .map((entry: any) => entry.photos?.storage_path)
+        .map((entry) => entry.photos?.storage_path)
         .filter(Boolean) as string[];
       const urlMap = await getPhotoUrls(paths);
 
       return (data ?? [])
-        .map((entry: any) => ({
+        .map((entry) => ({
           id: entry.id,
           date: entry.date,
           photoUrl: entry.photos?.storage_path

@@ -13,7 +13,10 @@ import { useProfile } from "@/lib/profile";
 import { useUnitPreference, useSetUnitPreference } from "@/lib/units";
 import { DraggableSheet } from "@/components/DraggableSheet";
 
-function StatChip({ icon, label, value }: { icon: any; label: string; value: string }) {
+/** Feather ikon adları — yanlış yazılmış bir ad artık derlemede yakalanıyor. */
+type FeatherIcon = keyof typeof Feather.glyphMap;
+
+function StatChip({ icon, label, value }: { icon: FeatherIcon; label: string; value: string }) {
   return (
     <View className="items-start gap-1">
       <View className="flex-row items-center gap-1.5">
@@ -25,7 +28,21 @@ function StatChip({ icon, label, value }: { icon: any; label: string; value: str
   );
 }
 
-function SettingsRow({ icon, label, value, danger, onPress }: any) {
+function SettingsRow({
+  icon,
+  label,
+  value,
+  danger,
+  onPress,
+}: {
+  icon: FeatherIcon;
+  label: string;
+  /** Satırın sağında gösterilen ikincil metin (örn. seçili birim). */
+  value?: string;
+  /** Silme gibi yıkıcı işlemler: kırmızı renk + chevron gizlenir. */
+  danger?: boolean;
+  onPress: () => void;
+}) {
   return (
     <Pressable
       onPress={onPress}

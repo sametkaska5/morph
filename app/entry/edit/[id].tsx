@@ -58,24 +58,20 @@ export default function EditEntry() {
   const { scrollRef, onScroll, revealField, keyboardPadding } = useKeyboardFocus();
 
   // Yeni fotoğraf seçildiyse onu, yoksa kayıtlı olanı göster.
-  const displayUri = localUri ?? (data as any)?.photoUrl ?? null;
+  const displayUri = localUri ?? data?.photoUrl ?? null;
   // Kayıtlı fotoğrafı gösterirken cacheKey veriyoruz; akış/detay ekranlarıyla
   // aynı anahtar olduğu için disk cache'ten anında geliyor. Yeni seçilen yerel
   // dosyada cacheKey olmaz (henüz storage'da bir karşılığı yok).
   const displayCacheKey =
-    !localUri && (data as any)?.photoPath
-      ? photoCacheKey((data as any).photoPath, "full")
-      : undefined;
+    !localUri && data?.photoPath ? photoCacheKey(data.photoPath, "full") : undefined;
 
   // Tam boy diskte yoksa gösterilecek anlık düşük çözünürlüklü kopya. Yeni
   // seçilen yerel fotoğrafta placeholder'a gerek yok (dosya zaten cihazda).
   const placeholderSource =
-    !localUri && (data as any)?.thumbUrl
+    !localUri && data?.thumbUrl
       ? {
-          uri: (data as any).thumbUrl,
-          cacheKey: (data as any).thumbPath
-            ? photoCacheKey((data as any).thumbPath, "thumb")
-            : undefined,
+          uri: data.thumbUrl,
+          cacheKey: data.thumbPath ? photoCacheKey(data.thumbPath, "thumb") : undefined,
         }
       : undefined;
 
@@ -94,7 +90,7 @@ export default function EditEntry() {
     if (data?.note) setNote(data.note);
     if (data?.measurement_values) {
       const initial: Record<string, string> = {};
-      for (const mv of data.measurement_values as any[]) {
+      for (const mv of data.measurement_values) {
         const baseUnit = mv.measurement_types?.unit ?? "";
         initial[mv.measurement_type_id] = String(toDisplayValue(mv.value, baseUnit, unitPref));
       }
@@ -144,7 +140,7 @@ export default function EditEntry() {
         thumb_path?: string | null;
       }>(data);
 
-      let coverPhotoId = (data as any)?.cover_photo_id ?? existingPhotoRow?.id ?? null;
+      let coverPhotoId = data?.cover_photo_id ?? existingPhotoRow?.id ?? null;
 
       // Yeni fotoğraf yalnızca kullanıcı gerçekten seçtiyse (pendingImage dolu)
       // yüklenir — ve yükleme tam da BURADA, kayıt anında yapılır.
@@ -298,7 +294,7 @@ export default function EditEntry() {
             style={{ width: "100%", height: 256, borderRadius: 20 }}
             contentFit="cover"
             cachePolicy="memory-disk"
-            recyclingKey={(data as any)?.photoPath ?? undefined}
+            recyclingKey={data?.photoPath ?? undefined}
             transition={150}
           />
         ) : (

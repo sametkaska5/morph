@@ -100,14 +100,12 @@ const EntryPage = memo(function EntryPage({ entryId }: { entryId: string }) {
             // (feed/ana ekranla aynı fotoğraf) cache isabet eder, yeniden indirmez.
             source={{
               uri: data.photoUrl,
-              cacheKey: (data as any).photoPath
-                ? photoCacheKey((data as any).photoPath, "full")
-                : undefined,
+              cacheKey: data.photoPath ? photoCacheKey(data.photoPath, "full") : undefined,
             }}
             style={{ width: "100%", height: "100%" }}
             contentFit="cover"
             cachePolicy="memory-disk"
-            recyclingKey={(data as any).photoPath ?? undefined}
+            recyclingKey={data.photoPath ?? undefined}
             transition={150}
           />
         ) : (
@@ -122,33 +120,33 @@ const EntryPage = memo(function EntryPage({ entryId }: { entryId: string }) {
           {data?.date ? new Date(data.date).toLocaleDateString("tr-TR") : ""}
         </Text>
 
-        {(data as any)?.measurement_values?.length > 0 && (
+        {data?.measurement_values?.length ? (
           <View className="bg-surface border border-border rounded-card p-4 mb-4">
-            {(data as any).measurement_values.map((mv: any, i: number) => (
+            {data.measurement_values.map((mv, i) => (
               <View key={i} className="flex-row justify-between py-2">
-                <Text className="text-textMuted text-base capitalize">{mv.measurement_types.name}</Text>
+                <Text className="text-textMuted text-base capitalize">{mv.measurement_types?.name}</Text>
                 <Text className="text-text text-base font-bold">
-                  {mv.value} {mv.measurement_types.unit}
+                  {mv.value} {mv.measurement_types?.unit}
                 </Text>
               </View>
             ))}
           </View>
-        )}
+        ) : null}
 
-        {(data as any)?.workout_items?.length > 0 && (
+        {data?.workout_items?.length ? (
           <View className="bg-surface border border-border rounded-card p-4 mb-4">
             <Text className="text-textFaint text-sm font-semibold mb-3 tracking-wide">ANTRENMAN PROGRAMI</Text>
-            {[...(data as any).workout_items]
-              .sort((a: any, b: any) => a.order_index - b.order_index)
-              .map((wi: any, i: number) => {
+            {[...data.workout_items]
+              .sort((a, b) => a.order_index - b.order_index)
+              .map((wi, i) => {
                 const sets = [...(wi.workout_sets ?? [])].sort(
-                  (a: any, b: any) => a.order_index - b.order_index
+                  (a, b) => a.order_index - b.order_index
                 );
                 return (
                   <View key={i} className={i > 0 ? "mt-3 pt-3 border-t border-border" : ""}>
                     <Text className="text-text text-base font-semibold capitalize mb-1">{wi.name}</Text>
                     {sets.length > 0 ? (
-                      sets.map((s: any, j: number) => (
+                      sets.map((s, j) => (
                         <View key={j} className="flex-row justify-between py-0.5">
                           <Text className="text-textFaint text-sm">{j + 1}. set</Text>
                           <Text className="text-textMuted text-base">{workoutSetLabel(s)}</Text>
@@ -161,7 +159,7 @@ const EntryPage = memo(function EntryPage({ entryId }: { entryId: string }) {
                 );
               })}
           </View>
-        )}
+        ) : null}
 
         {data?.note && (
           <View className="bg-surface border border-border rounded-card p-4">

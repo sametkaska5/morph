@@ -58,7 +58,7 @@ export function useTimelineEntries() {
       // olurdu — 60 kayıtlık ızgarada tek batch isteği çok daha hızlı.
       const urlMap = await getPhotoUrls(paths);
 
-      return (data ?? []).map((e: any) => {
+      return (data ?? []).map((e) => {
         const path = coverThumbPath(e);
         return {
           id: e.id,
@@ -106,26 +106,26 @@ export function useCapsuleEntries() {
 
       if (error) throw error;
 
-      const paths = (data ?? []).map((e: any) => e.photos?.storage_path).filter(Boolean) as string[];
+      const paths = (data ?? []).map((e) => e.photos?.storage_path).filter(Boolean) as string[];
       const urlMap = await getPhotoUrls(paths, "full");
 
-      return (data ?? []).map((e: any) => ({
+      return (data ?? []).map((e) => ({
         id: e.id,
         date: e.date,
         note: e.note,
         photoUrl: e.photos?.storage_path ? (urlMap.get(e.photos.storage_path) ?? null) : null,
         photoPath: e.photos?.storage_path ?? null,
         measurements: (e.measurement_values ?? [])
-          .filter((mv: any) => mv.measurement_types)
-          .map((mv: any) => ({
-            name: mv.measurement_types.name,
-            unit: mv.measurement_types.unit,
+          .filter((mv) => mv.measurement_types)
+          .map((mv) => ({
+            name: mv.measurement_types!.name,
+            unit: mv.measurement_types!.unit,
             value: mv.value,
           })),
         program: (e.workout_items ?? [])
           .slice()
-          .sort((a: any, b: any) => a.order_index - b.order_index)
-          .map((wi: any) => ({ name: wi.name, setCount: (wi.workout_sets ?? []).length })),
+          .sort((a, b) => a.order_index - b.order_index)
+          .map((wi) => ({ name: wi.name, setCount: (wi.workout_sets ?? []).length })),
       }));
     },
     getNextPageParam: (lastPage, allPages) =>
@@ -163,7 +163,7 @@ export function useSearchIndex(userId: string | undefined) {
       const paths = (data ?? []).map(coverThumbPath).filter(Boolean) as string[];
       const urlMap = await getPhotoUrls(paths);
 
-      return (data ?? []).map((e: any) => {
+      return (data ?? []).map((e) => {
         const path = coverThumbPath(e);
         return {
           id: e.id,
@@ -206,7 +206,7 @@ export function usePickableEntries(userId: string | undefined) {
       const paths = (data ?? []).map(coverThumbPath).filter(Boolean) as string[];
       const urlMap = await getPhotoUrls(paths);
 
-      return (data ?? []).map((e: any) => {
+      return (data ?? []).map((e) => {
         const path = coverThumbPath(e);
         return {
           id: e.id,
@@ -235,7 +235,7 @@ export function useEntryDetail(entryId: string) {
 
       if (error) throw error;
 
-      const photoPath = (data as any)?.photos?.storage_path;
+      const photoPath = data.photos?.storage_path ?? null;
       const photoUrl = photoPath ? await getPhotoUrl(photoPath, "full") : null;
 
       return { ...data, photoUrl, photoPath };
@@ -263,7 +263,7 @@ export function useEntryOrder() {
         .order("date", { ascending: false })
         .limit(60);
       if (error) throw error;
-      return (data ?? []).map((e: any) => e.id as string);
+      return (data ?? []).map((e) => e.id);
     },
   });
 }
@@ -311,7 +311,13 @@ function findEntryInCaches(queryClient: QueryClient, entryId: string): EntrySeed
     }
   }
   if (!seed.photoUrl) {
-    const detail = queryClient.getQueryData<any>(queryKeys.entry.detail(entryId));
+    // Tohumlama için detay cache'inden yalnızca şu üç alan okunuyor; tam satır
+    // tipini istemek yerine ihtiyacımız olan en dar şekli yazıyoruz.
+    const detail = queryClient.getQueryData<{
+      note?: string | null;
+      photoUrl?: string | null;
+      photoPath?: string | null;
+    }>(queryKeys.entry.detail(entryId));
     if (detail) {
       seed.note = seed.note ?? detail.note ?? null;
       seed.photoUrl = detail.photoUrl ?? null;
@@ -345,15 +351,20 @@ export function useEditableEntry(entryId: string) {
     placeholderData: () => {
       const seed = findEntryInCaches(queryClient, entryId);
       if (!seed) return undefined;
+      // Şekil, aşağıdaki queryFn'in döndürdüğüyle birebir aynı olmalı — eskiden
+      // `as any` ile susturuluyordu, dolayısıyla sorgu şekli değişse placeholder
+      // sessizce eksik kalırdı. Artık TypeScript ikisini senkron tutuyor.
       return {
         id: entryId,
         note: seed.note,
+        cover_photo_id: null,
+        photos: [],
+        measurement_values: [],
         photoUrl: seed.photoUrl,
         photoPath: seed.photoPath,
         thumbUrl: seed.thumbUrl,
         thumbPath: seed.thumbPath,
-        measurement_values: [],
-      } as any;
+      };
     },
     queryFn: async () => {
       const { data, error } = await supabase
@@ -371,7 +382,7 @@ export function useEditableEntry(entryId: string) {
       // imzalama isteği gidiyor → ancak ondan sonra fotoğraf inmeye başlıyordu.
       // Tam boy VE küçük kopyayı paralel imzalıyoruz; küçük kopya, tam boy diskte
       // yoksa anlık placeholder olarak gösterilip "boş kare" beklemesini önlüyor.
-      const coverRow = coverPhotoRow<{ storage_path: string; thumb_path?: string | null }>(data);
+      const coverRow = coverPhotoRow(data);
       const photoPath = coverRow?.storage_path ?? null;
       const thumbPath = coverRow?.thumb_path ?? null;
 
@@ -398,7 +409,7 @@ async function deleteEntry(entryId: string) {
   // Tam boy kopyanın yanında küçük kopyayı da siliyoruz, yoksa storage'da
   // yetim thumbnail dosyaları birikir.
   const paths = (photos ?? []).flatMap(
-    (p: any) => [p.storage_path, p.thumb_path].filter(Boolean) as string[]
+    (p) => [p.storage_path, p.thumb_path].filter(Boolean) as string[]
   );
 
   if (paths.length > 0) {

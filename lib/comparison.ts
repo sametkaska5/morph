@@ -17,7 +17,19 @@ export type ComparisonData = {
   types: { id: string; name: string; unit: string; targetDirection: string }[];
 };
 
-async function loadSide(entryRow: any): Promise<ComparisonSide> {
+/**
+ * Aşağıdaki iki fonksiyonun paylaştığı `selectStr`'in döndürdüğü satır şekli.
+ * photos to-one ilişki olduğu için (entries.cover_photo_id → photos.id) tekil
+ * bir nesne ya da null geliyor, dizi değil.
+ */
+type ComparisonEntryRow = {
+  id: string;
+  date: string;
+  photos: { storage_path: string; thumb_path: string | null } | null;
+  measurement_values: { measurement_type_id: string; value: number }[];
+};
+
+async function loadSide(entryRow: ComparisonEntryRow): Promise<ComparisonSide> {
   const photoRow = entryRow.photos;
   // Karşılaştırma fotoğrafları yan yana YARIM genişlikte gösteriliyor — tam boy
   // (1280px) yerine küçük kopya (thumb, 400px) hem yeterli hem kat kat hızlı

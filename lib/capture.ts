@@ -77,8 +77,17 @@ async function pickFromLibrary() {
 // döndürüyoruz ki galeriden seçilen eski bir fotoğrafta kayıt tarihi elle seçilmek
 // zorunda kalınmadan çekildiği güne otomatik ayarlanabilsin. Konum (iOS: düz alanlar,
 // Android: aynı şekilde düz) veya EXIF hiç yoksa (ekran görüntüsü, düzenlenmiş foto) undefined döner.
-function parseExifDateTime(exif: Record<string, any> | undefined | null): string | undefined {
-  const raw: unknown = exif?.DateTimeOriginal ?? exif?.DateTime ?? exif?.["{TIFF}"]?.DateTime;
+// `unknown` (any değil): EXIF içeriği platforma ve cihaza göre değiştiği için
+// alanların varlığı da tipi de garanti değil — unknown, aşağıdaki string
+// kontrolünü zorunlu kılıyor. any olsaydı `raw.match(...)` çağrısı hiç
+// doğrulanmadan derlenirdi.
+function parseExifDateTime(exif: Record<string, unknown> | undefined | null): string | undefined {
+  // iOS bazı fotoğraflarda tarihi düz alan yerine "{TIFF}" alt sözlüğünde veriyor.
+  const tiff = exif?.["{TIFF}"];
+  const tiffDateTime =
+    tiff && typeof tiff === "object" ? (tiff as Record<string, unknown>).DateTime : undefined;
+
+  const raw: unknown = exif?.DateTimeOriginal ?? exif?.DateTime ?? tiffDateTime;
   if (typeof raw !== "string") return undefined;
   const match = raw.match(/^(\d{4}):(\d{2}):(\d{2})\s+(\d{2}):(\d{2}):(\d{2})/);
   if (!match) return undefined;

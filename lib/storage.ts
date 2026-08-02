@@ -114,15 +114,6 @@ export function coverPhotoRow<T extends PhotoRowLike = PhotoRowLike>(
 }
 
 /**
- * Bir entry satırının KAPAK fotoğrafının storage yolunu döner (bkz. coverPhotoRow).
- */
-export function coverPhotoPath(entryRow: EntryRowWithPhotos | null | undefined): string | null {
-  const photos = entryRow?.photos;
-  if (!Array.isArray(photos)) return photos?.storage_path ?? null;
-  return coverPhotoRow(entryRow)?.storage_path ?? null;
-}
-
-/**
  * Izgaralar için kapak fotoğrafının KÜÇÜK kopyasının yolunu döner.
  * thumb_path yoksa (thumbnail'den önce yazılmış eski kayıtlar) tam boy
  * storage_path'e geri düşer — eski kayıtlar bozulmaz, sadece büyük iner.

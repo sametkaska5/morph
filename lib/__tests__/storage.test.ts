@@ -1,4 +1,4 @@
-import { coverPhotoRow, coverPhotoPath, coverThumbPath, photoCacheKey } from "../storage";
+import { coverPhotoRow, coverThumbPath, photoCacheKey } from "../storage";
 
 // coverPhotoRow: photos!entry_id ilişkisi bir DİZİ döndürür ve sırası garanti
 // değil. Kör photos[0] almak, aynı güne ikinci kez kayıt/değişiklik yapıldığında
@@ -46,23 +46,6 @@ describe("coverPhotoRow", () => {
 
   it("photos yoksa null döner", () => {
     expect(coverPhotoRow({})).toBeNull();
-  });
-});
-
-describe("coverPhotoPath", () => {
-  it("kapak satırının tam boy storage yolunu verir", () => {
-    const entry = {
-      cover_photo_id: "p2",
-      photos: [
-        { id: "p1", storage_path: "u/e/eski.jpg" },
-        { id: "p2", storage_path: "u/e/yeni.jpg" },
-      ],
-    };
-    expect(coverPhotoPath(entry)).toBe("u/e/yeni.jpg");
-  });
-
-  it("tek nesne photos'ta düz storage_path'i verir", () => {
-    expect(coverPhotoPath({ photos: { storage_path: "u/e/tek.jpg" } })).toBe("u/e/tek.jpg");
   });
 });
 

@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Aynı dal için üst üste push yapılınca eski çalışmayı iptal et — sonuncusu
+# zaten hepsini kapsıyor, boşuna dakika harcamasın.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Lint · Typecheck · Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Geliştirme ortamıyla aynı sürüm — "bende çalışıyordu" farkı olmasın.
+          node-version: 24
+          cache: npm
+
+      # npm ci: package-lock.json'ı birebir kurar (npm install gibi lockfile'ı
+      # güncellemez), böylece CI'daki bağımlılıklar yereldekiyle aynı olur.
+      # Repodaki .npmrc otomatik okunur (legacy-peer-deps + ignore-scripts).
+      - name: Bağımlılıkları kur
+        run: npm ci
+
+      # Üç adım da HER durumda çalışsın: lint patlayınca typecheck ve testleri
+      # görememek, aynı hatayı üç turda düzeltmek demek. !cancelled() sayesinde
+      # önceki adım başarısız olsa bile devam eder ama iş yine kırmızı biter.
+      - name: Lint
+        if: ${{ !cancelled() }}
+        run: npm run lint
+
+      - name: Typecheck
+        if: ${{ !cancelled() }}
+        run: npm run typecheck
+
+      - name: Testler
+        if: ${{ !cancelled() }}
+        run: npm test -- --ci

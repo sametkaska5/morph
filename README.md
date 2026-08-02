@@ -1,5 +1,7 @@
 # Remory
 
+[![CI](https://github.com/sametkaska5/remory/actions/workflows/ci.yml/badge.svg)](https://github.com/sametkaska5/remory/actions/workflows/ci.yml)
+
 Fotoğraf tabanlı, offline-öncelikli bir anı/ilerleme günlüğü. Expo Router + Supabase üzerine kurulu, NativeWind ile tasarım sistemine bağlı.
 
 ## Kurulum
@@ -116,7 +118,21 @@ Saf mantık katmanı (tarih, birim dönüşümü, kapak-fotoğraf seçimi) `jest
 npm test
 ```
 
-Testler `lib/__tests__/` altında. Native/Supabase köprüsü gerektirmeyen saf fonksiyonlara odaklı (`date`, `units`, `storage` yardımcıları); `jest.setup.js` sahte Supabase env'i verip AsyncStorage'ı mock'layarak bu modüllerin ağa çıkmadan yüklenmesini sağlıyor.
+Testler `lib/__tests__/` altında. Native/Supabase köprüsü gerektirmeyen saf fonksiyonlara odaklı (`date`, `units`, `storage` yardımcıları, grafik matematiği `chart`, seri/trend hesapları `stats`); `jest.setup.js` sahte Supabase env'i verip AsyncStorage'ı mock'layarak bu modüllerin ağa çıkmadan yüklenmesini sağlıyor.
+
+## Kalite kontrolleri
+
+Üç komut projenin kalite kapısı — üçü de temiz geçmeden değişiklik gönderme:
+
+```bash
+npm run lint
+npm run typecheck
+npm test
+```
+
+Aynı üçü her `push` ve pull request'te GitHub Actions üzerinde de çalışıyor (`.github/workflows/ci.yml`). CI, biri patlasa bile diğerlerini çalıştırır — böylece tüm sorunları tek turda görüp düzeltebilirsin.
+
+Biçimlendirme Prettier'ın işi (`npm run format` yazar, `npm run format:check` sadece denetler); ESLint yalnızca kod kalitesine bakar, ikisi çakışmaz.
 
 ## Durum
 

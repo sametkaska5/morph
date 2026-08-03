@@ -29,6 +29,13 @@
         }
       ],
       "expo-font",
+      "expo-dev-client",
+      [
+        "expo-notifications",
+        {
+          "color": "#8CE05A"
+        }
+      ],
       [
         "expo-splash-screen",
         {
@@ -49,7 +56,22 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#0A0A08"
+      },
+      "permissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO"
+      ]
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2131b708-cd8d-4e16-bce0-febe12619e10"
       }
-    }
+    },
+    "owner": "parzival55"
   }
 }

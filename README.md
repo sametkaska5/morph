@@ -77,7 +77,6 @@ app/
     edit/[id].tsx      kayıt düzenleme
     workout.tsx        fotoğrafsız gün: ölçüm + off-day işaretleme
     program.tsx        antrenman programı: hareket + set set giriş
-    off-day.tsx        boş/atlanan gün kaydı
   compare/
     index.tsx          iki kaydı karşılaştırma
     pick.tsx           karşılaştırma için kayıt seçimi
@@ -126,7 +125,6 @@ lib/
   errors.ts            ham hataları kullanıcıya gösterilebilir Türkçe metinlere çevirir
   alerts.ts            alertError(): hem Alert gösterir hem Sentry'ye raporlar
   monitoring.ts        ince hata-izleme katmanı (Sentry; DSN yoksa no-op)
-  offDay.ts            gün kutusu 3 durumlu döngü mantığı (boş→off_day→workout)
   date.ts              tarih yardımcıları
 
 supabase/migrations/   0001–0010 şema + RLS + storage politikaları, antrenman tabloları

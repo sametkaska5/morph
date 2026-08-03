@@ -81,10 +81,8 @@ export default function Istatistikler() {
   }
 
   // Fotoğraflı gün → o kaydı aç. Diğer tüm günler (boş / off_day / workout) →
-  // fotoğrafsız gün ekranı, o tarih ön-doldurulmuş olarak. Eskiden buradaki
-  // dokunma boş→off_day→workout→boş şeklinde hızlı döngü yapıyordu; artık ölçüm
-  // ve program da girilebildiği için tam ekrana yönlendiriyoruz (off-day işaretleme
-  // o ekranın içindeki seçimle korunuyor).
+  // fotoğrafsız gün ekranı, o tarih ön-doldurulmuş olarak (off day işaretlemesi
+  // o ekranın içindeki seçim).
   function handleDayPress(day: { date: string; id: string | null; type: string | null; isFuture: boolean }) {
     if (day.isFuture) return;
     if (day.type === "log" && day.id) {

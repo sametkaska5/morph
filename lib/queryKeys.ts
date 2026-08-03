@@ -58,7 +58,9 @@ export const queryKeys = {
 
   currentWeek: {
     all: ["currentWeek"] as const,
-    byUser: (userId: string | undefined) => ["currentWeek", userId] as const,
+    /** weekOffset: 0 = bu hafta, -1 = önceki hafta... (bkz. lib/stats.ts useWeek) */
+    byWeek: (userId: string | undefined, weekOffset: number) =>
+      ["currentWeek", userId, weekOffset] as const,
   },
 
   shareablePhotos: {

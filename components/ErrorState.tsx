@@ -33,15 +33,28 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
   const { kind, title, message } = describeError(error);
 
   return (
-    <View className="items-center px-8 py-6" accessibilityRole="alert">
+    <View className="items-center px-8 py-6">
       <View className="mb-4 h-16 w-16 items-center justify-center rounded-full border border-border bg-surfaceMuted">
         <Feather name={ICON[kind]} size={26} color="#8B8A82" />
       </View>
 
-      <Text className="mb-2 text-center text-xl font-semibold text-text">{title}</Text>
-      <Text className="mb-6 max-w-[280px] text-center text-base leading-6 text-textMuted">
-        {message}
-      </Text>
+      {/* Başlık ve açıklama TEK bir erişilebilirlik düğümü: ekran okuyucu ikisini
+          bir arada, tek bir duyuru olarak okur. `accessible` olmadan
+          accessibilityRole tek başına sorgulanabilir/duyurulabilir olmuyor;
+          liveRegion ise Android tarafında "bu metin değişti, oku" sinyali.
+          Sarmalayıcı bilerek yalnızca metinleri kapsıyor — "Tekrar dene"
+          düğmesi dışarıda kalmalı ki ayrı bir odak hedefi olarak erişilebilsin. */}
+      <View
+        accessible
+        accessibilityRole="alert"
+        accessibilityLiveRegion="polite"
+        className="items-center"
+      >
+        <Text className="mb-2 text-center text-xl font-semibold text-text">{title}</Text>
+        <Text className="mb-6 max-w-[280px] text-center text-base leading-6 text-textMuted">
+          {message}
+        </Text>
+      </View>
 
       {onRetry ? (
         <Pressable

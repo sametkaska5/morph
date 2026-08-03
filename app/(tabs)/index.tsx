@@ -171,12 +171,16 @@ export default function AnaEkran() {
         </View>
       </View>
 
-      {/* isEmpty, veri gelmeden `undefined` olduğu için yükleme sırasında da
-          "Son Kayıtlar" başlığı görünüyordu — açıkça false olmasını şart koşuyoruz. */}
-      {isEmpty === false ? (
+      {/* Başlık YALNIZCA gerçekten kayıt varken görünmeli.
+          Buradaki eski kontrol `isEmpty === false` idi ve yükleme sırasında da
+          başlığı gösteriyordu: veri gelmeden `entries` undefined, dolayısıyla
+          `entries?.length === 0` ifadesi undefined DEĞİL `false` üretiyor
+          (undefined === 0 → false) ve koşul tutuyordu. Doğrudan uzunluğa
+          bakmak hem niyeti hem davranışı aynı yere getiriyor. */}
+      {entries?.length ? (
         <View className="flex-row items-center justify-between px-4 mb-3">
           <Text className="text-textMuted text-sm font-semibold uppercase tracking-wide">Son Kayıtlar</Text>
-          {entries?.length ? <Text className="text-textMuted text-sm font-medium">{entries.length} kayıt</Text> : null}
+          <Text className="text-textMuted text-sm font-medium">{entries.length} kayıt</Text>
         </View>
       ) : null}
 

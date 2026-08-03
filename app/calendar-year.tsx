@@ -4,13 +4,8 @@ import { Text } from "@/components/Typography";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
 import { useAuth } from "@/lib/useAuth";
-import { toLocalDateKey } from "@/lib/date";
+import { toLocalDateKey, MONTH_NAMES } from "@/lib/date";
 import { useYearEntries } from "@/lib/entries";
-
-const MONTH_NAMES = [
-  "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
-  "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık",
-];
 
 function getMonthGrid(year: number, monthIndex: number) {
   const firstDay = new Date(year, monthIndex, 1);
@@ -29,6 +24,34 @@ function getMonthGrid(year: number, monthIndex: number) {
   return weeks;
 }
 
+/**
+ * Gün kutusunun ekran okuyucuya söyleyeceği metin.
+ *
+ * Bu ızgara bilgiyi YALNIZCA renkle aktarıyordu; görme engelli bir kullanıcı
+ * için takvim tamamen boştu. Etiketi sadece ANLAMI olan günlere veriyoruz
+ * (kayıt/antrenman/off day ve bugün) — 365 kutunun hepsi odaklanabilir olsaydı
+ * ekran okuyucuyla gezinmek işkenceye dönerdi. Etiketsiz kutular
+ * `accessible={false}` ile odak dışında kalıyor.
+ */
+function dayCellLabel(dateKey: string, status: string | undefined, isToday: boolean) {
+  const dayNumber = Number(dateKey.slice(8, 10));
+  const monthName = MONTH_NAMES[Number(dateKey.slice(5, 7)) - 1];
+  const statusLabel =
+    status === "log"
+      ? "fotoğraflı kayıt"
+      : status === "off_day"
+        ? "off day"
+        : status === "workout"
+          ? "antrenman günü"
+          : null;
+
+  if (!statusLabel && !isToday) return null;
+  const parts = [`${dayNumber} ${monthName}`];
+  if (isToday) parts.push("bugün");
+  parts.push(statusLabel ?? "kayıt yok");
+  return parts.join(", ");
+}
+
 function MonthCalendar({ year, monthIndex, statusMap }: { year: number; monthIndex: number; statusMap: Record<string, string> }) {
   const weeks = getMonthGrid(year, monthIndex);
   const todayKey = toLocalDateKey(new Date());
@@ -43,9 +66,12 @@ function MonthCalendar({ year, monthIndex, statusMap }: { year: number; monthInd
             const status = statusMap[dateKey];
             const isFuture = dateKey > todayKey;
             const isToday = dateKey === todayKey;
+            const label = dayCellLabel(dateKey, status, isToday);
             return (
               <View
                 key={di}
+                accessible={label !== null}
+                accessibilityLabel={label ?? undefined}
                 style={{ flex: 1, aspectRatio: 1, marginHorizontal: 2 }}
                 className={`rounded-[4px] items-center justify-center ${
                   status === "log"

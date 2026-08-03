@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, type QueryClient } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 import { getPhotoUrls } from "./storage";
 import { toLocalDateKey, getMondayOfWeek, weekdayLetter } from "./date";
@@ -48,13 +48,23 @@ export type WeekDayStatus = {
   type: string | null;
 };
 
-export function useCurrentWeek(userId: string | undefined) {
+/**
+ * Bir haftanın (Pazartesi–Pazar) gün durumları.
+ *
+ * `weekOffset`: 0 = içinde bulunulan hafta, -1 = bir önceki hafta, -2 = iki
+ * önceki... Şerit yalnızca bu haftayı gösterdiği sürece geçmişe dönük off day /
+ * antrenman işaretlemenin bir yolu yoktu (yıllık takvim salt görsel); şeridin
+ * geriye gezinebilmesi o kapıyı açıyor — güne dokunmak fotoğrafsız gün ekranını
+ * o tarihle açar.
+ */
+export function useWeek(userId: string | undefined, weekOffset = 0) {
   return useQuery({
-    queryKey: queryKeys.currentWeek.byUser(userId),
+    queryKey: queryKeys.currentWeek.byWeek(userId, weekOffset),
     enabled: !!userId,
     queryFn: async (): Promise<WeekDayStatus[]> => {
       const todayKey = toLocalDateKey(new Date());
       const monday = getMondayOfWeek(new Date());
+      monday.setDate(monday.getDate() + weekOffset * 7);
 
       const days: { date: string; label: string; isFuture: boolean; isToday: boolean }[] = [];
       for (let i = 0; i < 7; i++) {
@@ -100,6 +110,26 @@ export function computeWeekStreak(week: Pick<WeekDayStatus, "isFuture" | "type">
     else break;
   }
   return streak;
+}
+
+/**
+ * İstatistikler ekranını besleyen TÜM sorguları tazeler (aşağı çekip yenile).
+ *
+ * Neden ekranda değil burada: liste, ekranın hangi verilere dayandığının
+ * tanımı ve eksik bırakılması sessiz bir hataya yol açıyor — özellikle
+ * measurement_series, çünkü bir kaydın ölçümü BAŞKA ekrandan (düzenleme)
+ * değiştirildiğinde grafik cache'ten eski değeri göstermeye devam edebiliyor;
+ * elle yenileme bunun tek çıkış yolu. Adlandırılmış ve test edilebilir bir
+ * fonksiyon olarak burada duruyor.
+ */
+export function invalidateStatsQueries(queryClient: QueryClient) {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: queryKeys.measurementSeries.all }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.currentWeek.all }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.shareablePhotos.all }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.measurementTypes.all }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.profile.all }),
+  ]);
 }
 
 export type Trend = { delta: number | null; isGood: boolean };

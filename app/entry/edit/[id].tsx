@@ -26,6 +26,7 @@ import { useUnitPreference, displayUnit, toDisplayValue, toMetricValue } from "@
 import { validateMeasurementInput, measurementErrorText } from "@/lib/measurementInput";
 import { useEditableEntry } from "@/lib/entries";
 import { queryKeys } from "@/lib/queryKeys";
+import { actionErrorMessage } from "@/lib/errors";
 
 /* ---------------- PAGE ---------------- */
 
@@ -378,7 +379,9 @@ export default function EditEntry() {
       />
 
       {updateMutation.isError ? (
-        <Text className="text-danger text-base mb-3">{(updateMutation.error as Error).message}</Text>
+        <Text className="text-danger text-base mb-3" accessibilityRole="alert">
+          {actionErrorMessage(updateMutation.error)}
+        </Text>
       ) : null}
 
       <Pressable

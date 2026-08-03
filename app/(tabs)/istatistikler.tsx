@@ -12,14 +12,15 @@ import { scheduleStreakRiskNotification } from "@/lib/notifications";
 import { useNotificationSettings } from "@/lib/notificationSettings";
 import { useMeasurementTypes } from "@/lib/measurementTypes";
 import { useUnitPreference, displayUnit, toDisplayValue } from "@/lib/units";
+import { formatWeekRange } from "@/lib/date";
 import {
   useMeasurementSeries,
-  useCurrentWeek,
+  useWeek,
   useShareablePhotoEntries,
   computeWeekStreak,
   computeTrend,
+  invalidateStatsQueries,
 } from "@/lib/stats";
-import { queryKeys } from "@/lib/queryKeys";
 import { alertError } from "@/lib/alerts";
 import { MeasurementChart, VISIBLE_POINTS } from "@/components/MeasurementChart";
 
@@ -49,6 +50,8 @@ export default function Istatistikler() {
   const [sharePendingAction, setSharePendingAction] = useState<"save" | "share" | null>(null);
   const shareCardRef = useRef<View>(null);
   const [refreshing, setRefreshing] = useState(false);
+  /** Hafta şeridinde gezinilen hafta: 0 = bu hafta, -1 = önceki hafta... */
+  const [weekOffset, setWeekOffset] = useState(0);
 
   // Aşağı çekince yenile: bu ekrandaki tüm sorguları geçersiz kılıp yeniden
   // çekiyoruz. Özellikle measurement_series önemli — bir kaydın ölçümünü başka
@@ -57,13 +60,7 @@ export default function Istatistikler() {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: queryKeys.measurementSeries.all }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.currentWeek.all }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.shareablePhotos.all }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.measurementTypes.all }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.profile.all }),
-      ]);
+      await invalidateStatsQueries(queryClient);
     } finally {
       setRefreshing(false);
     }
@@ -101,7 +98,13 @@ export default function Istatistikler() {
   const activeType = types?.find((t) => t.id === currentTypeId);
 
   const { data: series, isLoading: seriesLoading } = useMeasurementSeries(user?.id, currentTypeId);
-  const { data: week, isLoading: weekLoading } = useCurrentWeek(user?.id);
+  // Şeritte gezinilen hafta ile seriyi besleyen hafta ayrı: seri HER ZAMAN
+  // içinde bulunulan haftadan hesaplanır, yoksa kullanıcı geçmişe gidince
+  // karttaki "X gün üst üste" o eski haftanın serisini gösterirdi (ve streak
+  // bildirimi yanlış veriyle yeniden kurulurdu). weekOffset 0 iken iki çağrı
+  // aynı sorgu anahtarına düştüğü için tek istek atılıyor.
+  const { data: week, isLoading: weekLoading } = useWeek(user?.id, weekOffset);
+  const { data: currentWeek } = useWeek(user?.id, 0);
   const { data: shareablePhotos, isLoading: sharePhotosLoading } = useShareablePhotoEntries(user?.id);
   const { data: unitPref = "metric" } = useUnitPreference(user?.id);
 
@@ -155,7 +158,8 @@ export default function Istatistikler() {
     activeType?.target_direction
   );
 
-  const currentStreak = week ? computeWeekStreak(week) : 0;
+  const currentStreak = currentWeek ? computeWeekStreak(currentWeek) : 0;
+  const weekRangeLabel = week?.length ? formatWeekRange(week[0].date, week[week.length - 1].date) : "";
 
   // Türetilmiş seçim: state'teki id listede yoksa (kayıt silindi / liste
   // yenilendi) ilk fotoğrafa düşer. Eskiden bunu bir useEffect state'i
@@ -211,10 +215,10 @@ export default function Istatistikler() {
   }
 
   useEffect(() => {
-    if (!week || !notifSettings?.streak_enabled) return;
-    const today = week.find((d) => d.isToday);
+    if (!currentWeek || !notifSettings?.streak_enabled) return;
+    const today = currentWeek.find((d) => d.isToday);
     scheduleStreakRiskNotification(currentStreak, !!today?.type);
-  }, [week, currentStreak, notifSettings?.streak_enabled]);
+  }, [currentWeek, currentStreak, notifSettings?.streak_enabled]);
 
   return (
     <ScrollView
@@ -439,6 +443,53 @@ export default function Istatistikler() {
               <Feather name="chevron-right" size={15} color="#8CE05A" />
             </Pressable>
           </View>
+        </View>
+
+        {/* Hafta gezinmesi — geçmiş bir günü işaretlemenin (off day dahil) tek
+            yolu buradan o güne dokunmak; şerit bu haftaya kilitliyken geçmişe
+            dönük kayıt hiçbir ekrandan yapılamıyordu. İleri yön bu haftada
+            duruyor: gelecek günler zaten dokunulamaz. */}
+        <View className="flex-row items-center justify-between mb-3">
+          <Pressable
+            onPress={() => setWeekOffset((o) => o - 1)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityRole="button"
+            accessibilityLabel="Önceki hafta"
+            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+            className="w-8 h-8 items-center justify-center"
+          >
+            <Feather name="chevron-left" size={18} color="#8B8A82" />
+          </Pressable>
+
+          <Pressable
+            onPress={() => setWeekOffset(0)}
+            disabled={weekOffset === 0}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityRole="button"
+            accessibilityLabel={
+              weekOffset === 0 ? `${weekRangeLabel}, bu hafta` : `${weekRangeLabel}, bu haftaya dön`
+            }
+            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+            className="flex-row items-center gap-1.5 px-2 py-1"
+          >
+            <Text className={`text-sm ${weekOffset === 0 ? "text-textFaint" : "text-text font-medium"}`}>
+              {weekRangeLabel}
+            </Text>
+            {weekOffset !== 0 ? <Feather name="rotate-ccw" size={13} color="#8CE05A" /> : null}
+          </Pressable>
+
+          <Pressable
+            onPress={() => setWeekOffset((o) => Math.min(0, o + 1))}
+            disabled={weekOffset === 0}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityRole="button"
+            accessibilityLabel="Sonraki hafta"
+            accessibilityState={{ disabled: weekOffset === 0 }}
+            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+            className="w-8 h-8 items-center justify-center"
+          >
+            <Feather name="chevron-right" size={18} color={weekOffset === 0 ? "#3A3A34" : "#8B8A82"} />
+          </Pressable>
         </View>
 
         {weekLoading ? (

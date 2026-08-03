@@ -1,4 +1,4 @@
-import { toLocalDateKey, getMondayOfWeek, weekdayLetter } from "../date";
+import { toLocalDateKey, getMondayOfWeek, weekdayLetter, formatWeekRange } from "../date";
 
 describe("toLocalDateKey", () => {
   it("YEREL tarihe göre YYYY-MM-DD üretir (UTC'ye kaymaz)", () => {
@@ -42,6 +42,30 @@ describe("getMondayOfWeek", () => {
     expect(mon.getMinutes()).toBe(0);
     expect(mon.getSeconds()).toBe(0);
     expect(mon.getMilliseconds()).toBe(0);
+  });
+});
+
+describe("formatWeekRange", () => {
+  it("aynı ay içindeki haftada ayı bir kez yazar", () => {
+    expect(formatWeekRange("2026-07-13", "2026-07-19")).toBe("13 – 19 Temmuz");
+  });
+
+  it("ay atlayan haftada iki ayı da yazar", () => {
+    expect(formatWeekRange("2026-06-29", "2026-07-05")).toBe("29 Haziran – 5 Temmuz");
+  });
+
+  it("yıl atlayan haftayı da doğru yazar", () => {
+    expect(formatWeekRange("2025-12-29", "2026-01-04")).toBe("29 Aralık – 4 Ocak");
+  });
+
+  it("gün numaralarının başındaki sıfırı atar", () => {
+    expect(formatWeekRange("2026-03-02", "2026-03-08")).toBe("2 – 8 Mart");
+  });
+
+  it("tarih anahtarını YEREL okur — saat dilimi günü kaydırmaz", () => {
+    // new Date("2026-08-03") UTC gece yarısıdır; negatif saat diliminde
+    // getDate() 2 döner ve aralık bir gün geriye kayardı.
+    expect(formatWeekRange("2026-08-03", "2026-08-09")).toBe("3 – 9 Ağustos");
   });
 });
 

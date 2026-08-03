@@ -9,6 +9,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
 import { toLocalDateKey } from "@/lib/date";
 import { queryKeys } from "@/lib/queryKeys";
+import { actionErrorMessage } from "@/lib/errors";
 
 export default function OffDayScreen() {
   const { user } = useAuth();
@@ -72,7 +73,9 @@ export default function OffDayScreen() {
       )}
 
       {saveMutation.isError ? (
-        <Text className="text-danger text-base mb-3">{(saveMutation.error as Error).message}</Text>
+        <Text className="text-danger text-base mb-3" accessibilityRole="alert">
+          {actionErrorMessage(saveMutation.error)}
+        </Text>
       ) : null}
 
       <Pressable

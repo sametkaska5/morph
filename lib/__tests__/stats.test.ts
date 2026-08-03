@@ -1,4 +1,5 @@
-import { computeWeekStreak, computeTrend } from "../stats";
+import { computeWeekStreak, computeTrend, invalidateStatsQueries } from "../stats";
+import type { QueryClient } from "@tanstack/react-query";
 
 type Day = { isFuture: boolean; type: string | null };
 const day = (type: string | null, isFuture = false): Day => ({ type, isFuture });
@@ -65,5 +66,39 @@ describe("computeTrend", () => {
 
   it("hedef yönü bilinmiyorsa nötr (isGood true) kalır", () => {
     expect(computeTrend(71, 70, undefined).isGood).toBe(true);
+  });
+});
+
+describe("invalidateStatsQueries", () => {
+  it("İstatistikler ekranını besleyen BEŞ sorgu ailesini de tazeler", async () => {
+    // Biri unutulursa ekran sessizce bayat veri gösterir; en tehlikelisi
+    // measurement_series — başka ekrandan değiştirilen ölçüm grafikte eski
+    // değeriyle kalır ve kullanıcı bunu fark edemez.
+    const invalidateQueries = jest.fn().mockResolvedValue(undefined);
+
+    await invalidateStatsQueries({ invalidateQueries } as unknown as QueryClient);
+
+    const families = invalidateQueries.mock.calls.map((c) => c[0].queryKey[0]);
+    expect(families).toEqual([
+      "measurement_series",
+      "currentWeek",
+      "shareablePhotos",
+      "measurement_types",
+      "profile",
+    ]);
+  });
+
+  it("hepsini PARALEL başlatır (sıralı beklemez)", async () => {
+    // Sıralı olsaydı yenileme beş ağ gidiş-dönüşü kadar sürerdi.
+    let resolveFirst: () => void = () => {};
+    const gate = new Promise<void>((r) => (resolveFirst = r));
+    const invalidateQueries = jest.fn().mockReturnValueOnce(gate).mockResolvedValue(undefined);
+
+    const pending = invalidateStatsQueries({ invalidateQueries } as unknown as QueryClient);
+
+    // İlk çağrı henüz çözülmemişken beşi de başlatılmış olmalı.
+    expect(invalidateQueries).toHaveBeenCalledTimes(5);
+    resolveFirst();
+    await pending;
   });
 });

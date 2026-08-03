@@ -186,7 +186,6 @@ export default function EntryDetail() {
   const { data: orderIds, isLoading: orderLoading } = useEntryOrder();
   const [showActionMenu, setShowActionMenu] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(0);
 
   // Arama ya da yıllık takvimden açılan ESKİ bir kayıt son 60'ın dışında
   // kalabilir. O durumda tek sayfalık listeye düşüyoruz: yana kaydırma olmaz
@@ -198,7 +197,15 @@ export default function EntryDetail() {
 
   const initialIndex = Math.max(0, ids.indexOf(id));
 
-  // Sıra verisi gelince (initialIndex değişince) aktif sayfayı ona eşitle.
+  // DİKKAT: başlangıç değeri 0 DEĞİL initialIndex olmalı. Sıra verisi ilk
+  // render'da hazırsa (cache'ten geldiğinde) aşağıdaki karşılaştırma hiç
+  // tetiklenmez; activeIndex 0'da kalır, sayfalayıcı doğru kayda kayar ama
+  // activeId listenin İLK kaydını gösterir — yani Düzenle/Sil yanlış kayda
+  // uygulanır. (Bu hata bir kez yaşandı: useEffect'ten render sırasında
+  // senkronizasyona geçilirken mount anındaki eşitleme kaybolmuştu.)
+  const [activeIndex, setActiveIndex] = useState(initialIndex);
+
+  // Sıra verisi SONRADAN gelince (initialIndex değişince) aktif sayfayı eşitle.
   // Effect'te setState yapmak fazladan bir tam render turu demekti; React'in
   // "render sırasında önceki değerle karşılaştır" kalıbı aynı işi commit
   // öncesinde, tek geçişte yapıyor (react.dev: you-might-not-need-an-effect).

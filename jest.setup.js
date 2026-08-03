@@ -21,3 +21,22 @@ jest.mock("@sentry/react-native", () => ({
   init: jest.fn(),
   captureException: jest.fn(),
 }));
+
+// ─── Bileşen testleri için native köprü taklitleri ───
+// Aşağıdakiler yalnızca EKRAN render eden testlerde gerekiyor ama burada
+// merkezî olarak tanımlanıyorlar: her test dosyasında tekrar yazmak yerine
+// kütüphanelerin KENDİ resmi mock'larını kullanıyoruz, böylece sürüm
+// yükseltmelerinde davranış kendiliğinden güncelleniyor.
+
+// Reanimated'ın KENDİ resmi mock'u bu sürümde kullanılamıyor (gerçek modülü
+// import edip worklets JSI köprüsüne çarpıyor) — gerekçesi ve kapsamı
+// __mocks__/react-native-reanimated.js dosyasında yazılı.
+jest.mock("react-native-reanimated");
+
+// useSafeAreaInsets native ölçüm gerektiriyor; resmi mock sabit kenar boşlukları
+// döndürüyor, layout hesabı yapan ekranlar (anı akışı) böylece render edilebiliyor.
+// `.default` şart: mock dosyası her şeyi tek bir default export nesnesinde
+// veriyor, doğrudan require edilirse `useSafeAreaInsets is not a function` olur.
+jest.mock("react-native-safe-area-context", () =>
+  require("react-native-safe-area-context/jest/mock").default
+);

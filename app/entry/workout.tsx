@@ -328,6 +328,10 @@ function DayTypeOption({
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
+      // Etiketi açıkça veriyoruz: accessibilityState zaten seçili olup
+      // olmadığını duyuruyor ama etiket olmadan ekran okuyucu neyin seçili
+      // olduğunu söyleyemiyordu.
+      accessibilityLabel={label}
       accessibilityState={{ selected: active }}
       style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
       className={`flex-1 flex-row items-center justify-center gap-2 rounded-button py-3 border ${

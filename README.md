@@ -151,6 +151,12 @@ Testler `lib/__tests__/` altında, iki gruba ayrılıyor:
 
 **Yazma yolu** — `entryMutations`, `workout`, `deleteEntry`. Uygulamanın en riskli kodu (veri kaybı senaryosu) ve saf olmadığı için `lib/__tests__/helpers/supabaseMock.ts` üzerinden test ediliyor: zincirlenebilir Supabase API'sini taklit eden, tablo başına sonuç kuyruğu tutan ve yapılan her çağrıyı kaydeden küçük bir harness. Testler "hangi tabloya, hangi sırayla, hangi yükle yazıldı" sorusunu doğruluyor — bayat fotoğraf temizliği, boşaltılan ölçümün silinmesi, silmede foreign key sırası gibi daha önce gerçekten yaşanmış hataları kilitliyor.
 
+**Bileşen/ekran** — `ErrorState` ve on bir ekran (`profile/edit`, `entry/program`, `entry/workout`, `entry/edit/[id]`, `entry/[id]`, ana ekran, anı akışı, arama, karşılaştırma seçimi/sonucu, istatistikler, yıllık takvim) `@testing-library/react-native` ile render edilerek test ediliyor. İki odak var: (1) form doldurma — dört ekranda form `useEffect` yerine render sırasında "önceki değerle karşılaştır" kalıbıyla dolduruluyor, testler iki sessiz kırılmayı kilitliyor (formun hiç dolmaması ve kullanıcının yazdığının her render'da ezilmesi); (2) durum geçişleri — yükleme / hata / boş / veri, ve hata durumunda ham metin yerine `ErrorState` + çalışan "Tekrar dene".
+
+Native köprü gerektiren kütüphaneler `jest.setup.js`'te merkezî olarak taklit ediliyor. Reanimated için elle yazılmış bir mock var (`__mocks__/react-native-reanimated.js`) — kütüphanenin kendi resmi mock'u v4'te gerçek modülü import edip worklets JSI köprüsüne çarptığı için kullanılamıyor; gerekçesi dosyanın başında yazılı.
+
+> **RNTL v14 notu:** `render`, `rerender` ve `fireEvent` **async** — `await` unutulursa sorgular sessizce çalışmaz. Eski `toHaveAccessibilityState` yerine `toBeSelected()` / `toBeDisabled()` kullanılıyor.
+
 > `helpers/` klasörü `testPathIgnorePatterns` ile hariç tutulmuş; oraya test değil yalnızca yardımcı koy.
 
 ## Kalite kontrolleri
@@ -171,11 +177,11 @@ Biçimlendirme Prettier'ın işi (`npm run format` yazar, `npm run format:check`
 
 Ana akışlar uçtan uca çalışır durumda: auth, kayıt oluşturma/düzenleme/silme, fotoğrafsız gün ve antrenman programı, offline ekleme + geri senkronizasyon, karşılaştırma, istatistikler, paylaşılabilir kart, bildirimler, profil ve ayarlar.
 
-Kalite kapısının üçü de temiz: ESLint sıfır sorun, `tsc --noEmit` temiz, 13 test paketi / 139 test geçiyor. Kod tabanında `any` yok — `@typescript-eslint/no-explicit-any` hata seviyesinde açık.
+Kalite kapısının üçü de temiz: ESLint sıfır sorun, `tsc --noEmit` temiz, 26 test paketi / 244 test geçiyor. Kullanıcının gördüğü tüm ekranların render testi var. Kod tabanında `any` yok — `@typescript-eslint/no-explicit-any` hata seviyesinde açık.
 
 ## Bilinen açık uçlar
 
 - Onboarding tek ekranda (`welcome.tsx`); planlanan ek adımlar henüz yok.
-- Bileşen/render testi yok — testlerin tamamı `lib/` katmanında. `@testing-library/react-native` kurulu değil.
+- Yasal metinler, onboarding ve ayar alt ekranlarının (bildirimler, yardım) render testi yok — içerikleri statik olduğu için öncelik verilmedi.
 - `npm run gen:types` yalnızca proje Supabase CLI'a link'liyken çalışır; aksi halde `lib/database.types.ts` elle güncellenmeli.
 - Galeriye kaydetme (`app/compare/index.tsx`), `expo-media-library`'yi try/catch'li `require` ile yüklüyor: bu native modül Expo Go'da bulunmadığı için import anında throw eder, yakalanır ve "Kaydet" bilinçli olarak devre dışı kalıp kullanıcıyı development build'e / "Paylaş"a yönlendirir. Beklenen davranış — galeri kaydı için development/production build gerekir.

@@ -12,6 +12,7 @@ import { useProfileStats } from "@/lib/profileStats";
 import { useProfile } from "@/lib/profile";
 import { useUnitPreference, useSetUnitPreference } from "@/lib/units";
 import { DraggableSheet } from "@/components/DraggableSheet";
+import { ErrorState } from "@/components/ErrorState";
 import { alertError } from "@/lib/alerts";
 
 /** Feather ikon adları — yanlış yazılmış bir ad artık derlemede yakalanıyor. */
@@ -88,7 +89,7 @@ function UnitOption({
 
 export default function Profil() {
   const { user } = useAuth();
-  const { data: stats, isLoading } = useProfileStats(user?.id);
+  const { data: stats, isLoading, error: statsError, refetch: refetchStats } = useProfileStats(user?.id);
   const { data: profile } = useProfile(user?.id);
   const { data: unitPref = "metric" } = useUnitPreference(user?.id);
   const setUnitMutation = useSetUnitPreference(user?.id);
@@ -158,6 +159,10 @@ export default function Profil() {
 
       {isLoading ? (
         <ActivityIndicator color="#8CE05A" className="mt-2" />
+      ) : statsError ? (
+        // Hatasızken rakamlar "0 anı, 0 gün seri" olarak görünüyordu — kullanıcı
+        // için verisi silinmiş gibi okunan, gerçekte sadece başarısız bir istek.
+        <ErrorState error={statsError} onRetry={() => refetchStats()} />
       ) : (
         <>
           <View className="px-4 pb-4 flex-row justify-between">

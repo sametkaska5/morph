@@ -15,6 +15,7 @@ import {
   cancelDailyReminder,
   cancelStreakRiskNotification,
 } from "@/lib/notifications";
+import { ErrorState } from "@/components/ErrorState";
 
 const ACCENT = "#8CE05A";
 
@@ -52,6 +53,9 @@ function SettingSwitch({
         value={value}
         onValueChange={onChange}
         disabled={disabled}
+        // Etiket olmadan ekran okuyucu üç anahtarı da isimsiz okuyordu: yandaki
+        // başlık ayrı bir Text, anahtarla ilişkilendirilmiş değil.
+        accessibilityLabel={label}
         trackColor={{ false: "#3A3830", true: ACCENT }}
         thumbColor="#F5F3EC"
       />
@@ -61,7 +65,7 @@ function SettingSwitch({
 
 export default function NotificationSettingsScreen() {
   const { user } = useAuth();
-  const { data: settings, isLoading } = useNotificationSettings(user?.id);
+  const { data: settings, isLoading, error, refetch } = useNotificationSettings(user?.id);
   const updateMutation = useUpdateNotificationSettings(user?.id);
   const [showPicker, setShowPicker] = useState(false);
 
@@ -146,7 +150,12 @@ export default function NotificationSettingsScreen() {
         </View>
       ) : null}
 
-      {isLoading || !settings ? (
+      {error ? (
+        // Tercihler okunamadan anahtarları göstermek yanıltıcı olurdu: hepsi
+        // kapalı görünür, kullanıcı açmaya çalışır, yazma da aynı ağ sorununa
+        // takılırdı.
+        <ErrorState error={error} onRetry={() => refetch()} />
+      ) : isLoading || !settings ? (
         <ActivityIndicator color={ACCENT} className="mt-10" />
       ) : (
         <>

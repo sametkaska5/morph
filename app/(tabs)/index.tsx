@@ -1,4 +1,4 @@
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback, useMemo, useRef, useState } from "react";
 import { View, Pressable, FlatList, Dimensions, RefreshControl, ActivityIndicator } from "react-native";
 import { Text } from "@/components/Typography";
 import { Image } from "expo-image";
@@ -7,6 +7,8 @@ import Feather from "@expo/vector-icons/Feather";
 import { photoCacheKey } from "@/lib/storage";
 import { openCapturePicker } from "@/lib/capture";
 import { useTimelineEntries, type EntryRow } from "@/lib/entries";
+import { useReduceMotion } from "@/lib/useReduceMotion";
+import { PhotoStack } from "@/components/PhotoStack";
 import { ErrorState } from "@/components/ErrorState";
 
 const { width } = Dimensions.get("window");
@@ -20,7 +22,19 @@ const THUMB_H = THUMB_W * 1.5; // poster oranı (2:3)
 // değişince) 60 hücrenin hepsi yeniden çiziliyordu. React Query yenilemede
 // değişmeyen kayıtların obje kimliğini korur (structural sharing) — memo
 // sayesinde yalnızca gerçekten değişen hücreler render olur.
-const PosterThumb = memo(function PosterThumb({ entry }: { entry: EntryRow }) {
+const PosterThumb = memo(function PosterThumb({
+  entry,
+  peekToken,
+  staggerIndex,
+  reduceMotion,
+  onPeek,
+}: {
+  entry: EntryRow;
+  peekToken: number;
+  staggerIndex: number;
+  reduceMotion: boolean;
+  onPeek: (entryId: string) => void;
+}) {
   // Pressable'ın basınca-değişen style FONKSİYONU burada marginBottom'u (satır
   // arası boşluk) uygulamıyordu — daha önce FAB ve Anı Akışı genişletme butonunda
   // gördüğümüz aynı sorun. Düz stil objesine geri dönüp basma efektini elle
@@ -34,14 +48,24 @@ const PosterThumb = memo(function PosterThumb({ entry }: { entry: EntryRow }) {
       // hata sayfası gösteriyordu. Senkronize olana kadar dokunmayı kapatıyoruz.
       onPress={entry.pending ? undefined : () => router.push(`/entry/${entry.id}`)}
       disabled={entry.pending}
-      onPressIn={() => setPressed(true)}
+      onPressIn={() => {
+        setPressed(true);
+        // Plak sandığı jesti: parmak değdiği anda arkadakiler açılıyor.
+        onPeek(entry.id);
+      }}
       onPressOut={() => setPressed(false)}
       accessibilityRole="button"
       accessibilityLabel={`${new Date(entry.date).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })} tarihli anı${
-        entry.pending ? ", senkronize edilmeyi bekliyor" : ""
-      }`}
+        entry.photo_count > 1 ? `, ${entry.photo_count} fotoğraf` : ""
+      }${entry.pending ? ", senkronize edilmeyi bekliyor" : ""}`}
       style={{ width: THUMB_W, marginBottom: 16 }}
     >
+      <PhotoStack
+        photos={entry.back_photos}
+        peekToken={peekToken}
+        reduceMotion={reduceMotion}
+        staggerIndex={staggerIndex}
+      >
       <View
         style={{
           width: THUMB_W,
@@ -85,8 +109,16 @@ const PosterThumb = memo(function PosterThumb({ entry }: { entry: EntryRow }) {
             <Feather name="clock" size={11} color="#F5F3EC" />
             <Text className="text-text text-xs font-semibold">Bekliyor</Text>
           </View>
+        ) : entry.photo_count > 1 ? (
+          // Sayı rozeti, yaprak kenarlarının söylediğini kesinleştiriyor:
+          // "birden fazla var" ile "kaç tane var" ayrı bilgiler.
+          <View className="absolute top-1.5 right-1.5 bg-black/70 rounded-full px-1.5 py-0.5 flex-row items-center gap-1">
+            <Feather name="layers" size={10} color="#F5F3EC" />
+            <Text className="text-text text-xs font-semibold">{entry.photo_count}</Text>
+          </View>
         ) : null}
       </View>
+      </PhotoStack>
     </Pressable>
   );
 });
@@ -120,7 +152,61 @@ export default function AnaEkran() {
   // Sabit renderItem: her render'da yeni closure üretmek FlatList'in satır
   // karşılaştırmasını boşa düşürüyordu; memo'lu PosterThumb ancak sabit bir
   // renderItem ile birlikte işe yarar.
-  const renderPoster = useCallback(({ item }: { item: EntryRow }) => <PosterThumb entry={item} />, []);
+  const reduceMotion = useReduceMotion();
+
+  /**
+   * Kart başına "kaç kez açıldı" sayacı. Sayaç artınca PhotoStack bir kez
+   * oynuyor. İki tetikleyici de aynı sayaçtan geçiyor (görünür olma + basma) —
+   * ayrı bayraklar olsaydı ikisi çakıştığında animasyon kendi kendini keserdi.
+   */
+  const [peekTokens, setPeekTokens] = useState<Record<string, number>>({});
+  // Bir kez görünüp açılmış kartlar: geri kaydırınca tekrar tekrar oynamasın.
+  const seenRef = useRef<Set<string>>(new Set());
+
+  const bumpPeek = useCallback((entryId: string) => {
+    setPeekTokens((prev) => ({ ...prev, [entryId]: (prev[entryId] ?? 0) + 1 }));
+  }, []);
+
+  // Görünürlük eşiği: kartın yarısı ekranda olmadan açılma başlarsa kullanıcı
+  // hareketin yarısını kaçırıyor.
+  // useMemo/useCallback + boş bağımlılık: FlatList bu ikisinin referansının
+  // değişmesine izin vermiyor ("Changing onViewableItemsChanged on the fly is
+  // not supported") ve render sırasında ref okumak da yasak.
+  const viewabilityConfig = useMemo(() => ({ itemVisiblePercentThreshold: 60 }), []);
+
+  const onViewableItemsChanged = useCallback(
+    ({ viewableItems }: { viewableItems: { item?: EntryRow; index: number | null }[] }) => {
+      const firstTime = viewableItems.filter(
+        (v) => v.item && v.item.back_photos.length > 0 && !seenRef.current.has(v.item.id)
+      );
+      if (firstTime.length === 0) return;
+
+      setPeekTokens((prev) => {
+        const next = { ...prev };
+        firstTime.forEach((v) => {
+          seenRef.current.add(v.item!.id);
+          next[v.item!.id] = (next[v.item!.id] ?? 0) + 1;
+        });
+        return next;
+      });
+    },
+    []
+  );
+
+  const renderPoster = useCallback(
+    ({ item, index }: { item: EntryRow; index: number }) => (
+      <PosterThumb
+        entry={item}
+        peekToken={peekTokens[item.id] ?? 0}
+        // Aynı anda görünen kartlar sırayla açılsın: hepsi aynı anda oynarsa
+        // hem takılır hem "yaprak çevirme" hissi kaybolur.
+        staggerIndex={index % COLUMNS}
+        reduceMotion={reduceMotion}
+        onPeek={bumpPeek}
+      />
+    ),
+    [peekTokens, reduceMotion, bumpPeek]
+  );
 
   const todayLabel = new Date().toLocaleDateString("tr-TR", {
     weekday: "long",
@@ -200,6 +286,8 @@ export default function AnaEkran() {
           keyExtractor={(item) => item.id}
           numColumns={COLUMNS}
           showsVerticalScrollIndicator={false}
+          viewabilityConfig={viewabilityConfig}
+          onViewableItemsChanged={onViewableItemsChanged}
           refreshControl={
             <RefreshControl
               refreshing={isRefetching}

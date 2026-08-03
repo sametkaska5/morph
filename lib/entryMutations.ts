@@ -2,6 +2,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 import { uploadPhoto, uploadThumb } from "./storage";
 import { parseMeasurementInput } from "./measurementInput";
+import { nextOrderIndex } from "./photos";
 import { captureError } from "./monitoring";
 import { queryKeys } from "./queryKeys";
 
@@ -51,38 +52,35 @@ export async function saveEntry(payload: SaveEntryPayload) {
     }
   }
 
+  // Entry upsert'ü (user_id, date) çakışmasında MEVCUT kaydı yeniden kullanıyor:
+  // aynı güne ikinci kez fotoğraf çekmek yeni bir gün değil, o güne bir fotoğraf
+  // daha eklemek demek. Bu yüzden order_index'i mevcutların ARDINA koyuyoruz.
+  //
+  // Eskiden burada o entry'nin diğer tüm fotoğrafları satır ve dosya olarak
+  // SİLİNİYORDU (kapak karışıklığını çözmek için). Sonucu şuydu: sabah bir
+  // fotoğraf çekip akşam bir tane daha çeken kullanıcı sabahkini geri dönüşsüz
+  // kaybediyordu — üstelik hiçbir uyarı görmeden. Kapak karışıklığı artık
+  // silerek değil, kapağı açıkça YENİ fotoğrafa vererek çözülüyor.
+  const { data: existingPhotos } = await supabase
+    .from("photos")
+    .select("order_index")
+    .eq("entry_id", entry.id);
+
   const { data: photoRow, error: photoError } = await supabase
     .from("photos")
-    .insert({ entry_id: entry.id, storage_path: storagePath, thumb_path: thumbPath, order_index: 0 })
+    .insert({
+      entry_id: entry.id,
+      storage_path: storagePath,
+      thumb_path: thumbPath,
+      order_index: nextOrderIndex(existingPhotos ?? []),
+    })
     .select()
     .single();
   if (photoError) throw photoError;
 
+  // En son eklenen kapak olur: kullanıcı az önce çektiği fotoğrafı ızgarada
+  // görmeyi bekler. Diğerleri duruyor, detay ekranından erişilebiliyor.
   await supabase.from("entries").update({ cover_photo_id: photoRow.id }).eq("id", entry.id);
-
-  // Entry upsert'ü (user_id, date) çakışmasında MEVCUT kaydı yeniden kullanıyor —
-  // yani aynı güne ikinci kez kayıt yapılınca eskisinin fotoğrafı hem photos
-  // tablosunda hem storage'da öylece kalıyordu (ızgarada yanlış kapak + sürekli
-  // büyüyen çöp dosyalar). Yeni kapağı yazdıktan sonra o entry'nin diğer tüm
-  // fotoğraflarını satır ve dosya olarak temizliyoruz.
-  const { data: stalePhotos } = await supabase
-    .from("photos")
-    .select("id, storage_path, thumb_path")
-    .eq("entry_id", entry.id)
-    .neq("id", photoRow.id);
-
-  if (stalePhotos && stalePhotos.length > 0) {
-    // Tam boy kopyanın yanında thumbnail'i de silmezsek storage'da yetim
-    // küçük dosyalar birikir.
-    const staleFiles = stalePhotos.flatMap((p) =>
-      [p.storage_path, p.thumb_path].filter(Boolean) as string[]
-    );
-    await supabase.storage.from("photos").remove(staleFiles);
-    await supabase
-      .from("photos")
-      .delete()
-      .in("id", stalePhotos.map((p) => p.id));
-  }
 
   // Değerler buraya new.tsx'ten zaten temizlenmiş (metrik) gelir; yine de
   // parseMeasurementInput ile geçiriyoruz — offline'da kuyruğa alınıp sonra

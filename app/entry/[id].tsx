@@ -14,7 +14,13 @@ import { memo, useMemo, useState } from "react";
 import Feather from "@expo/vector-icons/Feather";
 import { photoCacheKey } from "@/lib/storage";
 import { useEntryDetail, useEntryOrder, useDeleteEntry } from "@/lib/entries";
+import { useAddEntryPhotos, useSetCoverPhoto, useDeleteEntryPhoto } from "@/lib/photos";
+import { pickPhotosForEntry } from "@/lib/capture";
+import { useAuth } from "@/lib/useAuth";
+import { alertError } from "@/lib/alerts";
 import { ErrorState } from "@/components/ErrorState";
+import { EntryPhotoStrip, useActivePhoto } from "@/components/EntryPhotoStrip";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 function ActionMenuOption({
   icon,
@@ -67,7 +73,26 @@ function workoutSetLabel(s: { reps: number | null; weight: number | null }): str
  * için sayfalar artık tamamen atlanıyor.
  */
 const EntryPage = memo(function EntryPage({ entryId }: { entryId: string }) {
+  const { user } = useAuth();
   const { data, isLoading, error, refetch } = useEntryDetail(entryId);
+
+  const photos = useMemo(() => data?.photos ?? [], [data?.photos]);
+  const { activeId, active, setActiveId } = useActivePhoto(photos);
+
+  const addPhotos = useAddEntryPhotos(entryId);
+  const setCover = useSetCoverPhoto(entryId);
+  const deletePhoto = useDeleteEntryPhoto(entryId);
+  const busy = addPhotos.isPending || setCover.isPending || deletePhoto.isPending;
+
+  async function handleAdd() {
+    if (!user) return;
+    const uris = await pickPhotosForEntry();
+    if (uris.length === 0) return;
+    addPhotos.mutate(
+      { userId: user.id, uris },
+      { onError: (err) => alertError("Fotoğraf eklenemedi", err, "photos.add") }
+    );
+  }
 
   // DİKKAT: Bu kaplarda `flex-1` KULLANILMAZ.
   // Yatay listede iç kap satır yönünde dizilir; orada `flex-1` (flexBasis: 0)
@@ -95,18 +120,16 @@ const EntryPage = memo(function EntryPage({ entryId }: { entryId: string }) {
   return (
     <ScrollView style={{ width: SCREEN_WIDTH }} className="bg-bg" bounces={false}>
       <View className="relative w-full" style={{ height: IMAGE_HEIGHT }}>
-        {data?.photoUrl ? (
+        {/* Şeritten seçilen fotoğraf; seçim yoksa kapak. */}
+        {active?.url ? (
           <Image
             // cacheKey stabil storage yoluna bağlı — imzalı URL token'ı değişse de
             // (feed/ana ekranla aynı fotoğraf) cache isabet eder, yeniden indirmez.
-            source={{
-              uri: data.photoUrl,
-              cacheKey: data.photoPath ? photoCacheKey(data.photoPath, "full") : undefined,
-            }}
+            source={{ uri: active.url, cacheKey: photoCacheKey(active.path, "full") }}
             style={{ width: "100%", height: "100%" }}
             contentFit="cover"
             cachePolicy="memory-disk"
-            recyclingKey={data.photoPath ?? undefined}
+            recyclingKey={active.path}
             transition={150}
           />
         ) : (
@@ -115,6 +138,25 @@ const EntryPage = memo(function EntryPage({ entryId }: { entryId: string }) {
           </View>
         )}
       </View>
+
+      <EntryPhotoStrip
+        photos={photos}
+        activeId={activeId}
+        onSelect={setActiveId}
+        onAdd={handleAdd}
+        onSetCover={(photoId) =>
+          setCover.mutate(photoId, {
+            onError: (err) => alertError("Kapak değiştirilemedi", err, "photos.setCover"),
+          })
+        }
+        onDelete={(photoId, nextCoverId) =>
+          deletePhoto.mutate(
+            { photoId, nextCoverId },
+            { onError: (err) => alertError("Fotoğraf silinemedi", err, "photos.delete") }
+          )
+        }
+        busy={busy}
+      />
 
       <View className="px-5 pt-6 pb-12">
         <Text className="text-text text-3xl font-bold mb-6">
@@ -347,47 +389,20 @@ export default function EntryDetail() {
       </Pressable>
     </Modal>
 
-    <Modal
+    <ConfirmDialog
       visible={showDeleteConfirm}
-      transparent
-      animationType="fade"
-      onRequestClose={() => setShowDeleteConfirm(false)}
-    >
-      <Pressable
-        onPress={() => setShowDeleteConfirm(false)}
-        className="flex-1 bg-black/60 items-center justify-center px-8"
-      >
-        <Pressable onPress={() => {}} className="w-full bg-bg border border-border rounded-card p-5 items-center">
-          <View className="w-14 h-14 rounded-full bg-danger/15 items-center justify-center mb-4">
-            <Feather name="trash-2" size={24} color="#D9705A" />
-          </View>
-          <Text className="text-text text-xl font-bold mb-2 text-center">Bu anıyı sil?</Text>
-          <Text className="text-textMuted text-sm text-center mb-6">
-            Bu işlem geri alınamaz, fotoğraf ve ölçümler kalıcı olarak silinir.
-          </Text>
-          <View className="flex-row gap-3 w-full">
-            <Pressable
-              onPress={() => setShowDeleteConfirm(false)}
-              style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
-              className="flex-1 py-4 rounded-button items-center bg-surface border border-border"
-            >
-              <Text className="text-text text-base font-semibold">Vazgeç</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                setShowDeleteConfirm(false);
-                // Navigasyon ekranın işi — invalidation'lar hook'un içinde.
-                deleteMutation.mutate(activeId, { onSuccess: () => router.back() });
-              }}
-              style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
-              className="flex-1 py-4 rounded-button items-center bg-danger"
-            >
-              <Text className="text-bg text-base font-semibold">Sil</Text>
-            </Pressable>
-          </View>
-        </Pressable>
-      </Pressable>
-    </Modal>
+      icon="trash-2"
+      danger
+      title="Bu anıyı sil?"
+      message="Bu işlem geri alınamaz, fotoğraf ve ölçümler kalıcı olarak silinir."
+      confirmLabel="Sil"
+      onConfirm={() => {
+        setShowDeleteConfirm(false);
+        // Navigasyon ekranın işi — invalidation'lar hook'un içinde.
+        deleteMutation.mutate(activeId, { onSuccess: () => router.back() });
+      }}
+      onClose={() => setShowDeleteConfirm(false)}
+    />
     </>
   );
 }

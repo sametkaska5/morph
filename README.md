@@ -94,6 +94,9 @@ components/
   ErrorBoundary.tsx    render çökmelerini yakalar (kök layout'ta), Sentry'ye bildirir
   ErrorState.tsx       veri yüklenemediğinde ikon + açıklama + "Tekrar dene"
   MeasurementChart.tsx interaktif ölçüm grafiği (satır içi + büyütme modu)
+  ConfirmDialog.tsx    temalı onay/bilgi kutusu — yıkıcı işlemlerde native Alert yerine
+  PhotoStack.tsx       ızgarada kapağın arkasındaki yaprak destesi + açılma animasyonu
+  EntryPhotoStrip.tsx  detayda bir günün fotoğrafları arası geçiş + kapak/silme
   DraggableSheet.tsx, CaptureOptionsSheet.tsx, LegalScreen.tsx
 
 lib/
@@ -115,6 +118,7 @@ lib/
 
   — yazma & fotoğraf
   entryMutations.ts    fotoğraflı kaydın yazma yolu (offline kuyruk dahil)
+  photos.ts            bir günün fotoğrafları: sıralama, ekleme, silme, kapak seçme
   capture.ts, captureStore.ts, captureSheetStore.ts   fotoğraf çekim akışı
   storage.ts           Supabase storage yükleme/imzalı link/kapak seçimi
   orphanSweep.ts       hiçbir DB satırının işaret etmediği yetim fotoğrafları temizler (günde bir, açılışta)
@@ -136,6 +140,7 @@ supabase/migrations/   0001–0010 şema + RLS + storage politikaları, antrenma
 - **Veri erişimi ekranlarda değil `lib/` içinde.** Ekranlar `useTimelineEntries()` gibi hook'ları çağırır; `supabase.from(...)` yazmaz. Yeni bir sorgu eklerken hook'u ilgili lib modülüne koy.
 - **Query anahtarları `lib/queryKeys.ts`'ten gelir**, elle dizi yazılmaz. Aile yapısı sayesinde `invalidateQueries({ queryKey: queryKeys.entries.all })` tüm girdi listelerini birden tazeler.
 - **Ham hata metni kullanıcıya asla gösterilmez.** Sorgu hatası → `<ErrorState error={error} onRetry={...} />`; eylem hatası → `alertError("Başlık", err, "modul.islem")`; auth akışı → `authErrorMessage(error)`.
+- **Hata, boşlukla karıştırılmaz.** Bir sorgu patladığında `isLoading` da false olur ve `data` undefined kalır: hata dalı yazılmazsa ekran "hiç kaydın yok" gibi görünür. Form ekranlarında bu daha ağır — boş dolan formun üstüne basılan "Kaydet" var olan veriyi siler. Bu yüzden **veri okuyan her form, sorgu hata verdiğinde hiç açılmaz**; hydration koşulları da `!error` içerir.
 - **Offline-first**: mutasyonlar çevrimdışıyken kuyruğa alınır (`registerEntryMutationDefaults` + `resumePausedMutations`), önbellek AsyncStorage'a kalıcılaştırılır. Bir sorgunun veri şekli değişirse `app/_layout.tsx`'teki `PERSIST_CACHE_BUSTER`'ı artır.
 
 ## Test
@@ -176,11 +181,11 @@ Biçimlendirme Prettier'ın işi (`npm run format` yazar, `npm run format:check`
 
 Ana akışlar uçtan uca çalışır durumda: auth, kayıt oluşturma/düzenleme/silme, fotoğrafsız gün ve antrenman programı, offline ekleme + geri senkronizasyon, karşılaştırma, istatistikler, paylaşılabilir kart, bildirimler, profil ve ayarlar.
 
-Kalite kapısının üçü de temiz: ESLint sıfır sorun, `tsc --noEmit` temiz, 26 test paketi / 260 test geçiyor. Kullanıcının gördüğü tüm ekranların render testi var. Kod tabanında `any` yok — `@typescript-eslint/no-explicit-any` hata seviyesinde açık.
+Kalite kapısının üçü de temiz: ESLint sıfır sorun, `tsc --noEmit` temiz, 28 test paketi / 312 test geçiyor. Kullanıcının gördüğü tüm ekranların render testi var. Kod tabanında `any` yok — `@typescript-eslint/no-explicit-any` hata seviyesinde açık.
 
 ## Bilinen açık uçlar
 
 - Onboarding tek ekranda (`welcome.tsx`); planlanan ek adımlar henüz yok.
-- Yasal metinler, onboarding ve ayar alt ekranlarının (bildirimler, yardım) render testi yok — içerikleri statik olduğu için öncelik verilmedi.
+- Yasal metinler, onboarding ve `settings/help.tsx`'in render testi yok — içerikleri statik olduğu için öncelik verilmedi. (Bildirim ayarları testli: tercih yazan tek ayar ekranı o.)
 - `npm run gen:types` yalnızca proje Supabase CLI'a link'liyken çalışır; aksi halde `lib/database.types.ts` elle güncellenmeli.
 - Galeriye kaydetme (`app/compare/index.tsx`), `expo-media-library`'yi try/catch'li `require` ile yüklüyor: bu native modül Expo Go'da bulunmadığı için import anında throw eder, yakalanır ve "Kaydet" bilinçli olarak devre dışı kalıp kullanıcıyı development build'e / "Paylaş"a yönlendirir. Beklenen davranış — galeri kaydı için development/production build gerekir.

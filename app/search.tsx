@@ -7,6 +7,7 @@ import Feather from "@expo/vector-icons/Feather";
 import { useAuth } from "@/lib/useAuth";
 import { photoCacheKey } from "@/lib/storage";
 import { useSearchIndex, type SearchEntry } from "@/lib/entries";
+import { ErrorState } from "@/components/ErrorState";
 
 // memo: her tuş vuruşu sonuç listesini yeniden filtreliyor ama satır objeleri
 // aynı kalıyor — memo olmadan görünür tüm satırlar (expo-image dahil) her
@@ -42,7 +43,7 @@ const ResultRow = memo(function ResultRow({ entry }: { entry: SearchEntry }) {
 
 export default function SearchScreen() {
   const { user } = useAuth();
-  const { data: entries, isLoading } = useSearchIndex(user?.id);
+  const { data: entries, isLoading, error, refetch } = useSearchIndex(user?.id);
   const [query, setQuery] = useState("");
 
   const results = useMemo(() => {
@@ -98,6 +99,12 @@ export default function SearchScreen() {
 
       {isLoading ? (
         <ActivityIndicator color="#8CE05A" className="mt-4" />
+      ) : error ? (
+        // Arama dizini çekilemediyse her sorgu "sonuç yok" derdi — kullanıcı
+        // aradığı anının silindiğini sanırdı.
+        <View className="mt-6">
+          <ErrorState error={error} onRetry={() => refetch()} />
+        </View>
       ) : !query.trim() ? (
         <Text className="text-textMuted text-base text-center mt-10 px-6">
           Bir tarih (ör. "mart 2026") ya da notlarında geçen bir kelime yazarak anılarında arama yapabilirsin.

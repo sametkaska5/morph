@@ -63,6 +63,10 @@ export default function NewEntry() {
         // Küçük kopya varsa onu kullan, yoksa (eski akış) tam boya düş.
         cover_photo_url: `data:image/jpeg;base64,${payload.thumbBase64 ?? payload.photoBase64}`,
         cover_photo_path: `pending-${payload.date}`,
+        // Senkronize olmadan o günün gerçek fotoğraf sayısını bilmiyoruz; kart
+        // tek fotoğraflı gibi çizilir, sunucudan dönen satır doğrusunu getirir.
+        photo_count: 1,
+        back_photos: [],
         pending: true,
       };
 

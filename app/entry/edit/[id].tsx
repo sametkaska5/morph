@@ -27,6 +27,7 @@ import { validateMeasurementInput, measurementErrorText } from "@/lib/measuremen
 import { useEditableEntry } from "@/lib/entries";
 import { queryKeys } from "@/lib/queryKeys";
 import { actionErrorMessage } from "@/lib/errors";
+import { ErrorState } from "@/components/ErrorState";
 
 /* ---------------- PAGE ---------------- */
 
@@ -36,7 +37,7 @@ export default function EditEntry() {
 
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { data, isLoading } = useEditableEntry(id);
+  const { data, isLoading, error, refetch } = useEditableEntry(id);
   const { data: allTypes } = useMeasurementTypes(user?.id);
   const { data: unitPref = "metric" } = useUnitPreference(user?.id);
 
@@ -257,6 +258,17 @@ export default function EditEntry() {
     return (
       <View className="flex-1 bg-bg items-center justify-center">
         <ActivityIndicator color="#8CE05A" />
+      </View>
+    );
+  }
+
+  // Kayıt çekilemediyse formu AÇMIYORUZ: alanlar boş kalırdı ve "Kaydet"
+  // notu da ölçümleri de silerdi. Kullanıcının gördüğü tek şey boş bir form
+  // olduğu için sildiğini anlaması da mümkün değildi.
+  if (error) {
+    return (
+      <View className="flex-1 bg-bg items-center justify-center">
+        <ErrorState error={error} onRetry={() => refetch()} />
       </View>
     );
   }

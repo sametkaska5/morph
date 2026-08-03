@@ -79,6 +79,23 @@ describe("arama ekranı", () => {
     expect(screen.getByText("Eşleşen bir anı bulunamadı.")).toBeTruthy();
   });
 
+  it("dizin çekilemediyse 'eşleşme yok' DEMEZ, hata durumu gösterir", async () => {
+    // İkisi bambaşka: "böyle bir anın yok" ile "arayamadık". Hata sessizce
+    // yutulunca kullanıcı aradığı anının silindiğini düşünürdü.
+    mockUseSearchIndex.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new Error("network"),
+      refetch: jest.fn(),
+    });
+    await render(<SearchScreen />);
+
+    await fireEvent.changeText(screen.getByLabelText(SEARCH_BOX), "temmuz");
+
+    expect(screen.queryByText("Eşleşen bir anı bulunamadı.")).toBeNull();
+    expect(screen.getByLabelText("Tekrar dene")).toBeTruthy();
+  });
+
   it("yalnızca boşluk yazmak arama saymaz", async () => {
     await render(<SearchScreen />);
 

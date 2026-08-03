@@ -137,6 +137,22 @@ describe("düzenleme ekranı — form doldurma", () => {
 
     expect(screen.queryByLabelText("Not")).toBeNull();
   });
+
+  it("sorgu HATA verdiyse formu hiç açmaz", async () => {
+    // Hatada isLoading false, data undefined: form boş not ve boş ölçümlerle
+    // açılırdı. Kullanıcının basacağı Kaydet, kaydın notunu ve ölçümlerini
+    // gerçekten silerdi — üstelik ekranda hiçbir uyarı olmadan.
+    mockUseEditableEntry.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new Error("network"),
+      refetch: jest.fn(),
+    });
+    await render(<EditEntry />);
+
+    expect(screen.queryByLabelText("Not")).toBeNull();
+    expect(screen.getByLabelText("Tekrar dene")).toBeTruthy();
+  });
 });
 
 describe("düzenleme ekranı — doğrulama ve hata", () => {

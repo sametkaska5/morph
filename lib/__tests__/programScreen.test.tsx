@@ -88,6 +88,37 @@ describe("program ekranı — form doldurma", () => {
     expect(screen.queryAllByPlaceholderText("Hareket (örn. Bench Press)")).toHaveLength(0);
   });
 
+  it("sorgu HATA verdiyse formu hiç açmaz", async () => {
+    // En tehlikeli senaryo: hatada da isLoading false oluyor ve data undefined
+    // kalıyor. Form "bu günde hiç hareket yok" diye boş dolarsa, kullanıcının
+    // basacağı Kaydet o günün programını gerçekten siler.
+    mockUseProgramDay.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new Error("network"),
+      refetch: jest.fn(),
+    });
+    await render(<ProgramScreen />);
+
+    expect(screen.queryAllByPlaceholderText("Hareket (örn. Bench Press)")).toHaveLength(0);
+    expect(screen.getByLabelText("Tekrar dene")).toBeTruthy();
+  });
+
+  it("hata sonrası veri gelince formu normal doldurur", async () => {
+    mockUseProgramDay.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new Error("network"),
+      refetch: jest.fn(),
+    });
+    const { rerender } = await render(<ProgramScreen />);
+
+    mockUseProgramDay.mockReturnValue({ data: PROGRAM, isLoading: false });
+    await rerender(<ProgramScreen />);
+
+    expect(exerciseNames()).toEqual(["Bench Press", "Squat"]);
+  });
+
   it("kullanıcının yazdığını sonraki render'lar EZMEZ", async () => {
     const { rerender } = await render(<ProgramScreen />);
 

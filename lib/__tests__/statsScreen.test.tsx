@@ -149,6 +149,21 @@ describe("istatistikler — ölçüm serisi ve trend", () => {
     expect(screen.getByText("Bu ölçüm için henüz veri yok.")).toBeTruthy();
   });
 
+  it("seri sorgusu hata verdiyse 'veri yok' DEMEZ, hata durumu gösterir", async () => {
+    // İkisi çok farklı şeyler: "henüz girmedin" ile "getiremedik". Hatayı
+    // boşlukmuş gibi göstermek, kullanıcıya ölçümlerini kaybettirmiş hissi verir.
+    mockUseMeasurementSeries.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new Error("network"),
+      refetch: jest.fn(),
+    });
+    await render(<Istatistikler />);
+
+    expect(screen.queryByText("Bu ölçüm için henüz veri yok.")).toBeNull();
+    expect(screen.getByLabelText("Tekrar dene")).toBeTruthy();
+  });
+
   it("imperial tercihte değerleri çevirir", async () => {
     mockUseUnitPreference.mockReturnValue({ data: "imperial" });
     await render(<Istatistikler />);
@@ -192,6 +207,19 @@ describe("istatistikler — haftalık seri", () => {
     await render(<Istatistikler />);
 
     expect(screen.getByText("4 gün üst üste")).toBeTruthy();
+  });
+
+  it("hafta sorgusu hata verdiyse şeridi boş kutularla çizmez", async () => {
+    mockUseWeek.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new Error("network"),
+      refetch: jest.fn(),
+    });
+    await render(<Istatistikler />);
+
+    expect(screen.queryByLabelText(/13 Temmuz/)).toBeNull();
+    expect(screen.getByLabelText("Tekrar dene")).toBeTruthy();
   });
 
   it("bugün boşsa seri sıfırdır", async () => {

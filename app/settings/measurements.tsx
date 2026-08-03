@@ -19,12 +19,14 @@ import {
   type TargetDirection,
 } from "@/lib/measurementTypes";
 import { useKeyboardFocus } from "@/lib/useKeyboardFocus";
+import { ErrorState } from "@/components/ErrorState";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 const ACCENT = "#8CE05A";
 
 export default function MeasurementSettingsScreen() {
   const { user } = useAuth();
-  const { data: types, isLoading } = useMeasurementTypes(user?.id);
+  const { data: types, isLoading, error, refetch } = useMeasurementTypes(user?.id);
   const addMutation = useAddMeasurementType(user?.id);
   const deleteMutation = useDeleteMeasurementType(user?.id);
 
@@ -58,18 +60,17 @@ export default function MeasurementSettingsScreen() {
     );
   }
 
-  function handleDelete(id: string, label: string) {
-    Alert.alert("Ölçümü sil", `"${label}" ölçüm tipini silmek istediğine emin misin? Geçmiş değerleri de kaybolur.`, [
-      { text: "Vazgeç", style: "cancel" },
-      {
-        text: "Sil",
-        style: "destructive",
-        onPress: () =>
-          deleteMutation.mutate(id, {
-            onError: (err) => alertError("Silinemedi", err, "measurements.delete"),
-          }),
-      },
-    ]);
+  // Silme onayı native Alert'ten temalı kutuya taşındı: Alert sistemin kendi
+  // penceresi, koyu temanın ortasında beyaz bir kutu olarak beliriyordu.
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; label: string } | null>(null);
+
+  function confirmDelete() {
+    const target = pendingDelete;
+    setPendingDelete(null);
+    if (!target) return;
+    deleteMutation.mutate(target.id, {
+      onError: (err) => alertError("Silinemedi", err, "measurements.delete"),
+    });
   }
 
   return (
@@ -81,6 +82,16 @@ export default function MeasurementSettingsScreen() {
       contentContainerStyle={{ paddingBottom: 32 + keyboardPadding }}
       keyboardShouldPersistTaps="handled"
     >
+      <ConfirmDialog
+        visible={pendingDelete !== null}
+        icon="trash-2"
+        danger
+        title="Ölçümü sil?"
+        message={`"${pendingDelete?.label ?? ""}" ölçüm tipi silinecek ve geçmiş değerleri de kaybolacak. Bu işlem geri alınamaz.`}
+        confirmLabel="Sil"
+        onConfirm={confirmDelete}
+        onClose={() => setPendingDelete(null)}
+      />
       <View className="flex-row items-center gap-3 mb-6">
         <Pressable
           onPress={() => router.back()}
@@ -96,6 +107,11 @@ export default function MeasurementSettingsScreen() {
 
       {isLoading ? (
         <ActivityIndicator color={ACCENT} className="mt-10" />
+      ) : error ? (
+        // Liste çekilemediğinde ekran bomboş "yeni ölçüm ekle" formuna
+        // düşüyordu: kullanıcı ölçümlerinin silindiğini sanıp yeniden ekler,
+        // istek geri gelince mükerrer kayıtla karşılaşırdı.
+        <ErrorState error={error} onRetry={() => refetch()} />
       ) : (
         <>
           <Text className="text-textFaint text-sm font-semibold mb-2 tracking-wide">SİSTEM ÖLÇÜMLERİ</Text>
@@ -138,7 +154,7 @@ export default function MeasurementSettingsScreen() {
                       accessibilityRole="button"
                       accessibilityLabel={`${t.name} ölçümünü sil`}
                       style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-                      onPress={() => handleDelete(t.id, t.name)}
+                      onPress={() => setPendingDelete({ id: t.id, label: t.name })}
                     >
                       <Feather name="trash-2" size={16} color="#D9705A" />
                     </Pressable>

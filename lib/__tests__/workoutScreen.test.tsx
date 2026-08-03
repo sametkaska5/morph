@@ -112,6 +112,22 @@ describe("fotoğrafsız gün — form doldurma", () => {
     expect(measureValue("kg")).toBe("82.5");
   });
 
+  it("sorgu HATA verdiyse formu hiç açmaz", async () => {
+    // Hatada isLoading false, data undefined: form o gün hiç kayıt yokmuş gibi
+    // boş dolardı ve Kaydet, günün ölçümleriyle notunu silerdi.
+    mockUseWorkoutDay.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new Error("network"),
+      refetch: jest.fn(),
+    });
+    await render(<WorkoutDayScreen />);
+
+    expect(screen.queryByPlaceholderText("— kg")).toBeNull();
+    expect(screen.queryByLabelText("Off day")).toBeNull();
+    expect(screen.getByLabelText("Tekrar dene")).toBeTruthy();
+  });
+
   it("off_day kaydını doğru sekmeyle açar", async () => {
     mockUseWorkoutDay.mockReturnValue({
       data: { ...DAY, type: "off_day", measurement_values: [] },

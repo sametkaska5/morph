@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 import { getPhotoUrl, getPhotoUrls, coverThumbPath, coverPhotoRow } from "./storage";
+import { orderEntryPhotos } from "./photos";
 import { queryKeys } from "./queryKeys";
 
 /**
@@ -27,14 +28,27 @@ const LIST_STALE_TIME = 1000 * 60 * 30;
 
 /* ─────────────────────────── Ana ekran ızgarası ─────────────────────────── */
 
+/** Kapağın ARKASINDA duran fotoğraf — ızgaradaki yaprak efekti için. */
+export type BackPhoto = { url: string; path: string };
+
 export type EntryRow = {
   id: string;
   date: string;
   note: string | null;
   cover_photo_url: string | null;
   cover_photo_path: string | null; // sabit cache anahtarı için — link değişse de bu değişmiyor
+  photo_count: number;
+  /**
+   * Kapak dışındaki fotoğraflardan EN FAZLA ikisi. Sınır bilinçli: ızgarada 60
+   * kart var, kart başına tüm fotoğrafları indirmek listeyi ağırlaştırırdı ve
+   * yaprak efektinde zaten ikiden fazlası görünmüyor.
+   */
+  back_photos: BackPhoto[];
   pending?: boolean; // offline'da eklenip henüz Supabase'e senkronize olmamış kayıt
 };
+
+/** Yaprak efektinde kapağın arkasında gösterilecek en fazla fotoğraf sayısı. */
+export const MAX_BACK_PHOTOS = 2;
 
 export function useTimelineEntries() {
   return useQuery({
@@ -43,16 +57,38 @@ export function useTimelineEntries() {
     queryFn: async (): Promise<EntryRow[]> => {
       const { data, error } = await supabase
         .from("entries")
-        .select("id, date, note, cover_photo_id, photos!entry_id(id, storage_path, thumb_path)")
+        .select(
+          "id, date, note, cover_photo_id, photos!entry_id(id, storage_path, thumb_path, order_index)"
+        )
         .eq("type", "log")
         .order("date", { ascending: false })
         .limit(60);
 
       if (error) throw error;
 
+      // Kapak + arkadaki en fazla 2 fotoğrafın küçük kopya yolları. Kapak
+      // sırası orderEntryPhotos'tan geliyor ki ızgaradaki yaprak dizilimi
+      // detay ekranındaki şeritle aynı sırayı göstersin.
+      const backPathsByEntry = new Map<string, string[]>();
+      for (const e of data ?? []) {
+        const ordered = orderEntryPhotos(e.photos ?? [], e.cover_photo_id);
+        backPathsByEntry.set(
+          e.id,
+          ordered
+            .slice(1, 1 + MAX_BACK_PHOTOS)
+            .map((p) => p.thumb_path ?? p.storage_path)
+            .filter(Boolean) as string[]
+        );
+      }
+
       // 3 sütunlu ızgara: kare ~108pt. Yüklemede üretilen küçük kopyayı
       // kullanıyoruz; olmayan (eski) kayıtlarda coverThumbPath tam boya düşer.
-      const paths = (data ?? []).map(coverThumbPath).filter(Boolean) as string[];
+      // Kapak ve arka yapraklar TEK batch'te imzalanıyor — aşağıdaki nota göre
+      // path başına ayrı istek 60 kayıtlık ızgarada belirgin şekilde yavaş.
+      const paths = [
+        ...((data ?? []).map(coverThumbPath).filter(Boolean) as string[]),
+        ...[...backPathsByEntry.values()].flat(),
+      ];
       // Bilerek transform'suz (varyantsız) çağrı: yol zaten küçük kopyaya işaret
       // ediyor, üstüne dönüşüm istemek path başına ayrı imzalama isteği demek
       // olurdu — 60 kayıtlık ızgarada tek batch isteği çok daha hızlı.
@@ -60,12 +96,17 @@ export function useTimelineEntries() {
 
       return (data ?? []).map((e) => {
         const path = coverThumbPath(e);
+        const backPaths = backPathsByEntry.get(e.id) ?? [];
         return {
           id: e.id,
           date: e.date,
           note: e.note,
           cover_photo_url: path ? (urlMap.get(path) ?? null) : null,
           cover_photo_path: path ?? null,
+          photo_count: (e.photos ?? []).length,
+          back_photos: backPaths
+            .map((p) => ({ url: urlMap.get(p) ?? null, path: p }))
+            .filter((p): p is BackPhoto => p.url !== null),
         };
       });
     },
@@ -221,24 +262,52 @@ export function usePickableEntries(userId: string | undefined) {
 
 /* ─────────────────────────── Girdi detayı ─────────────────────────── */
 
+/** Detay ekranındaki tek bir fotoğraf. `isCover` ızgaralarda görünen kapak. */
+export type EntryPhoto = {
+  id: string;
+  url: string | null;
+  path: string;
+  isCover: boolean;
+};
+
 export function useEntryDetail(entryId: string) {
   return useQuery({
     queryKey: queryKeys.entry.detail(entryId),
     queryFn: async () => {
+      // photos!entry_id: kapak değil, o güne ait TÜM fotoğraflar. Eskiden yalnız
+      // cover_photo_id okunuyordu — bir güne birden fazla fotoğraf eklenebildiği
+      // için diğerleri ekranda hiç görünmezdi.
       const { data, error } = await supabase
         .from("entries")
         .select(
-          "id, date, note, photos!cover_photo_id(storage_path), measurement_values(value, measurement_types(name, unit)), workout_items(name, order_index, workout_sets(reps, weight, order_index))"
+          "id, date, note, cover_photo_id, photos!entry_id(id, storage_path, order_index), measurement_values(value, measurement_types(name, unit)), workout_items(name, order_index, workout_sets(reps, weight, order_index))"
         )
         .eq("id", entryId)
         .single();
 
       if (error) throw error;
 
-      const photoPath = data.photos?.storage_path ?? null;
-      const photoUrl = photoPath ? await getPhotoUrl(photoPath, "full") : null;
+      const rows = orderEntryPhotos(data.photos ?? [], data.cover_photo_id);
+      const urlMap = await getPhotoUrls(
+        rows.map((p) => p.storage_path),
+        "full"
+      );
+      const photos: EntryPhoto[] = rows.map((p) => ({
+        id: p.id,
+        path: p.storage_path,
+        url: urlMap.get(p.storage_path) ?? null,
+        isCover: p.id === data.cover_photo_id,
+      }));
 
-      return { ...data, photoUrl, photoPath };
+      // photoUrl/photoPath: kapak. Ekranın geri kalanı ve paylaşım kartı bu iki
+      // alanı okumaya devam ediyor — çoklu fotoğraf onların üstüne EKLENDİ.
+      const cover = photos.find((p) => p.isCover) ?? photos[0] ?? null;
+      return {
+        ...data,
+        photos,
+        photoUrl: cover?.url ?? null,
+        photoPath: cover?.path ?? null,
+      };
     },
   });
 }

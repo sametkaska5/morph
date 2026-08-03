@@ -11,10 +11,11 @@ import { useProfile, useUpdateProfile } from "@/lib/profile";
 import { uploadAvatar } from "@/lib/storage";
 import { supabase } from "@/lib/supabase";
 import { alertError } from "@/lib/alerts";
+import { ErrorState } from "@/components/ErrorState";
 
 export default function EditProfileScreen() {
   const { user } = useAuth();
-  const { data: profile, isLoading } = useProfile(user?.id);
+  const { data: profile, isLoading, error, refetch } = useProfile(user?.id);
   const updateMutation = useUpdateProfile(user?.id);
 
   const [name, setName] = useState("");
@@ -83,6 +84,15 @@ export default function EditProfileScreen() {
     return (
       <View className="flex-1 bg-bg items-center justify-center">
         <ActivityIndicator color="#8CE05A" />
+      </View>
+    );
+  }
+
+  // Profil okunamadıysa form boş isimle açılırdı; "Kaydet" adı siler.
+  if (error) {
+    return (
+      <View className="flex-1 bg-bg items-center justify-center">
+        <ErrorState error={error} onRetry={() => refetch()} />
       </View>
     );
   }

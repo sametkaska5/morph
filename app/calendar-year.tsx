@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/useAuth";
 import { toLocalDateKey, MONTH_NAMES } from "@/lib/date";
 import { useYearEntries } from "@/lib/entries";
 import { dayRoute } from "@/lib/dayRoute";
+import { ErrorState } from "@/components/ErrorState";
 
 function getMonthGrid(year: number, monthIndex: number) {
   const firstDay = new Date(year, monthIndex, 1);
@@ -120,7 +121,7 @@ function MonthCalendar({
 export default function CalendarYear() {
   const { user } = useAuth();
   const [year, setYear] = useState(new Date().getFullYear());
-  const { data: statusMap, isLoading } = useYearEntries(user?.id, year);
+  const { data: statusMap, isLoading, error, refetch } = useYearEntries(user?.id, year);
 
   // Takvim artık salt görsel değil: hafta şeridiyle AYNI kuralla (bkz.
   // lib/dayRoute.ts) o güne gidiyor. Aylar öncesine dönük bir off day
@@ -197,6 +198,9 @@ export default function CalendarYear() {
 
       {isLoading ? (
         <ActivityIndicator color="#8CE05A" className="mt-10" />
+      ) : error ? (
+        // Hatasızken 365 boş kutu çiziliyordu: o yıl hiç kayıt yapılmamış gibi.
+        <ErrorState error={error} onRetry={() => refetch()} />
       ) : (
         <View className="flex-row flex-wrap justify-between">
           {Array.from({ length: 12 }).map((_, i) => (

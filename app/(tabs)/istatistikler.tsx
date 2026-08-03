@@ -14,6 +14,7 @@ import { useMeasurementTypes } from "@/lib/measurementTypes";
 import { useUnitPreference, displayUnit, toDisplayValue } from "@/lib/units";
 import { formatWeekRange } from "@/lib/date";
 import { dayRoute, type DayRouteInput } from "@/lib/dayRoute";
+import { ErrorState } from "@/components/ErrorState";
 import {
   useMeasurementSeries,
   useWeek,
@@ -91,15 +92,25 @@ export default function Istatistikler() {
   const currentTypeId = activeTypeId ?? types?.[0]?.id;
   const activeType = types?.find((t) => t.id === currentTypeId);
 
-  const { data: series, isLoading: seriesLoading } = useMeasurementSeries(user?.id, currentTypeId);
+  const {
+    data: series,
+    isLoading: seriesLoading,
+    error: seriesError,
+    refetch: refetchSeries,
+  } = useMeasurementSeries(user?.id, currentTypeId);
   // Şeritte gezinilen hafta ile seriyi besleyen hafta ayrı: seri HER ZAMAN
   // içinde bulunulan haftadan hesaplanır, yoksa kullanıcı geçmişe gidince
   // karttaki "X gün üst üste" o eski haftanın serisini gösterirdi (ve streak
   // bildirimi yanlış veriyle yeniden kurulurdu). weekOffset 0 iken iki çağrı
   // aynı sorgu anahtarına düştüğü için tek istek atılıyor.
-  const { data: week, isLoading: weekLoading } = useWeek(user?.id, weekOffset);
+  const { data: week, isLoading: weekLoading, error: weekError, refetch: refetchWeek } = useWeek(user?.id, weekOffset);
   const { data: currentWeek } = useWeek(user?.id, 0);
-  const { data: shareablePhotos, isLoading: sharePhotosLoading } = useShareablePhotoEntries(user?.id);
+  const {
+    data: shareablePhotos,
+    isLoading: sharePhotosLoading,
+    error: sharePhotosError,
+    refetch: refetchSharePhotos,
+  } = useShareablePhotoEntries(user?.id);
   const { data: unitPref = "metric" } = useUnitPreference(user?.id);
 
   // Kimliği sabit values dizisi: her render'da yeni dizi üretmek
@@ -270,6 +281,10 @@ export default function Istatistikler() {
       <View className="mx-4 mb-4 bg-surface border border-border rounded-card p-4">
         {seriesLoading ? (
           <ActivityIndicator color="#8CE05A" />
+        ) : seriesError ? (
+          // Hatasız hâlde "Bu ölçüm için henüz veri yok." yazıyordu: kullanıcı
+          // aylardır girdiği ölçümlerin kaybolduğunu sanırdı.
+          <ErrorState error={seriesError} onRetry={() => refetchSeries()} />
         ) : values.length === 0 ? (
           <Text className="text-textMuted text-base">Bu ölçüm için henüz veri yok.</Text>
         ) : (
@@ -488,6 +503,10 @@ export default function Istatistikler() {
 
         {weekLoading ? (
           <ActivityIndicator color="#8CE05A" />
+        ) : weekError ? (
+          // Hatasızken şerit yedi boş kutu çiziyordu — o haftanın kayıtları
+          // silinmiş gibi. Seri sayacı da sessizce 0'a düşüyordu.
+          <ErrorState error={weekError} onRetry={() => refetchWeek()} />
         ) : (
           <View className="flex-row justify-between">
             {week?.map((day) => {
@@ -553,6 +572,10 @@ export default function Istatistikler() {
 
             {sharePhotosLoading ? (
               <ActivityIndicator color="#8CE05A" className="my-6" />
+            ) : sharePhotosError ? (
+              // Hatasızken "paylaşabileceğin fotoğraf yok" boş durumuna
+              // düşüyordu — fotoğrafları olan kullanıcı için yanlış bilgi.
+              <ErrorState error={sharePhotosError} onRetry={() => refetchSharePhotos()} />
             ) : shareablePhotos && shareablePhotos.length > 0 ? (
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 8 }}>
                 <View className="mb-4">

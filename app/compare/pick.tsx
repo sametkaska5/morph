@@ -10,6 +10,7 @@ import { photoCacheKey } from "@/lib/storage";
 import { fetchComparisonBetween } from "@/lib/comparison";
 import { usePickableEntries, type PickableEntry } from "@/lib/entries";
 import { queryKeys } from "@/lib/queryKeys";
+import { ErrorState } from "@/components/ErrorState";
 
 const { width } = Dimensions.get("window");
 const THUMB_SIZE = (width - 20 * 2 - 8 * 2) / 3;
@@ -77,7 +78,7 @@ const PickThumb = memo(function PickThumb({
 
 export default function PickComparison() {
   const { user } = useAuth();
-  const { data: entries, isLoading } = usePickableEntries(user?.id);
+  const { data: entries, isLoading, error, refetch } = usePickableEntries(user?.id);
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<string[]>([]);
 
@@ -128,6 +129,11 @@ export default function PickComparison() {
 
       {isLoading ? (
         <ActivityIndicator color="#8CE05A" className="mt-10" />
+      ) : error ? (
+        // Hatasız boş ızgara, "karşılaştıracak fotoğrafım yok" gibi okunuyordu.
+        <View className="mt-6">
+          <ErrorState error={error} onRetry={() => refetch()} />
+        </View>
       ) : (
         <FlatList
           data={entries}

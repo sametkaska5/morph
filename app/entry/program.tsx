@@ -11,6 +11,7 @@ import { useKeyboardFocus } from "@/lib/useKeyboardFocus";
 import { useProgramDay, saveProgram, type WorkoutItemDraft, type WorkoutSetDraft } from "@/lib/workout";
 import { queryKeys } from "@/lib/queryKeys";
 import { alertError } from "@/lib/alerts";
+import { ErrorState } from "@/components/ErrorState";
 
 const EMPTY_SET: WorkoutSetDraft = { reps: "", weight: "" };
 const newExercise = (): WorkoutItemDraft => ({ name: "", sets: [{ ...EMPTY_SET }] });
@@ -26,7 +27,7 @@ export default function ProgramScreen() {
   const [showPicker, setShowPicker] = useState(false);
   const dateKey = toLocalDateKey(date);
 
-  const { data: existing, isLoading } = useProgramDay(user?.id, dateKey);
+  const { data: existing, isLoading, error, refetch } = useProgramDay(user?.id, dateKey);
 
   const [items, setItems] = useState<WorkoutItemDraft[]>([]);
 
@@ -38,9 +39,12 @@ export default function ProgramScreen() {
   // Effect'te setState yerine render sırasında senkronizasyon: aynı "bir kez
   // hydrate et" anahtarı state'te tutuluyor, veri hazır olur olmaz form tek
   // geçişte doluyor (react.dev: you-might-not-need-an-effect).
+  // `!error` şart: sorgu patladığında da isLoading false oluyor ve existing
+  // undefined kalıyordu — form "bu günde hiç hareket yok" diye BOŞ doluyor,
+  // kullanıcı kaydedince gerçekte var olan programın üstüne boş yazılıyordu.
   const [hydratedKey, setHydratedKey] = useState<string | null>(null);
   const hydrationKey = `${dateKey}:${existing?.entryId ?? "new"}`;
-  if (!isLoading && hydratedKey !== hydrationKey) {
+  if (!isLoading && !error && hydratedKey !== hydrationKey) {
     setHydratedKey(hydrationKey);
     if (!existing || existing.items.length === 0) {
       setItems([]);
@@ -159,6 +163,10 @@ export default function ProgramScreen() {
 
       {isLoading ? (
         <ActivityIndicator color="#8CE05A" className="my-8" />
+      ) : error ? (
+        // Formu hiç göstermiyoruz: boş formun üzerine basılan "Kaydet" o günün
+        // programını silerdi.
+        <ErrorState error={error} onRetry={() => refetch()} />
       ) : (
         <>
           {items.length === 0 ? (

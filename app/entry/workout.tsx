@@ -14,6 +14,7 @@ import { validateMeasurementInput, measurementErrorText } from "@/lib/measuremen
 import { useWorkoutDay, saveWorkoutDay, type WorkoutDayType } from "@/lib/workout";
 import { queryKeys } from "@/lib/queryKeys";
 import { alertError } from "@/lib/alerts";
+import { ErrorState } from "@/components/ErrorState";
 
 export default function WorkoutDayScreen() {
   const params = useLocalSearchParams();
@@ -29,7 +30,12 @@ export default function WorkoutDayScreen() {
   const [showPicker, setShowPicker] = useState(false);
   const dateKey = toLocalDateKey(date);
 
-  const { data: existing, isLoading: existingLoading } = useWorkoutDay(user?.id, dateKey);
+  const {
+    data: existing,
+    isLoading: existingLoading,
+    error: existingError,
+    refetch: refetchExisting,
+  } = useWorkoutDay(user?.id, dateKey);
   // O gün zaten fotoğraflı bir kayıtsa (log), bu ekrandan workout olarak upsert
   // etmek entry'nin type'ını değiştirip fotoğrafı akıştan düşürürdü. Bu durumda
   // formu göstermeyip kullanıcıyı o kaydın kendisine yönlendiriyoruz.
@@ -49,9 +55,12 @@ export default function WorkoutDayScreen() {
   // gelmeden hydrate etmiyoruz ki imperial'de ölçümler doğru birime çevrilsin.
   // Effect'te setState yerine render sırasında senkronizasyon — form, veri hazır
   // olur olmaz tek geçişte dolar (react.dev: you-might-not-need-an-effect).
+  // `!existingError` şart: sorgu patladığında da existingLoading false oluyor ve
+  // existing undefined kalıyordu — form o gün hiç kayıt yokmuş gibi BOŞ doluyor,
+  // kullanıcı kaydedince o günün notu ve ölçümleri siliniyordu.
   const [hydratedKey, setHydratedKey] = useState<string | null>(null);
   const hydrationKey = `${dateKey}:${existing?.id ?? "new"}`;
-  if (!existingLoading && allTypes && hydratedKey !== hydrationKey) {
+  if (!existingLoading && !existingError && allTypes && hydratedKey !== hydrationKey) {
     setHydratedKey(hydrationKey);
     if (!existing) {
       setDayType("workout");
@@ -161,7 +170,11 @@ export default function WorkoutDayScreen() {
         />
       )}
 
-      {isPhotoDay ? (
+      {existingError ? (
+        // Formu hiç göstermiyoruz: boş formun üzerine basılan "Kaydet" o günün
+        // ölçümlerini ve notunu silerdi.
+        <ErrorState error={existingError} onRetry={() => refetchExisting()} />
+      ) : isPhotoDay ? (
         <View className="bg-surface border border-border rounded-card p-4 mt-1">
           <View className="flex-row items-center gap-3 mb-2">
             <View className="w-9 h-9 rounded-lg bg-accentSoft items-center justify-center">

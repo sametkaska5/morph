@@ -73,6 +73,31 @@ async function pickFromLibrary() {
   return ImagePicker.launchImageLibraryAsync({ allowsEditing: false, quality: 0.9, exif: true });
 }
 
+/**
+ * MEVCUT bir güne eklemek için galeriden fotoğraf seçtirir; seçilen dosyaların
+ * yerel uri'lerini döner.
+ *
+ * pickFromLibrary'den ayrı çünkü o, seçilen fotoğrafı "yeni kayıt" akışına
+ * sokuyor (store + /entry/new). Buradaki akışta kayıt zaten var: seçim doğrudan
+ * çağırana dönüyor, yönlendirme yok. İzin reddedilirse aynı açıklayıcı uyarı
+ * gösterilip boş dizi dönüyor.
+ */
+export async function pickPhotosForEntry(): Promise<string[]> {
+  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (status !== "granted") {
+    warnPermissionDenied("galeri");
+    return [];
+  }
+
+  const result = await ImagePicker.launchImageLibraryAsync({
+    allowsEditing: false,
+    allowsMultipleSelection: true,
+    quality: 0.9,
+  });
+  if (result.canceled) return [];
+  return (result.assets ?? []).map((a) => a.uri).filter(Boolean);
+}
+
 // EXIF "DateTimeOriginal"/"DateTime" formatı "YYYY:MM:DD HH:MM:SS" — ISO'ya çevirip
 // döndürüyoruz ki galeriden seçilen eski bir fotoğrafta kayıt tarihi elle seçilmek
 // zorunda kalınmadan çekildiği güne otomatik ayarlanabilsin. Konum (iOS: düz alanlar,

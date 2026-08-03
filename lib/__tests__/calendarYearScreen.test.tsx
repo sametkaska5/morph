@@ -125,6 +125,20 @@ describe("yıllık takvim — gün durumları", () => {
     expect(screen.queryByLabelText(new RegExp(`^${TOMORROW_LABEL},`))).toBeNull();
   });
 
+  it("sorgu hata verdiyse 365 boş kutu yerine hata durumu gösterir", async () => {
+    // Hatasız hâlde takvim "o yıl hiç kayıt yapmamışsın" gibi okunuyordu.
+    mockUseYearEntries.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new Error("network"),
+      refetch: jest.fn(),
+    });
+    await render(<CalendarYear />);
+
+    expect(screen.queryByText("Ocak")).toBeNull();
+    expect(screen.getByLabelText("Tekrar dene")).toBeTruthy();
+  });
+
   it("veri boşken çökmez, hiçbir gün işaretli görünmez", async () => {
     mockUseYearEntries.mockReturnValue({ data: {}, isLoading: false });
     await render(<CalendarYear />);

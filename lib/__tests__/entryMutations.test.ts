@@ -38,13 +38,20 @@ const BASE_PAYLOAD = {
   photoBase64: "PHOTO",
 };
 
-/** entries.upsert → photos.insert sırasıyla varsayılan başarılı sonuçlar. */
-function queueHappyPath(stalePhotos: unknown[] = []) {
+/**
+ * entries.upsert → photos.select (mevcut sıra) → photos.insert → cover update
+ * sırasıyla varsayılan başarılı sonuçlar. `existingPhotos`, o güne DAHA ÖNCE
+ * eklenmiş fotoğrafları temsil eder (order_index hesabı için okunuyor).
+ */
+function queueHappyPath(existingPhotos: { order_index: number }[] = []) {
   sb.queue("entries", { data: { id: "e1", date: BASE_PAYLOAD.date } }); // upsert().select().single()
+  sb.queue("photos", { data: existingPhotos }); // mevcut order_index sorgusu
   sb.queue("photos", { data: { id: "p-new" } }); // insert().select().single()
   sb.queue("entries", {}); // update cover_photo_id
-  sb.queue("photos", { data: stalePhotos }); // bayat fotoğraf sorgusu
 }
+
+/** Fotoğraf INSERT zinciri — mevcut sıra sorgusundan sonraki ikinci photos çağrısı. */
+const photoInsert = () => sb.chainsFor("photos")[1];
 
 beforeEach(() => {
   sb = createSupabaseMock();
@@ -78,7 +85,7 @@ describe("saveEntry — mutlu yol", () => {
     expect(mockUploadThumb).toHaveBeenCalledWith("u1", "e1", "THUMB");
 
     // Fotoğraf satırı hem tam boy hem küçük kopya yolunu taşımalı.
-    expect(argOf(sb.chainsFor("photos")[0], "insert")).toEqual({
+    expect(argOf(photoInsert(), "insert")).toEqual({
       entry_id: "e1",
       storage_path: "u1/e1/foto.jpg",
       thumb_path: "u1/e1/thumb-foto.jpg",
@@ -101,7 +108,7 @@ describe("saveEntry — mutlu yol", () => {
     await saveEntry(BASE_PAYLOAD);
 
     expect(mockUploadThumb).not.toHaveBeenCalled();
-    expect(argOf(sb.chainsFor("photos")[0], "insert")).toMatchObject({ thumb_path: null });
+    expect(argOf(photoInsert(), "insert")).toMatchObject({ thumb_path: null });
   });
 
   it("thumbnail yüklemesi patlarsa kaydı DÜŞÜRMEZ, thumb_path null kalır", async () => {
@@ -111,49 +118,57 @@ describe("saveEntry — mutlu yol", () => {
     const entry = await saveEntry({ ...BASE_PAYLOAD, thumbBase64: "THUMB" });
 
     expect(entry).toEqual({ id: "e1", date: "2026-08-01" });
-    expect(argOf(sb.chainsFor("photos")[0], "insert")).toMatchObject({ thumb_path: null });
+    expect(argOf(photoInsert(), "insert")).toMatchObject({ thumb_path: null });
   });
 });
 
-describe("saveEntry — aynı güne ikinci kayıt (bayat fotoğraf temizliği)", () => {
-  it("eski fotoğrafın hem dosyalarını hem satırını siler, yenisine dokunmaz", async () => {
-    queueHappyPath([
-      { id: "p-old", storage_path: "u1/e1/eski.jpg", thumb_path: "u1/e1/thumb-eski.jpg" },
-    ]);
+/**
+ * Aynı güne ikinci fotoğraf.
+ *
+ * Burası eskiden tam TERSİNİ test ediyordu: saveEntry o günün diğer tüm
+ * fotoğraflarını satır ve dosya olarak SİLİYORDU (kapak karışıklığını çözmek
+ * için konmuştu). Sonucu, kullanıcının sabah çektiği fotoğrafın akşam ikinci
+ * fotoğrafı çekince geri dönüşsüz kaybolmasıydı — hiçbir uyarı olmadan. Artık
+ * bir güne birden fazla fotoğraf eklenebiliyor; kapak karışıklığı silerek değil,
+ * kapağı açıkça en son eklenene vererek çözülüyor.
+ */
+describe("saveEntry — aynı güne ikinci fotoğraf", () => {
+  it("eski fotoğrafı SİLMEZ — ne satırını ne dosyasını", async () => {
+    queueHappyPath([{ order_index: 0 }]);
 
     await saveEntry({ ...BASE_PAYLOAD, thumbBase64: "THUMB" });
 
-    // Bayat sorgusu YENİ fotoğrafı dışlamalı (neq), yoksa az önce eklediğimizi silerdik.
-    const staleQuery = sb.chainsFor("photos")[1];
-    expect(argOf(staleQuery, "eq", 1)).toBe("e1");
-    expect(argOf(staleQuery, "neq", 1)).toBe("p-new");
-
-    // Tam boy VE küçük kopya birlikte silinmeli — yoksa storage'da yetim
-    // thumbnail dosyaları birikiyordu.
-    expect(sb.storageRemovals).toEqual([
-      { bucket: "photos", paths: ["u1/e1/eski.jpg", "u1/e1/thumb-eski.jpg"] },
-    ]);
-
-    const deleteChain = sb.chainsFor("photos")[2];
-    expect(argOf(deleteChain, "in", 1)).toEqual(["p-old"]);
+    expect(sb.storageRemovals).toHaveLength(0);
+    // photos tablosuna yalnızca mevcut sıra sorgusu + insert gitmeli, delete YOK.
+    expect(sb.chainsFor("photos")).toHaveLength(2);
   });
 
-  it("thumb_path'i olmayan eski kayıtta yalnızca tam boyu siler (null yol göndermez)", async () => {
-    queueHappyPath([{ id: "p-old", storage_path: "u1/e1/eski.jpg", thumb_path: null }]);
+  it("yeni fotoğrafı mevcutların ARDINA koyar", async () => {
+    // Sıra korunmazsa detay şeridi fotoğrafları çekildikleri sırayla değil
+    // rastgele gösterirdi.
+    queueHappyPath([{ order_index: 0 }, { order_index: 1 }]);
 
     await saveEntry(BASE_PAYLOAD);
 
-    expect(sb.storageRemovals[0].paths).toEqual(["u1/e1/eski.jpg"]);
+    expect(argOf(photoInsert(), "insert")).toMatchObject({ order_index: 2 });
   });
 
-  it("bayat fotoğraf yoksa storage'a hiç dokunmaz", async () => {
+  it("o günün ilk fotoğrafında sıra 0'dan başlar", async () => {
     queueHappyPath([]);
 
     await saveEntry(BASE_PAYLOAD);
 
-    expect(sb.storageRemovals).toHaveLength(0);
-    // photos tablosuna yalnızca insert + bayat sorgusu gitmeli, delete YOK.
-    expect(sb.chainsFor("photos")).toHaveLength(2);
+    expect(argOf(photoInsert(), "insert")).toMatchObject({ order_index: 0 });
+  });
+
+  it("kapağı EN SON eklenen fotoğrafa verir", async () => {
+    // Kullanıcı az önce çektiği fotoğrafı ızgarada görmeyi bekler.
+    queueHappyPath([{ order_index: 0 }]);
+
+    await saveEntry(BASE_PAYLOAD);
+
+    const coverUpdate = sb.chainsFor("entries")[1];
+    expect(argOf(coverUpdate, "update")).toEqual({ cover_photo_id: "p-new" });
   });
 });
 
@@ -193,6 +208,7 @@ describe("saveEntry — hata yolları", () => {
 
   it("fotoğraf satırı eklenemezse hatayı yukarı fırlatır", async () => {
     sb.queue("entries", { data: { id: "e1" } });
+    sb.queue("photos", { data: [] }); // mevcut sıra sorgusu
     sb.queue("photos", { error: { message: "insert failed" } });
 
     await expect(saveEntry(BASE_PAYLOAD)).rejects.toEqual({ message: "insert failed" });

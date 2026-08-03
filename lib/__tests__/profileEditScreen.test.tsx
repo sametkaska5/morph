@@ -74,6 +74,20 @@ describe("profil düzenleme — form doldurma", () => {
     expect(nameValue()).toBe("Samet");
   });
 
+  it("sorgu HATA verdiyse formu hiç açmaz", async () => {
+    // Boş isimle açılan form + Kaydet = profildeki ismin silinmesi.
+    mockUseProfile.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new Error("network"),
+      refetch: jest.fn(),
+    });
+    await render(<EditProfileScreen />);
+
+    expect(screen.queryByLabelText("İsim")).toBeNull();
+    expect(screen.getByLabelText("Tekrar dene")).toBeTruthy();
+  });
+
   it("kullanıcının yazdığını sonraki render'lar EZMEZ", async () => {
     // En kritik test: render sırasında setState yapan bir kalıp, yanlış
     // yazılırsa her render'da formu profil verisine geri döndürür ve

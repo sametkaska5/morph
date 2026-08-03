@@ -80,7 +80,7 @@ app/
   compare/
     index.tsx          iki kaydı karşılaştırma
     pick.tsx           karşılaştırma için kayıt seçimi
-  calendar-year.tsx    yıllık takvim görünümü
+  calendar-year.tsx    yıllık takvim: güne dokununca o tarihin kaydına/ekranına gider
   search.tsx           arama
   profile/edit.tsx     profil düzenleme
   settings/
@@ -125,6 +125,7 @@ lib/
   errors.ts            ham hataları kullanıcıya gösterilebilir Türkçe metinlere çevirir
   alerts.ts            alertError(): hem Alert gösterir hem Sentry'ye raporlar
   monitoring.ts        ince hata-izleme katmanı (Sentry; DSN yoksa no-op)
+  dayRoute.ts          gün kutusuna dokununca gidilecek route (şerit + yıllık takvim ortak)
   date.ts              tarih yardımcıları
 
 supabase/migrations/   0001–0010 şema + RLS + storage politikaları, antrenman tabloları
@@ -175,7 +176,7 @@ Biçimlendirme Prettier'ın işi (`npm run format` yazar, `npm run format:check`
 
 Ana akışlar uçtan uca çalışır durumda: auth, kayıt oluşturma/düzenleme/silme, fotoğrafsız gün ve antrenman programı, offline ekleme + geri senkronizasyon, karşılaştırma, istatistikler, paylaşılabilir kart, bildirimler, profil ve ayarlar.
 
-Kalite kapısının üçü de temiz: ESLint sıfır sorun, `tsc --noEmit` temiz, 26 test paketi / 244 test geçiyor. Kullanıcının gördüğü tüm ekranların render testi var. Kod tabanında `any` yok — `@typescript-eslint/no-explicit-any` hata seviyesinde açık.
+Kalite kapısının üçü de temiz: ESLint sıfır sorun, `tsc --noEmit` temiz, 26 test paketi / 260 test geçiyor. Kullanıcının gördüğü tüm ekranların render testi var. Kod tabanında `any` yok — `@typescript-eslint/no-explicit-any` hata seviyesinde açık.
 
 ## Bilinen açık uçlar
 

@@ -461,15 +461,18 @@ export function useYearEntries(userId: string | undefined, year: number) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("entries")
-        .select("date, type")
+        .select("id, date, type")
         .eq("user_id", userId!)
         .gte("date", `${year}-01-01`)
         .lte("date", `${year}-12-31`);
       if (error) throw error;
 
-      const map: Record<string, string> = {};
+      // id de taşınıyor: takvimdeki fotoğraflı güne dokununca doğrudan o kaydı
+      // açabilmek için gerekiyor (yalnızca tip bilinseydi kullanıcıyı önce
+      // fotoğrafsız gün ekranına uğratmak zorunda kalırdık).
+      const map: Record<string, { id: string; type: string }> = {};
       (data ?? []).forEach((e) => {
-        map[e.date] = e.type;
+        map[e.date] = { id: e.id, type: e.type };
       });
       return map;
     },

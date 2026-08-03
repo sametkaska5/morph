@@ -13,6 +13,7 @@ import { useNotificationSettings } from "@/lib/notificationSettings";
 import { useMeasurementTypes } from "@/lib/measurementTypes";
 import { useUnitPreference, displayUnit, toDisplayValue } from "@/lib/units";
 import { formatWeekRange } from "@/lib/date";
+import { dayRoute, type DayRouteInput } from "@/lib/dayRoute";
 import {
   useMeasurementSeries,
   useWeek,
@@ -80,16 +81,11 @@ export default function Istatistikler() {
     return `${dateLabel}${day.isToday ? ", bugün" : ""}, ${statusLabel}`;
   }
 
-  // Fotoğraflı gün → o kaydı aç. Diğer tüm günler (boş / off_day / workout) →
-  // fotoğrafsız gün ekranı, o tarih ön-doldurulmuş olarak (off day işaretlemesi
-  // o ekranın içindeki seçim).
-  function handleDayPress(day: { date: string; id: string | null; type: string | null; isFuture: boolean }) {
-    if (day.isFuture) return;
-    if (day.type === "log" && day.id) {
-      router.push(`/entry/${day.id}`);
-      return;
-    }
-    router.push(`/entry/workout?date=${day.date}`);
+  // Hangi güne dokununca nereye gidileceği lib/dayRoute.ts'te — yıllık takvim
+  // de aynı kuralı kullanıyor, ikisi ayrışmasın.
+  function handleDayPress(day: DayRouteInput) {
+    const route = dayRoute(day);
+    if (route) router.push(route);
   }
 
   const currentTypeId = activeTypeId ?? types?.[0]?.id;

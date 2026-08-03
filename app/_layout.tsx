@@ -57,7 +57,7 @@ const persister = createAsyncStoragePersister({
 // bu sürümü artır — persist edilmiş eski-şekilli cache tamamen atılıp sıfırdan
 // fetch edilir. Aksi halde restore edilen eski veri yeni koda "undefined alan" olarak
 // çarpar (bkz: zaman-kapsulu.tsx measurements alanı eklenince yaşanan çökme).
-const PERSIST_CACHE_BUSTER = "2";
+const PERSIST_CACHE_BUSTER = "3";
 
 // Yetim dosya süpürmesini uygulama açılışında tetikler. Görünür bir şey render
 // etmez. Süpürme fire-and-forget (maybeSweepOrphans kendi içinde günde bir kez

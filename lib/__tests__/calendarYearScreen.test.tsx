@@ -11,23 +11,34 @@ import { render, screen, fireEvent } from "@testing-library/react-native";
  */
 
 const mockUseYearEntries = jest.fn();
+const mockPush = jest.fn();
 
 jest.mock("../entries", () => ({
   useYearEntries: (...args: unknown[]) => mockUseYearEntries(...args),
 }));
 jest.mock("../useAuth", () => ({ useAuth: () => ({ user: { id: "u1" } }) }));
-jest.mock("expo-router", () => ({ router: { back: jest.fn() } }));
+jest.mock("expo-router", () => ({ router: { back: jest.fn(), push: (p: string) => mockPush(p) } }));
 
 import CalendarYear from "@/app/calendar-year";
+import { MONTH_NAMES } from "../date";
 
 const THIS_YEAR = new Date().getFullYear();
 
 /** Bu yılın ocak ayından birkaç gün — takvim her zaman güncel yılı açıyor. */
-const STATUS_MAP: Record<string, string> = {
-  [`${THIS_YEAR}-01-05`]: "log",
-  [`${THIS_YEAR}-01-06`]: "workout",
-  [`${THIS_YEAR}-01-07`]: "off_day",
+const STATUS_MAP: Record<string, { id: string; type: string }> = {
+  [`${THIS_YEAR}-01-05`]: { id: "e1", type: "log" },
+  [`${THIS_YEAR}-01-06`]: { id: "e2", type: "workout" },
+  [`${THIS_YEAR}-01-07`]: { id: "e3", type: "off_day" },
 };
+
+/**
+ * Yarının etiketi — "gelecek gün odak dışında" testi için. Yarın gelecek yıla
+ * düşerse takvim o kutuyu hiç çizmez, sorgu yine boş döner: test her koşulda
+ * anlamlı kalır.
+ */
+const tomorrow = new Date();
+tomorrow.setDate(tomorrow.getDate() + 1);
+const TOMORROW_LABEL = `${tomorrow.getDate()} ${MONTH_NAMES[tomorrow.getMonth()]}`;
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -93,17 +104,25 @@ describe("yıllık takvim — gün durumları", () => {
     // engelli kullanıcı için takvim tamamen boş.
     await render(<CalendarYear />);
 
-    expect(screen.getByLabelText("5 Ocak, fotoğraflı kayıt")).toBeTruthy();
-    expect(screen.getByLabelText("6 Ocak, antrenman günü")).toBeTruthy();
-    expect(screen.getByLabelText("7 Ocak, off day")).toBeTruthy();
+    expect(screen.getByLabelText(/^5 Ocak, fotoğraflı kayıt/)).toBeTruthy();
+    expect(screen.getByLabelText(/^6 Ocak, antrenman günü/)).toBeTruthy();
+    expect(screen.getByLabelText(/^7 Ocak, off day/)).toBeTruthy();
   });
 
-  it("kaydı olmayan günleri odak listesine sokmaz", async () => {
-    // 365 kutunun hepsi odaklanabilir olsaydı ekran okuyucuyla gezinmek
-    // kullanılamaz hâle gelirdi.
+  it("boş geçmiş günleri de odak listesine alır", async () => {
+    // Kutular artık düğme: boş bir güne dokunmak o tarihe kayıt eklemenin
+    // yolu. Odaklanamayan kutu, ekran okuyucu kullanıcısından bu özelliği
+    // tümden gizlerdi.
     await render(<CalendarYear />);
 
-    expect(screen.queryByLabelText("4 Ocak, kayıt yok")).toBeNull();
+    expect(screen.getByLabelText(/^4 Ocak, kayıt yok, ölçüm veya program eklemek için dokun$/)).toBeTruthy();
+  });
+
+  it("gelecek günleri odak dışında bırakır", async () => {
+    // Gelecek gün salt dekor — dokunulamıyor, dolayısıyla odak durağı da olmamalı.
+    await render(<CalendarYear />);
+
+    expect(screen.queryByLabelText(new RegExp(`^${TOMORROW_LABEL},`))).toBeNull();
   });
 
   it("veri boşken çökmez, hiçbir gün işaretli görünmez", async () => {
@@ -120,5 +139,56 @@ describe("yıllık takvim — gün durumları", () => {
     expect(screen.getByText("kayıt")).toBeTruthy();
     expect(screen.getByText("antrenman")).toBeTruthy();
     expect(screen.getByText("off day")).toBeTruthy();
+  });
+});
+
+/**
+ * Takvim eskiden salt görseldi: aylar öncesine dönük bir kayıt (off day dahil)
+ * eklemenin tek yolu hafta şeridinde onlarca hafta geriye tıklamaktı. Kurallar
+ * lib/dayRoute.ts'te ve orada ayrıca test ediliyor; buradaki güvence
+ * DOKUNMANIN doğru güne bağlandığı.
+ */
+describe("yıllık takvim — güne dokunma", () => {
+  it("fotoğraflı güne dokununca o kaydın detayına gider", async () => {
+    await render(<CalendarYear />);
+
+    await fireEvent.press(screen.getByLabelText(/^5 Ocak, fotoğraflı kayıt/));
+
+    expect(mockPush).toHaveBeenCalledWith("/entry/e1");
+  });
+
+  it("off day gününe dokununca fotoğrafsız gün ekranını O TARİHLE açar", async () => {
+    await render(<CalendarYear />);
+
+    await fireEvent.press(screen.getByLabelText(/^7 Ocak, off day/));
+
+    expect(mockPush).toHaveBeenCalledWith(`/entry/workout?date=${THIS_YEAR}-01-07`);
+  });
+
+  it("boş güne dokununca fotoğrafsız gün ekranını O TARİHLE açar", async () => {
+    await render(<CalendarYear />);
+
+    await fireEvent.press(screen.getByLabelText(/^4 Ocak, kayıt yok/));
+
+    expect(mockPush).toHaveBeenCalledWith(`/entry/workout?date=${THIS_YEAR}-01-04`);
+  });
+
+  it("önceki yıla geçtikten sonra O YILIN tarihini gönderir", async () => {
+    // Tarih ay ızgarasından üretiliyor; yıl gezinmesiyle senkron kalmazsa
+    // kullanıcı geçen yılın kutusuna dokunup bu yıla kayıt eklerdi.
+    await render(<CalendarYear />);
+
+    await fireEvent.press(screen.getByLabelText("Önceki yıl"));
+    await fireEvent.press(screen.getByLabelText(/^4 Ocak, kayıt yok/));
+
+    expect(mockPush).toHaveBeenCalledWith(`/entry/workout?date=${THIS_YEAR - 1}-01-04`);
+  });
+
+  it("gelecek güne dokunmak hiçbir şey yapmaz", async () => {
+    await render(<CalendarYear />);
+
+    // Gelecek kutular odak dışında; dokunulabilir olsalardı etiketleri olurdu.
+    expect(screen.queryByLabelText(new RegExp(`^${TOMORROW_LABEL},`))).toBeNull();
+    expect(mockPush).not.toHaveBeenCalled();
   });
 });

@@ -1,6 +1,9 @@
 import type * as NotificationsType from "expo-notifications";
+import { Platform } from "react-native";
 import Constants, { ExecutionEnvironment } from "expo-constants";
 import { supabase } from "./supabase";
+import { captureError } from "./monitoring";
+import { pickMemoryMilestones } from "./memoryMilestones";
 
 // Expo Go, Android'de SDK 53'ten beri expo-notifications'ın native modülünü içermiyor;
 // paket import edilir edilmez (top-level side effect) senkron throw ediyor. Statik
@@ -38,6 +41,40 @@ const MEMORY_ID_PREFIX = "memory-";
 const DAILY_REMINDER_ID = "daily-reminder";
 const STREAK_RISK_ID = "streak-risk";
 
+/**
+ * Android bildirim kanalı.
+ *
+ * Android 8'den beri her bildirim bir kanala ait olmak zorunda. Kanalı biz
+ * tanımlamazsak sistem kendi varsayılanını kullanıyor ve o kanalın önceliği
+ * cihaza göre değişiyor: düşükse bildirim ekranda BELİRMİYOR, sessizce bildirim
+ * gölgesine düşüyor. Zamanlanmış bildirimlerde `channelId: null` görülmesinin
+ * sebebi buydu — bir telefonda çalışıp diğerinde "hiç gelmedi" denmesi de.
+ *
+ * Tek kanal kullanıyoruz, bildirim türü başına ayrı ayrı değil: uygulamanın
+ * kendi içinde zaten üç ayrı anahtar var ve kullanıcı neyi isteyip istemediğini
+ * oradan seçiyor. Ayrı kanallar olsaydı, Android ayarlarından kapatılan bir
+ * kanal uygulamadaki anahtarı yalancı çıkarırdı (anahtar açık görünür, bildirim
+ * gelmez).
+ */
+const CHANNEL_ID = "reminders";
+
+/**
+ * Kanalı oluşturur (varsa günceller). Bildirim zamanlamadan önce çağrılmalı —
+ * var olmayan bir kanala gönderilen bildirim Android tarafından düşürülür.
+ * Android dışında no-op.
+ */
+export async function ensureNotificationChannel() {
+  if (!Notifications || Platform.OS !== "android") return;
+  await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
+    name: "Hatırlatmalar",
+    description: "Günlük hatırlatma, geçmiş anılar ve seri uyarıları",
+    // HIGH: bildirim ekranın üstünde banner olarak belirsin ve ses çıkarsın.
+    // Kullanıcı bunu Android ayarlarından kısabilir — son söz onda.
+    importance: Notifications.AndroidImportance.HIGH,
+    lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+  });
+}
+
 // Aynı öneke sahip (prefix) bildirimleri tek tek bulup iptal eder — expo-notifications'ın
 // "cancelAll" fonksiyonu HER bildirimi (diğer türler dahil) siliyor, bu üç bildirim türü
 // (anı/günlük/seri) birbirini ezmesin diye kendi kimlikleriyle scope'lanmış şekilde iptal ediyoruz.
@@ -56,11 +93,14 @@ async function cancelByPrefix(prefix: string) {
  * Sunucudan push gerektirmez: cihaz kendi geçmiş kayıtlarını bilir,
  * bu yüzden zamanlama tamamen yerelde yapılır.
  *
- * Strateji: 1 ay, 3 ay, 6 ay, 1 yıl, ve her yıl dönümü için,
- * o tarihte bir entry varsa yerel bildirim kur.
+ * Hepsi DEĞİL, yalnızca en yakın MAX_MEMORY_NOTIFICATIONS tanesi kuruluyor —
+ * gerekçesi lib/memoryMilestones.ts'te (işletim sisteminin bekleyen bildirim
+ * sınırı). Uzaktakiler her uygulama açılışında tazelenen listeyle sıraları
+ * gelince kuruluyor (bkz. refreshMemoryNotifications).
  */
 export async function scheduleMemoryNotifications(userId: string, reminderTime: string) {
   if (!Notifications) return;
+  await ensureNotificationChannel();
   await cancelByPrefix(MEMORY_ID_PREFIX);
 
   const { data: entries } = await supabase
@@ -71,34 +111,45 @@ export async function scheduleMemoryNotifications(userId: string, reminderTime: 
 
   if (!entries) return;
 
-  const [hour, minute] = reminderTime.split(":").map(Number);
-  const milestones = [1, 3, 6, 12]; // ay cinsinden
+  const milestones = pickMemoryMilestones(entries, reminderTime, new Date());
 
-  for (const entry of entries) {
-    const entryDate = new Date(entry.date);
+  for (const milestone of milestones) {
+    const label =
+      milestone.months < 12
+        ? `${milestone.months} ay önce bugün`
+        : `${milestone.months / 12} yıl önce bugün`;
 
-    for (const months of milestones) {
-      const targetDate = new Date(entryDate);
-      targetDate.setMonth(targetDate.getMonth() + months);
-      // Saati geçmiş kontrolünden ÖNCE uygula: aksi halde yıldönümü bugüne denk
-      // gelip hatırlatma saati çoktan geçmişse, kontrol (gece yarısı ile) geçiyor
-      // ama sonradan set edilen saat geçmişte kalıyor ve bildirim ya anında
-      // tetikleniyor ya da hiç kurulmuyordu.
-      targetDate.setHours(hour, minute, 0, 0);
-      if (targetDate <= new Date()) continue; // geçmişteyse zamanlamaya gerek yok
+    await Notifications.scheduleNotificationAsync({
+      identifier: `${MEMORY_ID_PREFIX}${milestone.entryId}-${milestone.months}`,
+      content: {
+        title: `${label} 📸`,
+        body: milestone.note ?? "O günkü haline bir bak.",
+        data: { entryId: milestone.entryId },
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: milestone.date,
+        channelId: CHANNEL_ID,
+      },
+    });
+  }
+}
 
-      const label = months < 12 ? `${months} ay önce bugün` : `${months / 12} yıl önce bugün`;
-
-      await Notifications.scheduleNotificationAsync({
-        identifier: `${MEMORY_ID_PREFIX}${entry.id}-${months}`,
-        content: {
-          title: `${label} 📸`,
-          body: entry.note ?? "O günkü haline bir bak.",
-          data: { entryId: entry.id },
-        },
-        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: targetDate },
-      });
-    }
+/**
+ * Uygulama açılışında "geçmiş anı" bildirimlerini yeniden kurar.
+ *
+ * Sınır yüzünden yalnızca en yakın N tanesini zamanlıyoruz; tetiklenenlerin
+ * yerine sıradakiler ancak yeniden hesaplanınca giriyor. Bu olmadan, ilk N
+ * bildirim tükendikten sonra kullanıcı bir daha hiç anı bildirimi almazdı —
+ * üstelik hiçbir hata belirtisi olmadan.
+ *
+ * Bakım işi: kullanıcı akışını bloklamamalı, hatası kullanıcıya gösterilmemeli.
+ */
+export async function refreshMemoryNotifications(userId: string, reminderTime: string) {
+  try {
+    await scheduleMemoryNotifications(userId, reminderTime);
+  } catch (err) {
+    captureError(err, { where: "notifications.refreshMemory" });
   }
 }
 
@@ -130,7 +181,11 @@ export async function scheduleStreakRiskNotification(currentStreak: number, hasL
       title: "Serin risk altında! 🔥",
       body: `${currentStreak} günlük serin bugün bozulmak üzere. Hemen bir fotoğraf ekle.`,
     },
-    trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: triggerDate },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DATE,
+      date: triggerDate,
+      channelId: CHANNEL_ID,
+    },
   });
 }
 
@@ -142,6 +197,7 @@ export async function cancelStreakRiskNotification() {
 /** Günlük "bugün kaydetmeyi unutma" hatırlatması */
 export async function scheduleDailyReminder(reminderTime: string) {
   if (!Notifications) return;
+  await ensureNotificationChannel();
   const [hour, minute] = reminderTime.split(":").map(Number);
 
   await Notifications.cancelScheduledNotificationAsync(DAILY_REMINDER_ID).catch(() => {});
@@ -151,7 +207,12 @@ export async function scheduleDailyReminder(reminderTime: string) {
       title: "Bugünkü fotoğrafını çekmeyi unutma!",
       body: "Her gün kaydettiğin anılar, gelecekteki senin en büyük hediyesi.",
     },
-    trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour, minute },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
+      hour,
+      minute,
+      channelId: CHANNEL_ID,
+    },
   });
 }
 

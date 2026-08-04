@@ -19,6 +19,8 @@ import {
 import { AuthProvider, useAuth } from "@/lib/useAuth";
 import { registerEntryMutationDefaults, QUERY_CACHE_STORAGE_KEY } from "@/lib/entryMutations";
 import { maybeSweepOrphans } from "@/lib/orphanSweep";
+import { refreshMemoryNotifications } from "@/lib/notifications";
+import { useNotificationSettings } from "@/lib/notificationSettings";
 import { initMonitoring } from "@/lib/monitoring";
 import { CaptureOptionsSheet } from "@/components/CaptureOptionsSheet";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -76,6 +78,34 @@ function OrphanSweeper() {
   return null;
 }
 
+/**
+ * "Geçmiş anı" bildirimlerini açılışta yeniden kurar.
+ *
+ * İşletim sisteminin bekleyen bildirim sınırı yüzünden aynı anda yalnızca en
+ * yakın N tanesi zamanlanıyor (bkz. lib/memoryMilestones.ts). Tetiklenenlerin
+ * yerine sıradakiler ancak yeniden hesaplanınca giriyor — bu olmadan ilk parti
+ * tükendikten sonra kullanıcı bir daha hiç anı bildirimi almazdı.
+ *
+ * OrphanSweeper ile aynı desen: görünür bir şey render etmez, açılışla
+ * yarışmasın diye geciktirilir, hatası kullanıcıya gösterilmez.
+ */
+function MemoryNotificationRefresher() {
+  const { user } = useAuth();
+  const userId = user?.id;
+  const { data: settings } = useNotificationSettings(userId);
+  const enabled = settings?.past_memory_enabled;
+  const reminderTime = settings?.reminder_time;
+
+  useEffect(() => {
+    if (!userId || !enabled || !reminderTime) return;
+    const t = setTimeout(() => {
+      refreshMemoryNotifications(userId, reminderTime);
+    }, 6000);
+    return () => clearTimeout(t);
+  }, [userId, enabled, reminderTime]);
+  return null;
+}
+
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
@@ -108,6 +138,7 @@ export default function RootLayout() {
         >
           <AuthProvider>
             <OrphanSweeper />
+            <MemoryNotificationRefresher />
             <StatusBar style="light" />
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="(onboarding)/welcome" />

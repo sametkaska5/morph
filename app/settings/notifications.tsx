@@ -103,6 +103,7 @@ export default function NotificationSettingsScreen() {
     if (next && !(await ensurePermission())) return;
     updateMutation.mutate({ daily_reminder_enabled: next });
     if (next) {
+      console.log(`[teşhis] zamanlanıyor, saat: ${settings.reminder_time}`);
       await scheduleDailyReminder(settings.reminder_time);
     } else {
       await cancelDailyReminder();

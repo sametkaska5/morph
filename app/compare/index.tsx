@@ -105,7 +105,11 @@ function ComparisonBody({ data }: { data: ComparisonData }) {
         return;
       }
       const uri = await capturePhotoBlock();
-      await MediaLibrary.saveToLibraryAsync(uri);
+      // SDK 57'de saveToLibraryAsync kullanımdan kalktı (çağrılınca throw ediyor);
+      // yerini sınıf tabanlı Asset.create aldı. Bu hata Expo Go'da hiç ortaya
+      // çıkmıyordu çünkü orada modül zaten yüklenemiyor ve kod bu satıra hiç
+      // gelmiyordu — dev build'e geçince görünür oldu.
+      await MediaLibrary.Asset.create(uri);
       Alert.alert("Kaydedildi", "Karşılaştırma görseli galerine kaydedildi.");
     } catch (err) {
       alertError("Kaydetme başarısız", err, "compare.saveToLibrary");

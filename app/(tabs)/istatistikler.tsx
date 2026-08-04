@@ -198,7 +198,9 @@ export default function Istatistikler() {
           Alert.alert("İzin gerekli", "Galeriye kaydetmek için fotoğraf erişim izni vermelisin.");
           return;
         }
-        await MediaLibrary.saveToLibraryAsync(uri);
+        // SDK 57: saveToLibraryAsync kaldırıldı, yerine Asset.create
+        // (compare/index.tsx ile aynı düzeltme).
+        await MediaLibrary.Asset.create(uri);
         Alert.alert("Kaydedildi", "Paylaşım kartı galerine kaydedildi.");
       } else {
         const available = await Sharing.isAvailableAsync();

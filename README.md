@@ -164,6 +164,33 @@ Native köprü gerektiren kütüphaneler `jest.setup.js`'te merkezî olarak takl
 
 > `helpers/` klasörü `testPathIgnorePatterns` ile hariç tutulmuş; oraya test değil yalnızca yardımcı koy.
 
+## Dağıtım
+
+Proje **development build** ile geliştiriliyor (Expo Go değil) — `expo-notifications` ve `expo-media-library` gibi native modüller Expo Go'da yok.
+
+```bash
+eas build --profile development --platform android   # geliştirme (Metro'ya bağlanır)
+eas build --profile preview --platform android       # test kullanıcısına verilen bağımsız APK
+```
+
+Ortam değişkenleri `.env`'den gelmiyor — `.env` gitignore'da ve EAS onu görmüyor. Her ortama ayrı ayrı yüklenmesi gerekiyor, aksi halde build başarılı olur ama uygulama Supabase'e bağlanamaz:
+
+```bash
+eas env:push preview --path .env
+```
+
+### Kablosuz güncelleme (EAS Update)
+
+JS değişiklikleri yeni build almadan gönderilebiliyor. Build profilleri kanallara bağlı (`development` / `preview` / `production`):
+
+```bash
+eas update --branch preview --message "galeri kaydı düzeltildi"
+```
+
+**`runtimeVersion` politikası `fingerprint`** — bu bilinçli bir seçim. Fingerprint, native bağımlılık kümesinin özeti: `package.json`'daki native paketler ya da plugin'ler değişince otomatik değişiyor ve eski build'ler uyumsuz JS'i **almıyor**. Elle yönetilen bir sürüm numarası olsaydı, native tarafı değişmiş bir güncelleme eski binary'ye inip uygulamayı açılışta çökertebilirdi (bkz. worklets/reanimated sürüm uyuşmazlığı geçmişi).
+
+Pratikte: JS-only değişiklik → `eas update` yeter. Native değişiklik (yeni paket, plugin, sabitlenmiş sürümlerin kaldırılması) → yeni build şart.
+
 ## Kalite kontrolleri
 
 Üç komut projenin kalite kapısı — üçü de temiz geçmeden değişiklik gönderme:

@@ -8,6 +8,12 @@
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0A0A08",
     "icon": "./assets/images/icon.png",
+    "updates": {
+      "url": "https://u.expo.dev/2131b708-cd8d-4e16-bce0-febe12619e10"
+    },
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
     "plugins": [
       "expo-router",
       "expo-status-bar",

@@ -209,11 +209,11 @@ Biçimlendirme Prettier'ın işi (`npm run format` yazar, `npm run format:check`
 
 Ana akışlar uçtan uca çalışır durumda: auth, kayıt oluşturma/düzenleme/silme, fotoğrafsız gün ve antrenman programı, offline ekleme + geri senkronizasyon, karşılaştırma, istatistikler, paylaşılabilir kart, bildirimler, profil ve ayarlar.
 
-Kalite kapısının üçü de temiz: ESLint sıfır sorun, `tsc --noEmit` temiz, 31 test paketi / 341 test geçiyor. Kod tabanında `any` yok — `@typescript-eslint/no-explicit-any` hata seviyesinde açık.
+Kalite kapısının üçü de temiz: ESLint sıfır sorun, `tsc --noEmit` temiz, 32 test paketi / 361 test geçiyor. Kod tabanında `any` yok — `@typescript-eslint/no-explicit-any` hata seviyesinde açık.
 
 ## Bilinen açık uçlar
 
 - Onboarding tek ekranda (`welcome.tsx`); planlanan ek adımlar henüz yok.
-- Yasal metinler, onboarding, `settings/help.tsx`, `settings/measurements.tsx`, `(tabs)/profil.tsx` ve `(auth)/index.tsx`'in render testi yok. Veri yazan akışların (yeni kayıt, düzenleme, fotoğrafsız gün, program, bildirim ayarları, profil düzenleme) hepsi testli.
+- Yasal metinler, onboarding, `settings/help.tsx`, `settings/measurements.tsx` ve `(tabs)/profil.tsx`'in render testi yok. Veri yazan akışların (yeni kayıt, düzenleme, fotoğrafsız gün, program, bildirim ayarları, profil düzenleme, giriş/kayıt) hepsi testli.
 - `npm run gen:types` yalnızca proje Supabase CLI'a link'liyken çalışır; aksi halde `lib/database.types.ts` elle güncellenmeli.
 - Galeriye kaydetme (`app/compare/index.tsx`), `expo-media-library`'yi try/catch'li `require` ile yüklüyor: bu native modül Expo Go'da bulunmadığı için import anında throw eder, yakalanır ve "Kaydet" bilinçli olarak devre dışı kalıp kullanıcıyı development build'e / "Paylaş"a yönlendirir. Beklenen davranış — galeri kaydı için development/production build gerekir.

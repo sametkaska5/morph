@@ -18,25 +18,32 @@ export default function ForgotPasswordScreen() {
 
   async function handleSendCode() {
     setErrorMsg(null);
-    if (!email) {
+    // Boşluklu e-posta Supabase'de başka bir kimlik — kod hiç gelmez ve
+    // kullanıcı neden gelmediğini anlayamaz (bkz. (auth)/index.tsx).
+    const cleanEmail = email.trim();
+    if (!cleanEmail) {
       setErrorMsg("E-posta gerekli.");
       return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail);
     setLoading(false);
     if (error) {
       setErrorMsg(authErrorMessage(error));
       captureError(error, { where: "auth.resetPasswordForEmail" });
       return;
     }
-    setInfoMsg(`${email} adresine bir doğrulama kodu gönderdik.`);
+    setInfoMsg(`${cleanEmail} adresine bir doğrulama kodu gönderdik.`);
     setStep("reset");
   }
 
   async function handleResetPassword() {
     setErrorMsg(null);
-    if (!code || !password) {
+    // Kod çoğunlukla e-postadan kopyalanıyor ve yanında boşluk geliyor;
+    // boşluklu kod "Kod hatalı" hatası veriyordu.
+    const cleanCode = code.trim();
+    const cleanEmail = email.trim();
+    if (!cleanCode || !password) {
       setErrorMsg("Kod ve yeni şifre gerekli.");
       return;
     }
@@ -46,7 +53,11 @@ export default function ForgotPasswordScreen() {
     }
     setLoading(true);
 
-    const { error: verifyError } = await supabase.auth.verifyOtp({ email, token: code, type: "recovery" });
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      email: cleanEmail,
+      token: cleanCode,
+      type: "recovery",
+    });
     if (verifyError) {
       setLoading(false);
       setErrorMsg(authErrorMessage(verifyError));

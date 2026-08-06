@@ -1,6 +1,6 @@
 /**
  * Supabase veritabanı tipleri — supabase/migrations/ altındaki şemanın
- * (0001…0012) TypeScript karşılığı, `supabase gen types` çıktı formatında.
+ * (0001…0013) TypeScript karşılığı, `supabase gen types` çıktı formatında.
  *
  * NASIL GÜNCELLENİR: Yeni bir migration şemayı değiştirdiğinde bu dosyayı da
  * güncelle. Proje Supabase CLI ile link'liyse (supabase link --project-ref …)

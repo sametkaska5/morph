@@ -1,6 +1,6 @@
-import { Alert } from "react-native";
 import { actionErrorMessage } from "./errors";
 import { captureError } from "./monitoring";
+import { showAlert } from "./appAlert";
 
 /**
  * Başarısız bir eylemi kullanıcıya bildirir VE izlemeye raporlar.
@@ -18,5 +18,7 @@ import { captureError } from "./monitoring";
  */
 export function alertError(title: string, error: unknown, where: string) {
   captureError(error, { where });
-  Alert.alert(title, actionErrorMessage(error));
+  // Native Alert yerine uygulamanın temalı kutusu — tek satır değişikliği,
+  // ama alertError'ı çağıran BÜTÜN hata yollarını birden kapsıyor.
+  showAlert(title, actionErrorMessage(error), "danger");
 }

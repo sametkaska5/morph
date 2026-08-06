@@ -1,9 +1,9 @@
-import { Alert } from "react-native";
 import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { useCaptureStore } from "@/lib/captureStore";
 import { useCaptureSheetStore } from "@/lib/captureSheetStore";
+import { showAlert } from "@/lib/appAlert";
 
 const MAX_DIMENSION = 1280;
 const JPEG_QUALITY = 0.75;
@@ -42,7 +42,7 @@ export async function resizeAndCompress(uri: string) {
 // basıyor, hiçbir şey olmuyor ve nedenini anlayamıyordu. Artık ne yapması gerektiğini
 // söyleyen bir uyarı gösteriyoruz.
 function warnPermissionDenied(kind: "kamera" | "galeri") {
-  Alert.alert(
+  showAlert(
     "İzin gerekli",
     kind === "kamera"
       ? "Fotoğraf çekebilmek için kamera iznini cihaz ayarlarından açman gerekiyor."
@@ -149,7 +149,7 @@ async function handleResult(result: ImagePicker.ImagePickerResult | undefined) {
       // yapılamaz. processing'i kapatıyoruz; new.tsx base64 yoksa zaten
       // kaydetmeyi engelliyor.
       useCaptureStore.getState().patchPhoto({ processing: false });
-      Alert.alert("Fotoğraf işlenemedi", (err as Error).message);
+      showAlert("Fotoğraf işlenemedi", (err as Error).message, "danger");
     }
   }
 }

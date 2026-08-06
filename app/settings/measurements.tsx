@@ -3,10 +3,10 @@ import {
   View,
   Pressable,
   ActivityIndicator,
-  Alert,
   ScrollView,
   type TextInput as RNTextInput,
 } from "react-native";
+import { showAlert } from "@/lib/appAlert";
 import { Text, TextInput } from "@/components/Typography";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
@@ -44,7 +44,7 @@ export default function MeasurementSettingsScreen() {
 
   function handleAdd() {
     if (!name.trim() || !unit.trim()) {
-      Alert.alert("Eksik bilgi", "İsim ve birim alanları boş bırakılamaz.");
+      showAlert("Eksik bilgi", "İsim ve birim alanları boş bırakılamaz.");
       return;
     }
     addMutation.mutate(

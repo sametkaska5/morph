@@ -1,5 +1,6 @@
 import { useRef, useState, type ComponentProps } from "react";
-import { View, Pressable, Platform, Alert, ScrollView, ActivityIndicator } from "react-native";
+import { View, Pressable, Platform, ScrollView, ActivityIndicator } from "react-native";
+import { showAlert } from "@/lib/appAlert";
 import { Text, TextInput } from "@/components/Typography";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -100,7 +101,7 @@ export default function WorkoutDayScreen() {
       return s === "invalid" || s === "negative" || s === "too_high";
     });
     if (hasInvalid) {
-      Alert.alert("Geçersiz ölçüm", "Bazı ölçüm değerleri geçerli değil. Kırmızı uyarıları düzeltip tekrar dene.");
+      showAlert("Geçersiz ölçüm", "Bazı ölçüm değerleri geçerli değil. Kırmızı uyarıları düzeltip tekrar dene.");
       return;
     }
 

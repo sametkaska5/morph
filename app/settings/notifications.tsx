@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { View, Pressable, Switch, ActivityIndicator, Platform, Alert } from "react-native";
+import { View, Pressable, Switch, ActivityIndicator, Platform } from "react-native";
+import { showAlert } from "@/lib/appAlert";
 import { Text } from "@/components/Typography";
 import { router } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -71,7 +72,7 @@ export default function NotificationSettingsScreen() {
 
   async function ensurePermission() {
     if (!NOTIFICATIONS_AVAILABLE) {
-      Alert.alert(
+      showAlert(
         "Bu özellik Expo Go'da desteklenmiyor",
         "Yerel bildirimler için development build gerekiyor. Tercihini yine de kaydediyoruz, development build'e geçince otomatik devreye girecek."
       );
@@ -79,7 +80,7 @@ export default function NotificationSettingsScreen() {
     }
     const granted = await requestNotificationPermission();
     if (!granted) {
-      Alert.alert(
+      showAlert(
         "Bildirim izni verilmedi",
         "Bu özelliği kullanabilmek için cihaz ayarlarından Remory'e bildirim izni vermen gerekiyor."
       );
@@ -103,7 +104,6 @@ export default function NotificationSettingsScreen() {
     if (next && !(await ensurePermission())) return;
     updateMutation.mutate({ daily_reminder_enabled: next });
     if (next) {
-      console.log(`[teşhis] zamanlanıyor, saat: ${settings.reminder_time}`);
       await scheduleDailyReminder(settings.reminder_time);
     } else {
       await cancelDailyReminder();

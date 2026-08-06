@@ -1,5 +1,4 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react-native";
-import { Alert } from "react-native";
 import type { NotificationSettings } from "../notificationSettings";
 
 /**
@@ -24,6 +23,7 @@ const mockCancelMemory = jest.fn();
 const mockScheduleDaily = jest.fn();
 const mockCancelDaily = jest.fn();
 const mockCancelStreak = jest.fn();
+const mockShowAlert = jest.fn();
 /** Expo Go'da native modül yok; testler bunu tek tek değiştirebilsin diye getter. */
 let mockNotificationsAvailable = true;
 
@@ -44,6 +44,8 @@ jest.mock("../notifications", () => ({
   cancelStreakRiskNotification: () => mockCancelStreak(),
 }));
 jest.mock("expo-router", () => ({ router: { back: jest.fn() } }));
+// Uyarılar artık native Alert değil, uygulamanın temalı global kutusu.
+jest.mock("../appAlert", () => ({ showAlert: (...a: unknown[]) => mockShowAlert(...a) }));
 
 // Saat seçici: gerçek native bileşen yerine, seçimi tetikleyebileceğimiz sade
 // bir düğme (statsScreen.test.tsx'teki grafik taklidiyle aynı desen).
@@ -80,7 +82,6 @@ beforeEach(() => {
   mockUseAuth.mockReturnValue({ user: { id: "u1" } });
   mockUseSettings.mockReturnValue({ data: SETTINGS, isLoading: false });
   mockRequestPermission.mockResolvedValue(true);
-  jest.spyOn(Alert, "alert").mockImplementation(() => {});
 });
 
 describe("bildirim ayarları — görüntüleme", () => {
@@ -157,7 +158,7 @@ describe("bildirim ayarları — izin akışı", () => {
 
     await fireEvent(screen.getByLabelText("Geçmiş anı hatırlatmaları"), "valueChange", true);
 
-    await waitFor(() => expect(Alert.alert).toHaveBeenCalled());
+    await waitFor(() => expect(mockShowAlert).toHaveBeenCalled());
     expect(mockMutate).not.toHaveBeenCalled();
     expect(mockScheduleMemory).not.toHaveBeenCalled();
   });

@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
-import { View, Image, ScrollView, Pressable, ActivityIndicator, Alert } from "react-native";
+import { View, Image, ScrollView, Pressable, ActivityIndicator } from "react-native";
+import { showAlert } from "@/lib/appAlert";
 import { Text } from "@/components/Typography";
 import { router, useLocalSearchParams } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
@@ -89,7 +90,7 @@ function ComparisonBody({ data }: { data: ComparisonData }) {
 
   async function handleSave() {
     if (!MediaLibrary) {
-      Alert.alert(
+      showAlert(
         "Bu özellik Expo Go'da desteklenmiyor",
         "Galeriye kaydetmek için development build gerekiyor. Bu arada 'Paylaş' ile görseli doğrudan gönderebilirsin."
       );
@@ -101,7 +102,7 @@ function ComparisonBody({ data }: { data: ComparisonData }) {
       // (iOS'ta "Yalnızca Fotoğraf Ekle", Android'de medya-okuma iznini atlar)
       const { status } = await MediaLibrary.requestPermissionsAsync(true);
       if (status !== "granted") {
-        Alert.alert("İzin gerekli", "Galeriye kaydetmek için fotoğraf erişim izni vermelisin.");
+        showAlert("İzin gerekli", "Galeriye kaydetmek için fotoğraf erişim izni vermelisin.");
         return;
       }
       const uri = await capturePhotoBlock();
@@ -110,7 +111,7 @@ function ComparisonBody({ data }: { data: ComparisonData }) {
       // çıkmıyordu çünkü orada modül zaten yüklenemiyor ve kod bu satıra hiç
       // gelmiyordu — dev build'e geçince görünür oldu.
       await MediaLibrary.Asset.create(uri);
-      Alert.alert("Kaydedildi", "Karşılaştırma görseli galerine kaydedildi.");
+      showAlert("Kaydedildi", "Karşılaştırma görseli galerine kaydedildi.");
     } catch (err) {
       alertError("Kaydetme başarısız", err, "compare.saveToLibrary");
     } finally {
@@ -124,7 +125,7 @@ function ComparisonBody({ data }: { data: ComparisonData }) {
       const uri = await capturePhotoBlock();
       const available = await Sharing.isAvailableAsync();
       if (!available) {
-        Alert.alert("Paylaşım desteklenmiyor", "Bu cihazda paylaşım özelliği kullanılamıyor.");
+        showAlert("Paylaşım desteklenmiyor", "Bu cihazda paylaşım özelliği kullanılamıyor.");
         return;
       }
       await Sharing.shareAsync(uri, { mimeType: "image/png" });

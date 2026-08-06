@@ -141,6 +141,7 @@ supabase/migrations/   0001–0010 şema + RLS + storage politikaları, antrenma
 - **Veri erişimi ekranlarda değil `lib/` içinde.** Ekranlar `useTimelineEntries()` gibi hook'ları çağırır; `supabase.from(...)` yazmaz. Yeni bir sorgu eklerken hook'u ilgili lib modülüne koy.
 - **Query anahtarları `lib/queryKeys.ts`'ten gelir**, elle dizi yazılmaz. Aile yapısı sayesinde `invalidateQueries({ queryKey: queryKeys.entries.all })` tüm girdi listelerini birden tazeler.
 - **Ham hata metni kullanıcıya asla gösterilmez.** Sorgu hatası → `<ErrorState error={error} onRetry={...} />`; eylem hatası → `alertError("Başlık", err, "modul.islem")`; auth akışı → `authErrorMessage(error)`.
+- **Native `Alert.alert` kullanılmaz.** Bilgi/uyarı için `showAlert(baslik, mesaj)` (bkz. `lib/appAlert.ts`), onay gerektiren yıkıcı işlemler için `<ConfirmDialog>`. Alert sistemin kendi penceresi: koyu temanın ortasında beyaz bir kutu olarak belirir, iOS/Android'de bambaşka görünür ve testte içeriği okunamaz. `showAlert` React dışından da çağrılabilir, o yüzden modüllerde de kullanılabiliyor.
 - **Hata, boşlukla karıştırılmaz.** Bir sorgu patladığında `isLoading` da false olur ve `data` undefined kalır: hata dalı yazılmazsa ekran "hiç kaydın yok" gibi görünür. Form ekranlarında bu daha ağır — boş dolan formun üstüne basılan "Kaydet" var olan veriyi siler. Bu yüzden **veri okuyan her form, sorgu hata verdiğinde hiç açılmaz**; hydration koşulları da `!error` içerir.
 - **Offline-first**: mutasyonlar çevrimdışıyken kuyruğa alınır (`registerEntryMutationDefaults` + `resumePausedMutations`), önbellek AsyncStorage'a kalıcılaştırılır. Bir sorgunun veri şekli değişirse `app/_layout.tsx`'teki `PERSIST_CACHE_BUSTER`'ı artır.
 
@@ -209,7 +210,7 @@ Biçimlendirme Prettier'ın işi (`npm run format` yazar, `npm run format:check`
 
 Ana akışlar uçtan uca çalışır durumda: auth, kayıt oluşturma/düzenleme/silme, fotoğrafsız gün ve antrenman programı, offline ekleme + geri senkronizasyon, karşılaştırma, istatistikler, paylaşılabilir kart, bildirimler, profil ve ayarlar.
 
-Kalite kapısının üçü de temiz: ESLint sıfır sorun, `tsc --noEmit` temiz, 34 test paketi / 389 test geçiyor. Kod tabanında `any` yok — `@typescript-eslint/no-explicit-any` hata seviyesinde açık.
+Kalite kapısının üçü de temiz: ESLint sıfır sorun, `tsc --noEmit` temiz, 35 test paketi / 396 test geçiyor. Kod tabanında `any` yok — `@typescript-eslint/no-explicit-any` hata seviyesinde açık.
 
 ## Bilinen açık uçlar
 

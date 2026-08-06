@@ -1,5 +1,4 @@
 import { render, screen, fireEvent } from "@testing-library/react-native";
-import { Alert } from "react-native";
 import type { MeasurementType } from "../measurementTypes";
 
 /**
@@ -28,6 +27,7 @@ const mockUseUnitPreference = jest.fn();
 const mockMutate = jest.fn();
 const mockClearPhoto = jest.fn();
 const mockReplace = jest.fn();
+const mockShowAlert = jest.fn();
 const mockBack = jest.fn();
 let mockPhoto: { uri: string; base64?: string; thumbBase64?: string; takenAt?: string } | null = null;
 
@@ -53,6 +53,8 @@ jest.mock("expo-router", () => ({
 }));
 jest.mock("@react-native-community/datetimepicker", () => "DateTimePicker");
 jest.mock("../alerts", () => ({ alertError: jest.fn() }));
+// Uyarılar artık native Alert değil, uygulamanın temalı global kutusu.
+jest.mock("../appAlert", () => ({ showAlert: (...a: unknown[]) => mockShowAlert(...a) }));
 jest.mock("@tanstack/react-query", () => ({
   useQueryClient: () => ({
     cancelQueries: jest.fn(),
@@ -78,7 +80,6 @@ beforeEach(() => {
   mockUseMeasurementTypes.mockReturnValue({ data: TYPES });
   mockUseUnitPreference.mockReturnValue({ data: "metric" });
   mockPhoto = READY_PHOTO;
-  jest.spyOn(Alert, "alert").mockImplementation(() => {});
 });
 
 afterEach(() => {
@@ -109,7 +110,7 @@ describe("yeni kayıt — fotoğrafın hazır olması", () => {
     await fireEvent.press(screen.getByLabelText("Kaydı kaydet"));
 
     expect(mockMutate).not.toHaveBeenCalled();
-    expect(Alert.alert).toHaveBeenCalled();
+    expect(mockShowAlert).toHaveBeenCalled();
   });
 });
 
@@ -121,7 +122,7 @@ describe("yeni kayıt — ölçüm doğrulama", () => {
     await fireEvent.press(screen.getByLabelText("Kaydı kaydet"));
 
     expect(mockMutate).not.toHaveBeenCalled();
-    expect(Alert.alert).toHaveBeenCalled();
+    expect(mockShowAlert).toHaveBeenCalled();
   });
 
   it("negatif ölçüm varken kaydetmez", async () => {

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { View, ScrollView, Pressable, ActivityIndicator, Alert, Image, Modal, RefreshControl } from "react-native";
+import { View, ScrollView, Pressable, ActivityIndicator, Image, Modal, RefreshControl } from "react-native";
+import { showAlert } from "@/lib/appAlert";
 import { Text } from "@/components/Typography";
 import { useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
@@ -176,7 +177,7 @@ export default function Istatistikler() {
 
   async function handleShareCard(kind: "save" | "share") {
     if (!shareCardRef.current) {
-      Alert.alert("Ön izleme hazır değil", "Kart henüz oluşturulmadı, lütfen tekrar dene.");
+      showAlert("Ön izleme hazır değil", "Kart henüz oluşturulmadı, lütfen tekrar dene.");
       return;
     }
 
@@ -185,7 +186,7 @@ export default function Istatistikler() {
       const uri = await captureRef(shareCardRef, { format: "png", quality: 1 });
       if (kind === "save") {
         if (!MediaLibrary) {
-          Alert.alert(
+          showAlert(
             "Bu özellik Expo Go'da desteklenmiyor",
             "Galeriye kaydetmek için development build gerekiyor. Bu arada 'Paylaş' ile görseli doğrudan gönderebilirsin."
           );
@@ -195,17 +196,17 @@ export default function Istatistikler() {
         // (compare/index.tsx ile aynı yaklaşım — iOS "Yalnızca Fotoğraf Ekle").
         const { status } = await MediaLibrary.requestPermissionsAsync(true);
         if (status !== "granted") {
-          Alert.alert("İzin gerekli", "Galeriye kaydetmek için fotoğraf erişim izni vermelisin.");
+          showAlert("İzin gerekli", "Galeriye kaydetmek için fotoğraf erişim izni vermelisin.");
           return;
         }
         // SDK 57: saveToLibraryAsync kaldırıldı, yerine Asset.create
         // (compare/index.tsx ile aynı düzeltme).
         await MediaLibrary.Asset.create(uri);
-        Alert.alert("Kaydedildi", "Paylaşım kartı galerine kaydedildi.");
+        showAlert("Kaydedildi", "Paylaşım kartı galerine kaydedildi.");
       } else {
         const available = await Sharing.isAvailableAsync();
         if (!available) {
-          Alert.alert("Paylaşım desteklenmiyor", "Bu cihazda paylaşım özelliği kullanılamıyor.");
+          showAlert("Paylaşım desteklenmiyor", "Bu cihazda paylaşım özelliği kullanılamıyor.");
           return;
         }
         await Sharing.shareAsync(uri, { mimeType: "image/png" });

@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
-import { View, Image, Pressable, Platform, Alert, ScrollView, ActivityIndicator } from "react-native";
+import { View, Image, Pressable, Platform, ScrollView, ActivityIndicator } from "react-native";
+import { showAlert } from "@/lib/appAlert";
 import { Text, TextInput } from "@/components/Typography";
 import { router } from "expo-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -90,12 +91,12 @@ export default function NewEntry() {
   function handleSave() {
     if (!user) return;
     if (!photo) {
-      Alert.alert("Fotoğraf bulunamadı", "Kaydetmeden önce bir fotoğraf çekmen/seçmen gerekiyor.");
+      showAlert("Fotoğraf bulunamadı", "Kaydetmeden önce bir fotoğraf çekmen/seçmen gerekiyor.");
       return;
     }
     if (!photo.base64) {
       // Arka plan küçültme henüz bitmedi — birkaç saniye içinde hazır olur.
-      Alert.alert("Fotoğraf hazırlanıyor", "Fotoğraf işleniyor, bir saniye sonra tekrar dene.");
+      showAlert("Fotoğraf hazırlanıyor", "Fotoğraf işleniyor, bir saniye sonra tekrar dene.");
       return;
     }
     // Geçersiz / negatif / makul olmayan yüksek bir değer varsa kaydetme —
@@ -107,7 +108,7 @@ export default function NewEntry() {
       return s === "invalid" || s === "negative" || s === "too_high";
     });
     if (hasInvalid) {
-      Alert.alert("Geçersiz ölçüm", "Bazı ölçüm değerleri geçerli değil. Kırmızı uyarıları düzeltip tekrar dene.");
+      showAlert("Geçersiz ölçüm", "Bazı ölçüm değerleri geçerli değil. Kırmızı uyarıları düzeltip tekrar dene.");
       return;
     }
 

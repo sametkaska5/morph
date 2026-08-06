@@ -23,6 +23,7 @@ import { refreshMemoryNotifications } from "@/lib/notifications";
 import { useNotificationSettings } from "@/lib/notificationSettings";
 import { initMonitoring } from "@/lib/monitoring";
 import { CaptureOptionsSheet } from "@/components/CaptureOptionsSheet";
+import { AppAlert } from "@/components/AppAlert";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // NOT: Buradaki varsayılan font ataması eskiden `Text.defaultProps` ile yapılıyordu.
@@ -162,6 +163,7 @@ export default function RootLayout() {
               <Stack.Screen name="settings/help" options={{ presentation: "modal" }} />
             </Stack>
             <CaptureOptionsSheet />
+            <AppAlert />
           </AuthProvider>
         </PersistQueryClientProvider>
       </ErrorBoundary>

@@ -3,8 +3,8 @@ import {
   Pressable,
   ActivityIndicator,
   ScrollView,
-  Alert,
 } from "react-native";
+import { showAlert } from "@/lib/appAlert";
 // expo-image (RN'in kendi Image'ı DEĞİL): anı akışı ve detay ekranı zaten
 // expo-image kullanıyor ve aynı fotoğrafı cacheKey ile diskte tutuyor. RN Image
 // AYRI bir cache kullandığı için buradaki fotoğraf her seferinde sıfırdan
@@ -246,7 +246,7 @@ export default function EditEntry() {
       return s === "invalid" || s === "negative" || s === "too_high";
     });
     if (hasInvalid) {
-      Alert.alert("Geçersiz ölçüm", "Bazı ölçüm değerleri geçerli değil. Kırmızı uyarıları düzeltip tekrar dene.");
+      showAlert("Geçersiz ölçüm", "Bazı ölçüm değerleri geçerli değil. Kırmızı uyarıları düzeltip tekrar dene.");
       return;
     }
     updateMutation.mutate();

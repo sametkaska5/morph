@@ -53,7 +53,16 @@
           "backgroundColor": "#0A0A08"
         }
       ],
-      "@sentry/react-native"
+      [
+        "@sentry/react-native",
+        {
+          "//": "org/proje slug'ları gizli değil — sentry.properties'e yazılıp kaynak haritalarının hangi projeye yükleneceğini belirliyorlar. authToken BİLEREK yok: kütüphanenin kendisi app.json'a yazılmasına karşı uyarıyor, token yerine EAS gizli değişkeni SENTRY_AUTH_TOKEN kullanılıyor (npx eas-cli env:set ... --visibility secret ile preview ve production ortamlarına eklendi).",
+          "organization": "samet-kaska",
+          "project": "remory",
+          "//url": "ZORUNLU: proje EU (Frankfurt) bölgesinde — DSN'deki 'ingest.de.sentry.io' bunu söylüyor. Plugin'in varsayılanı https://sentry.io/ (US) ve EU bölgesindeki bir org için sentry-cli oradan kimlik doğrulayamıyor: token doğru olsa bile yükleme reddediliyor ve build düşüyor. Bu satır olmadan org/proje/token üçü de doğruyken bile çalışmaz.",
+          "url": "https://de.sentry.io/"
+        }
+      ]
     ],
     "ios": {
       "supportsTablet": false,

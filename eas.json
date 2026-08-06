@@ -1,7 +1,6 @@
 {
   "cli": {
     "version": ">= 21.0.0",
-    "//appVersionSource": "local ZORUNLU: app.json'daki runtimeVersion politikası appVersion, yani güncellemenin hangi build'lere ineceğini `version` alanı belirliyor. `remote` seçildiğinde sürümün sahibi EAS sunucusu oluyor ve build'in gömdüğü sürüm, `eas update`'in yereldeki app.json'dan hesapladığı runtimeVersion'dan sessizce ayrılabiliyor — o an güncelleme yanlış binary'ye iner ve uygulama açılışta çöker (bkz. README, worklets/reanimated geçmişi). `local` ile tek kaynak app.json: iki taraf da aynı değeri okur.",
     "appVersionSource": "local"
   },
   "build": {
@@ -18,9 +17,6 @@
       "distribution": "internal",
       "environment": "preview",
       "channel": "preview",
-      "env": {
-        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
-      },
       "android": {
         "buildType": "apk"
       }
@@ -29,9 +25,6 @@
       "autoIncrement": true,
       "environment": "production",
       "channel": "production",
-      "env": {
-        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
-      },
       "android": {
         "buildType": "app-bundle"
       }

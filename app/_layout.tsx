@@ -1,7 +1,7 @@
 import "../global.css";
 import { useEffect, useRef } from "react";
-import { View } from "react-native";
 import { Stack, router } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { QueryClient, onlineManager } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
@@ -60,6 +60,23 @@ initMonitoring();
 // Oturum yenilemesini ön/arka plan durumuna bağla — gerekçesi lib/supabase.ts'te.
 // Süreç boyunca tek bir abonelik; kök layout hiç unmount olmadığı için kaldırılmıyor.
 registerAuthAutoRefresh();
+
+// Açılış görselini fontlar hazır olana kadar ekranda tut.
+//
+// Eskiden splash kendiliğinden kayboluyordu ama RootLayout fontlar yüklenene
+// kadar düz siyah bir View döndürüyordu: kullanıcı splash'ten sonra boş bir
+// kare görüyordu. Şimdi splash, gösterilecek gerçek içerik hazır olana kadar
+// duruyor.
+//
+// Bileşen içinde DEĞİL global kapsamda çağrılıyor (kütüphanenin kendi tavsiyesi):
+// bir hook'un içinde çalıştırıldığında splash çoktan gizlenmiş olabiliyor ve
+// çağrı hiçbir işe yaramıyor. Reddi yutuyoruz — splash'i tutamamak açılışı
+// bozmamalı, en kötü ihtimalle eski davranışa dönülür.
+SplashScreen.preventAutoHideAsync().catch(() => {});
+
+// Sert kesme yerine kısa bir çapraz geçiş: splash ile ilk ekran aynı arka plan
+// rengini (#0A0A08) paylaştığı için geçiş neredeyse görünmez oluyor.
+SplashScreen.setOptions({ duration: 300, fade: true });
 
 const persister = createAsyncStoragePersister({
   storage: AsyncStorage,
@@ -160,7 +177,7 @@ function NotificationRouter() {
 }
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
     Inter_600SemiBold,
@@ -169,9 +186,22 @@ export default function RootLayout() {
 
   // Fontlar yüklenmeden render edilirse metinler bir an sistem fontuyla (SF Pro/Roboto)
   // görünüp Inter yüklenince değişir (göz kırpması) — o yüzden yüklenene kadar bekletiyoruz.
-  if (!fontsLoaded) {
-    return <View style={{ flex: 1, backgroundColor: "#0A0A08" }} />;
-  }
+  //
+  // `fontError` de devam ettiriyor: font indirilemediğinde (bozuk önbellek,
+  // diskin dolu olması) `fontsLoaded` sonsuza kadar false kalıyordu ve uygulama
+  // açılış ekranında KİLİTLENİYORDU — hiçbir hata belirtisi olmadan. Sistem
+  // fontuyla açılmak, hiç açılmamaktan iyi.
+  const ready = fontsLoaded || !!fontError;
+
+  // Splash'i ancak ilk gerçek render işlendikten SONRA indiriyoruz (useEffect
+  // commit'ten sonra çalışıyor) — böylece arada boş bir kare görünmüyor.
+  useEffect(() => {
+    if (ready) SplashScreen.hideAsync().catch(() => {});
+  }, [ready]);
+
+  // Splash hâlâ ekranı kapladığı için burada kendi arka planımızı çizmemize
+  // gerek yok; `null` döndürmek splash'in altına ikinci bir katman koymuyor.
+  if (!ready) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -213,6 +243,7 @@ export default function RootLayout() {
               <Stack.Screen name="profile/edit" options={{ presentation: "modal" }} />
               <Stack.Screen name="settings/notifications" options={{ presentation: "modal" }} />
               <Stack.Screen name="settings/measurements" options={{ presentation: "modal" }} />
+              <Stack.Screen name="settings/password" options={{ presentation: "modal" }} />
               <Stack.Screen name="settings/help" options={{ presentation: "modal" }} />
             </Stack>
             <CaptureOptionsSheet />

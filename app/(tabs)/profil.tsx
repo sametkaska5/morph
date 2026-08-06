@@ -49,6 +49,11 @@ function SettingsRow({
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
+      // Etiketsizken ekran okuyucu satırları yalnızca içlerindeki metinden
+      // okuyordu ve sağdaki ikincil değer (örn. "kg, cm") ayrı bir düğüm olarak
+      // geliyordu: "Birimler" ve "kg, cm" ilişkisiz iki parça gibi duyuluyordu.
+      accessibilityLabel={value ? `${label}, ${value}` : label}
       style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
       className="flex-row items-center gap-3 px-4 py-3 border-b border-border last:border-b-0"
     >
@@ -72,8 +77,13 @@ function UnitOption({
   onPress: () => void;
 }) {
   return (
+    // Hangi birim sisteminin seçili olduğu yalnızca renk + tik ikonuyla
+    // anlatılıyordu; ekran okuyucu ikisini de aynı okuyordu.
     <Pressable
       onPress={onPress}
+      accessibilityRole="radio"
+      accessibilityLabel={`${label}, ${sublabel}`}
+      accessibilityState={{ selected }}
       style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
       className={`flex-row items-center justify-between px-4 py-4 rounded-button border ${
         selected ? "bg-accentSoft border-accent" : "bg-surface border-border"
@@ -204,6 +214,7 @@ export default function Profil() {
             onPress={() => router.push("/settings/measurements")}
           />
           <SettingsRow icon="sliders" label="Birimler" value={unitsLabel} onPress={() => setShowUnitSheet(true)} />
+          <SettingsRow icon="lock" label="Şifre değiştir" onPress={() => router.push("/settings/password")} />
           <SettingsRow icon="help-circle" label="Yardım & Destek" onPress={() => router.push("/settings/help")} />
           <SettingsRow icon="log-out" label="Çıkış yap" danger onPress={handleSignOut} />
         </View>
@@ -248,6 +259,8 @@ export default function Profil() {
     >
       <Pressable
         onPress={() => setShowPhotoPreview(false)}
+        accessibilityRole="button"
+        accessibilityLabel="Profil fotoğrafı önizlemesini kapat"
         className="flex-1 bg-black/90 items-center justify-center"
       >
         {profile?.avatarUrl ? (

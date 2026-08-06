@@ -188,9 +188,13 @@ JS değişiklikleri yeni build almadan gönderilebiliyor. Build profilleri kanal
 eas update --branch preview --message "galeri kaydı düzeltildi"
 ```
 
-**`runtimeVersion` politikası `fingerprint`** — bu bilinçli bir seçim. Fingerprint, native bağımlılık kümesinin özeti: `package.json`'daki native paketler ya da plugin'ler değişince otomatik değişiyor ve eski build'ler uyumsuz JS'i **almıyor**. Elle yönetilen bir sürüm numarası olsaydı, native tarafı değişmiş bir güncelleme eski binary'ye inip uygulamayı açılışta çökertebilirdi (bkz. worklets/reanimated sürüm uyuşmazlığı geçmişi).
+**`runtimeVersion` politikası `appVersion`** — yani güncelleme uyumluluğu `app.json`'daki `version` alanına bağlı. Bu, bir güncellemenin hangi build'lere ineceğini belirleyen tek şey.
 
-Pratikte: JS-only değişiklik → `eas update` yeter. Native değişiklik (yeni paket, plugin, sabitlenmiş sürümlerin kaldırılması) → yeni build şart.
+> ⚠️ **Native tarafı değiştiren her değişiklikte `version` ELLE artırılmalı** — yeni native paket, yeni config plugin, `expo.install.exclude`'daki sürümlerin değişmesi. Artırılmazsa, native tarafı değişmiş bir JS güncellemesi eski binary'ye iner ve uygulama açılışta çöker (bkz. worklets/reanimated uyuşmazlığı geçmişi).
+>
+> Bu disiplin normalde `fingerprint` politikasıyla otomatik sağlanırdı ve önce o seçilmişti. Ama yönetilen (CNG) projede tutmuyor: `android/` klasörü yerelde yok, EAS onu derleme sırasında üretip parmak izini ondan SONRA hesaplıyor. İki taraf hiçbir zaman eşleşmiyor ve EAS build'i "Runtime version mismatch" ile düşürüyor. `appVersion` deterministik: iki tarafta da aynı sonucu veriyor.
+
+Pratikte: JS-only değişiklik → `eas update` yeter. Native değişiklik → `version`'ı artır **ve** yeni build al.
 
 ## Kalite kontrolleri
 

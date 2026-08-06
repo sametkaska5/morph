@@ -1,11 +1,14 @@
 import { Tabs, Redirect } from "expo-router";
 import { View, Pressable, ActivityIndicator } from "react-native";
+import { useIsMutating } from "@tanstack/react-query";
 import { Text } from "@/components/Typography";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Feather from "@expo/vector-icons/Feather";
 import { useAuth } from "@/lib/useAuth";
 import { useIsOnline } from "@/lib/useIsOnline";
+import { useAppUpdate } from "@/lib/appUpdates";
 import { openCapturePicker } from "@/lib/capture";
+import { UpdateBanner } from "@/components/UpdateBanner";
 
 const ACCENT = "#8CE05A";
 const MUTED = "#6B6A62";
@@ -52,6 +55,9 @@ export default function TabsLayout() {
   const { session, loading } = useAuth();
   const isOnline = useIsOnline();
   const insets = useSafeAreaInsets();
+  const { ready: updateReady, apply: applyUpdate } = useAppUpdate();
+  // Yeniden başlatma devam eden bir kaydı/yüklemeyi yarıda keserdi.
+  const isSaving = useIsMutating() > 0;
 
   if (loading) {
     return (
@@ -68,6 +74,11 @@ export default function TabsLayout() {
   return (
     <View style={{ flex: 1 }}>
       {!isOnline ? <OfflineBanner /> : null}
+      {/* Güvenli alanı yalnızca EN ÜSTTEKİ şerit ekliyor — ikisi birden
+          eklerse çentiğin altında çift boşluk oluşuyor. */}
+      {updateReady ? (
+        <UpdateBanner onApply={applyUpdate} withSafeArea={isOnline} busy={isSaving} />
+      ) : null}
       <Tabs
       screenOptions={{
         headerShown: false,

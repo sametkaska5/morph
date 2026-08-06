@@ -180,6 +180,12 @@ Ortam değişkenleri `.env`'den gelmiyor — `.env` gitignore'da ve EAS onu gör
 eas env:push preview --path .env
 ```
 
+### Sentry kaynak haritası yüklemesi kapalı
+
+`eas.json`'da release profillerinde `SENTRY_DISABLE_AUTO_UPLOAD=true` var. Sebebi: Sentry'nin Gradle eklentisi **yalnızca release derlemesinde** kaynak haritalarını sunucuya yüklemeye çalışıyor ve organizasyon/proje bilgisi olmadan `sentry-cli` hata döndürüp **build'i düşürüyor** (`An organization ID or slug is required`). Debug derlemesinde bu adım hiç çalışmadığı için `development` profili sorunsuz geçiyordu.
+
+Sentry'nin kendisi çalışmaya devam ediyor — hatalar panoya düşüyor. Yalnızca yığın izleri küçültülmüş kod üzerinden görünüyor, okunması zor. Düzeltmek için Sentry'de bir auth token üretip EAS'e gizli değişken olarak eklemek ve `app.json`'daki plugin'e `organization`/`project` yazmak gerekiyor; o zaman bu satır kaldırılabilir.
+
 ### Kablosuz güncelleme (EAS Update)
 
 JS değişiklikleri yeni build almadan gönderilebiliyor. Build profilleri kanallara bağlı (`development` / `preview` / `production`):

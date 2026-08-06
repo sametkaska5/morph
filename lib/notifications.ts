@@ -41,6 +41,79 @@ const MEMORY_ID_PREFIX = "memory-";
 const DAILY_REMINDER_ID = "daily-reminder";
 const STREAK_RISK_ID = "streak-risk";
 
+/* ─────────────── BİLDİRİME DOKUNMA → KAYDIN DETAYI ─────────────── */
+
+/** Dokunulan bildirimden çıkarılan yönlendirme bilgisi. */
+export type NotificationTap = {
+  /** Bildirimin kendi kimliği — aynı dokunmayı iki kez işlememek için. */
+  notificationId: string;
+  entryId: string;
+};
+
+/**
+ * Bir bildirim yanıtından yönlendirilecek kaydı çıkarır.
+ *
+ * Yükü `unknown` üzerinden daraltıyoruz: `content.data` serbest biçimli bir
+ * sözlük ve içeriğini işletim sistemi saklıyor — eski sürümde zamanlanmış,
+ * `entryId` taşımayan bir bildirim (günlük hatırlatma, seri uyarısı) buradan
+ * geçebilir. Doğrulamadan `entryId` okunursa `/entry/undefined` route'una
+ * gidilir ve ekran "kayıt bulunamadı" ile açılır.
+ *
+ * Native modüle dokunmuyor (Expo Go'da `Notifications` null) — bu yüzden saf ve
+ * doğrudan test edilebilir. Parametre yapısal olarak tiplenmiş, böylece
+ * `Notifications.NotificationResponse` de olduğu gibi geçebiliyor.
+ */
+export function notificationTap(
+  response:
+    | { notification: { request: { identifier: string; content: { data?: unknown } } } }
+    | null
+    | undefined
+): NotificationTap | null {
+  const request = response?.notification?.request;
+  if (!request) return null;
+
+  const data = request.content?.data;
+  if (!data || typeof data !== "object") return null;
+
+  const entryId = (data as Record<string, unknown>).entryId;
+  if (typeof entryId !== "string" || !entryId) return null;
+
+  return { notificationId: request.identifier, entryId };
+}
+
+/**
+ * Uygulama bir bildirime dokunularak açıldıysa (soğuk açılış) o dokunmayı döner.
+ *
+ * Uygulama kapalıyken gelen dokunma için dinleyici geç kalıyor: süreç bildirim
+ * yüzünden başlıyor ve olay biz abone olmadan önce yayınlanmış oluyor. İşletim
+ * sisteminin sakladığı SON yanıtı bu yüzden ayrıca soruyoruz.
+ */
+export async function getInitialNotificationTap(): Promise<NotificationTap | null> {
+  if (!Notifications) return null;
+  try {
+    return notificationTap(await Notifications.getLastNotificationResponseAsync());
+  } catch (err) {
+    // Yönlendirme bir KOLAYLIK — patlaması açılışı bozmamalı.
+    captureError(err, { where: "notifications.initialTap" });
+    return null;
+  }
+}
+
+/**
+ * Uygulama açıkken (ön veya arka planda) bildirime dokunulmasını dinler.
+ * Abonelikten çıkma fonksiyonu döner; Expo Go'da no-op.
+ */
+export function addNotificationTapListener(handler: (tap: NotificationTap) => void): () => void {
+  if (!Notifications) return () => {};
+
+  const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+    const tap = notificationTap(response);
+    if (tap) handler(tap);
+  });
+
+  return () => subscription.remove();
+}
+
 /**
  * Android bildirim kanalı.
  *

@@ -100,7 +100,7 @@ components/
   DraggableSheet.tsx, CaptureOptionsSheet.tsx, LegalScreen.tsx
 
 lib/
-  supabase.ts          Supabase client (createClient<Database> ile tipli)
+  supabase.ts          Supabase client (createClient<Database> ile tipli) + oturum yenilemesinin AppState'e bağlanması
   database.types.ts    DB şemasının TypeScript karşılığı — bkz. npm run gen:types
   queryKeys.ts         TÜM React Query anahtarlarının tek kaynağı
   useAuth.tsx          oturum context'i
@@ -114,7 +114,7 @@ lib/
   comparison.ts        karşılaştırma mantığı
   profile.ts, profileStats.ts, account.ts   profil & hesap
   measurementTypes.ts, units.ts             ölçümler & birimler
-  notifications.ts, notificationSettings.ts yerel bildirimler
+  notifications.ts, notificationSettings.ts yerel bildirimler + bildirime dokununca kaydın detayına yönlendirme
 
   — yazma & fotoğraf
   entryMutations.ts    fotoğraflı kaydın yazma yolu (offline kuyruk dahil)
@@ -144,6 +144,7 @@ supabase/migrations/   0001–0010 şema + RLS + storage politikaları, antrenma
 - **Native `Alert.alert` kullanılmaz.** Bilgi/uyarı için `showAlert(baslik, mesaj)` (bkz. `lib/appAlert.ts`), onay gerektiren yıkıcı işlemler için `<ConfirmDialog>`. Alert sistemin kendi penceresi: koyu temanın ortasında beyaz bir kutu olarak belirir, iOS/Android'de bambaşka görünür ve testte içeriği okunamaz. `showAlert` React dışından da çağrılabilir, o yüzden modüllerde de kullanılabiliyor.
 - **Hata, boşlukla karıştırılmaz.** Bir sorgu patladığında `isLoading` da false olur ve `data` undefined kalır: hata dalı yazılmazsa ekran "hiç kaydın yok" gibi görünür. Form ekranlarında bu daha ağır — boş dolan formun üstüne basılan "Kaydet" var olan veriyi siler. Bu yüzden **veri okuyan her form, sorgu hata verdiğinde hiç açılmaz**; hydration koşulları da `!error` içerir.
 - **Offline-first**: mutasyonlar çevrimdışıyken kuyruğa alınır (`registerEntryMutationDefaults` + `resumePausedMutations`), önbellek AsyncStorage'a kalıcılaştırılır. Bir sorgunun veri şekli değişirse `app/_layout.tsx`'teki `PERSIST_CACHE_BUSTER`'ı artır.
+- **Oturum yenilemesi AppState'e bağlı.** `autoRefreshToken: true` tek başına yetmiyor: yenileme bir JS zamanlayıcısıyla yapılıyor, işletim sistemi ise arka plandaki uygulamanın zamanlayıcılarını donduruyor. Uygulama uzun süre arka planda kalınca token'ın süresi doluyor ve dönüşteki ilk istekler 401 alıyor — kullanıcı için bu, sebepsiz bir çıkış gibi görünüyor. `registerAuthAutoRefresh()` (bkz. `lib/supabase.ts`, kök layout'ta bir kez çağrılır) önplana geçişte `startAutoRefresh()` çağırıyor; bu yalnızca zamanlayıcıyı kurmakla kalmıyor, kaçırılan yenilemeyi ilk veri isteğinden önce telafi ediyor.
 
 ## Test
 
@@ -153,7 +154,7 @@ npm test
 
 Testler `lib/__tests__/` altında, iki gruba ayrılıyor:
 
-**Saf mantık** — tarih, birim dönüşümü, ölçüm girdisi doğrulama, kapak-fotoğraf seçimi, grafik matematiği (`chart`), seri/trend hesapları (`stats`), hata metni eşlemesi (`errors`). `jest.setup.js` sahte Supabase env'i verip AsyncStorage ve Sentry'yi mock'layarak bu modüllerin ağa çıkmadan yüklenmesini sağlıyor.
+**Saf mantık** — tarih, birim dönüşümü, ölçüm girdisi doğrulama, kapak-fotoğraf seçimi, grafik matematiği (`chart`), seri/trend hesapları (`stats`), hata metni eşlemesi (`errors`), bildirim yükünden kayıt kimliği çıkarma (`notificationTap`) ve oturum yenilemesinin AppState'e bağlanması (`authAutoRefresh`). Son ikisi "sessizce bozulan" davranışlar: kaldırıldıklarında hiçbir hata çıkmıyor, yalnızca kullanıcı bildirime dokununca yanlış yere düşüyor ya da arka plandan dönüşte oturumu kopmuş gibi görünüyor. `jest.setup.js` sahte Supabase env'i verip AsyncStorage ve Sentry'yi mock'layarak bu modüllerin ağa çıkmadan yüklenmesini sağlıyor.
 
 **Yazma yolu** — `entryMutations`, `workout`, `deleteEntry`. Uygulamanın en riskli kodu (veri kaybı senaryosu) ve saf olmadığı için `lib/__tests__/helpers/supabaseMock.ts` üzerinden test ediliyor: zincirlenebilir Supabase API'sini taklit eden, tablo başına sonuç kuyruğu tutan ve yapılan her çağrıyı kaydeden küçük bir harness. Testler "hangi tabloya, hangi sırayla, hangi yükle yazıldı" sorusunu doğruluyor — bayat fotoğraf temizliği, boşaltılan ölçümün silinmesi, silmede foreign key sırası gibi daha önce gerçekten yaşanmış hataları kilitliyor.
 
@@ -196,6 +197,8 @@ eas update --branch preview --message "galeri kaydı düzeltildi"
 
 **`runtimeVersion` politikası `appVersion`** — yani güncelleme uyumluluğu `app.json`'daki `version` alanına bağlı. Bu, bir güncellemenin hangi build'lere ineceğini belirleyen tek şey.
 
+Bu yüzden `eas.json`'daki **`appVersionSource` `local` olmak zorunda**. `remote` seçilirse sürümün sahibi EAS sunucusu oluyor: build'in gömdüğü sürüm ile `eas update`'in yereldeki `app.json`'dan hesapladığı `runtimeVersion` sessizce ayrılabiliyor ve güncelleme yanlış binary'ye iniyor. `local` ile iki taraf da aynı dosyayı okuyor. Karşılığında `android.versionCode` da `app.json`'da tutuluyor — `production` profilindeki `autoIncrement` onu yerelde artırıp dosyaya yazıyor, artan değeri commit'lemek gerekiyor.
+
 > ⚠️ **Native tarafı değiştiren her değişiklikte `version` ELLE artırılmalı** — yeni native paket, yeni config plugin, `expo.install.exclude`'daki sürümlerin değişmesi. Artırılmazsa, native tarafı değişmiş bir JS güncellemesi eski binary'ye iner ve uygulama açılışta çöker (bkz. worklets/reanimated uyuşmazlığı geçmişi).
 >
 > Bu disiplin normalde `fingerprint` politikasıyla otomatik sağlanırdı ve önce o seçilmişti. Ama yönetilen (CNG) projede tutmuyor: `android/` klasörü yerelde yok, EAS onu derleme sırasında üretip parmak izini ondan SONRA hesaplıyor. İki taraf hiçbir zaman eşleşmiyor ve EAS build'i "Runtime version mismatch" ile düşürüyor. `appVersion` deterministik: iki tarafta da aynı sonucu veriyor.
@@ -220,7 +223,13 @@ Biçimlendirme Prettier'ın işi (`npm run format` yazar, `npm run format:check`
 
 Ana akışlar uçtan uca çalışır durumda: auth, kayıt oluşturma/düzenleme/silme, fotoğrafsız gün ve antrenman programı, offline ekleme + geri senkronizasyon, karşılaştırma, istatistikler, paylaşılabilir kart, bildirimler, profil ve ayarlar.
 
-Kalite kapısının üçü de temiz: ESLint sıfır sorun, `tsc --noEmit` temiz, 36 test paketi / 409 test geçiyor. Kod tabanında `any` yok — `@typescript-eslint/no-explicit-any` hata seviyesinde açık.
+Kalite kapısının üçü de temiz: ESLint sıfır sorun, `tsc --noEmit` temiz, 38 test paketi / 418 test geçiyor. Kod tabanında `any` yok — `@typescript-eslint/no-explicit-any` hata seviyesinde açık.
+
+### Android izinleri
+
+Manifest'e yalnızca fotoğraf izinleri giriyor. Seçici `mediaTypes` verilmeden çağrıldığı için varsayılan olarak sadece görsel seçiyor, galeriye yazılan tek şey de karşılaştırma kartı — yani ses ve video erişimine hiç ihtiyaç yok. Ama `expo-image-picker` ve `expo-media-library` eklentileri `READ_MEDIA_VIDEO` / `READ_MEDIA_AUDIO`'yu kendi manifest'lerine ekliyor; `app.json`'daki `permissions` listesinden çıkarmak bu yüzden yetmiyor. `android.blockedPermissions` ile manifest merge sırasında `tools:node="remove"` işaretleniyor. Play Console geniş medya erişimi için ayrı bir gerekçe formu istiyor — kullanılmayan izinler yüzünden o riski almanın anlamı yok.
+
+Doğrulamak için: `npx expo prebuild --platform android --no-install` çalıştırıp `android/app/src/main/AndroidManifest.xml`'e bak, sonra üretilen `android/` klasörünü sil (`package.json`'daki `android`/`ios` script'lerini de geri al — prebuild onları `expo run:*` olarak değiştiriyor).
 
 ## Bilinen açık uçlar
 

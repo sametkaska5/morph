@@ -1,7 +1,7 @@
 import "../global.css";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { View } from "react-native";
-import { Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { QueryClient, onlineManager } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
@@ -17,9 +17,15 @@ import {
   Inter_700Bold,
 } from "@expo-google-fonts/inter";
 import { AuthProvider, useAuth } from "@/lib/useAuth";
+import { registerAuthAutoRefresh } from "@/lib/supabase";
 import { registerEntryMutationDefaults, QUERY_CACHE_STORAGE_KEY } from "@/lib/entryMutations";
 import { maybeSweepOrphans } from "@/lib/orphanSweep";
-import { refreshMemoryNotifications } from "@/lib/notifications";
+import {
+  refreshMemoryNotifications,
+  getInitialNotificationTap,
+  addNotificationTapListener,
+  type NotificationTap,
+} from "@/lib/notifications";
 import { useNotificationSettings } from "@/lib/notificationSettings";
 import { initMonitoring } from "@/lib/monitoring";
 import { CaptureOptionsSheet } from "@/components/CaptureOptionsSheet";
@@ -50,6 +56,10 @@ registerEntryMutationDefaults(queryClient);
 
 // Hata izlemeyi uygulama açılışında bir kez başlat (DSN yoksa no-op).
 initMonitoring();
+
+// Oturum yenilemesini ön/arka plan durumuna bağla — gerekçesi lib/supabase.ts'te.
+// Süreç boyunca tek bir abonelik; kök layout hiç unmount olmadığı için kaldırılmıyor.
+registerAuthAutoRefresh();
 
 const persister = createAsyncStoragePersister({
   storage: AsyncStorage,
@@ -107,6 +117,48 @@ function MemoryNotificationRefresher() {
   return null;
 }
 
+/**
+ * "X ay önce bugün" bildirimine dokunulduğunda o kaydın detayını açar.
+ *
+ * Bildirimler `data: { entryId }` taşıyor (bkz. scheduleMemoryNotifications) ama
+ * bunu okuyan kimse yoktu: dokunan kullanıcı hangi anı için uyarıldığını
+ * göremeden ana ekrana düşüyordu.
+ *
+ * İki ayrı yol var çünkü dokunma iki farklı durumda gelebiliyor: uygulama
+ * kapalıyken (süreç bildirimle başlıyor, dinleyici olaya yetişemiyor → son yanıt
+ * sorgulanıyor) ve uygulama açıkken (dinleyici). Soğuk açılışta İKİSİ birden
+ * tetiklenebiliyor, o yüzden bildirim kimliğiyle tekilleştiriyoruz — aksi halde
+ * aynı kayıt üst üste iki kez push edilip geri tuşu kullanıcıyı aynı ekrana
+ * geri getirirdi.
+ *
+ * Oturum açılmadan yönlendirmiyoruz: `(tabs)` dışındaki bir route'a giriş
+ * ekranının üstünden push etmek kullanıcıyı kimliksiz bir detay ekranında
+ * bırakırdı.
+ */
+function NotificationRouter() {
+  const { session, loading } = useAuth();
+  const ready = !loading && !!session;
+  const handledId = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!ready) return;
+
+    const go = (tap: NotificationTap) => {
+      if (handledId.current === tap.notificationId) return;
+      handledId.current = tap.notificationId;
+      router.push(`/entry/${tap.entryId}`);
+    };
+
+    getInitialNotificationTap().then((tap) => {
+      if (tap) go(tap);
+    });
+
+    return addNotificationTapListener(go);
+  }, [ready]);
+
+  return null;
+}
+
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
@@ -140,6 +192,7 @@ export default function RootLayout() {
           <AuthProvider>
             <OrphanSweeper />
             <MemoryNotificationRefresher />
+            <NotificationRouter />
             <StatusBar style="light" />
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="(onboarding)/welcome" />

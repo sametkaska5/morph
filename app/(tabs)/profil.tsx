@@ -13,6 +13,7 @@ import { useProfile } from "@/lib/profile";
 import { useUnitPreference, useSetUnitPreference } from "@/lib/units";
 import { DraggableSheet } from "@/components/DraggableSheet";
 import { ErrorState } from "@/components/ErrorState";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { alertError } from "@/lib/alerts";
 
 /** Feather ikon adları — yanlış yazılmış bir ad artık derlemede yakalanıyor. */
@@ -259,54 +260,19 @@ export default function Profil() {
       </Pressable>
     </Modal>
 
-    <Modal
+    <ConfirmDialog
       visible={showDeleteAccountConfirm}
-      transparent
-      animationType="fade"
-      onRequestClose={() => {
-        if (!deleteAccountMutation.isPending) setShowDeleteAccountConfirm(false);
-      }}
-    >
-      <Pressable
-        onPress={() => {
-          if (!deleteAccountMutation.isPending) setShowDeleteAccountConfirm(false);
-        }}
-        className="flex-1 bg-black/60 items-center justify-center px-8"
-      >
-        <Pressable onPress={() => {}} className="w-full bg-bg border border-border rounded-card p-5 items-center">
-          <View className="w-14 h-14 rounded-full bg-danger/15 items-center justify-center mb-4">
-            <Feather name="trash-2" size={24} color="#D9705A" />
-          </View>
-          <Text className="text-text text-xl font-bold mb-2 text-center">Hesabını sil?</Text>
-          <Text className="text-textMuted text-sm text-center mb-6">
-            Bu işlem geri alınamaz. Tüm fotoğrafların, ölçümlerin ve anıların kalıcı olarak silinir,
-            hesabına bir daha giriş yapamazsın.
-          </Text>
-          <View className="flex-row gap-3 w-full">
-            <Pressable
-              onPress={() => setShowDeleteAccountConfirm(false)}
-              disabled={deleteAccountMutation.isPending}
-              style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
-              className="flex-1 py-4 rounded-button items-center bg-surface border border-border"
-            >
-              <Text className="text-text text-base font-semibold">Vazgeç</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => deleteAccountMutation.mutate()}
-              disabled={deleteAccountMutation.isPending}
-              style={({ pressed }) => ({ opacity: pressed ? 0.8 : deleteAccountMutation.isPending ? 0.7 : 1 })}
-              className="flex-1 py-4 rounded-button items-center bg-danger"
-            >
-              {deleteAccountMutation.isPending ? (
-                <ActivityIndicator color="#0B0D0A" />
-              ) : (
-                <Text className="text-bg text-base font-semibold">Hesabı sil</Text>
-              )}
-            </Pressable>
-          </View>
-        </Pressable>
-      </Pressable>
-    </Modal>
+      icon="trash-2"
+      danger
+      title="Hesabını sil?"
+      message="Bu işlem geri alınamaz. Tüm fotoğrafların, ölçümlerin ve anıların kalıcı olarak silinir, hesabına bir daha giriş yapamazsın."
+      confirmLabel="Hesabı sil"
+      // Silme uzun sürüyor (depo taranıp temizleniyor); bitmeden kutu kapanmasın
+      // ki kullanıcı yarıda kaldı sanıp tekrar başlatmasın.
+      pending={deleteAccountMutation.isPending}
+      onConfirm={() => deleteAccountMutation.mutate()}
+      onClose={() => setShowDeleteAccountConfirm(false)}
+    />
     </>
   );
 }

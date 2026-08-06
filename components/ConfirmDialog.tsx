@@ -1,4 +1,4 @@
-import { View, Pressable, Modal } from "react-native";
+import { View, Pressable, Modal, ActivityIndicator } from "react-native";
 import Feather from "@expo/vector-icons/Feather";
 import { Text } from "@/components/Typography";
 
@@ -26,6 +26,7 @@ export function ConfirmDialog({
   confirmLabel,
   cancelLabel = "Vazgeç",
   danger,
+  pending,
   onConfirm,
   onClose,
 }: {
@@ -36,14 +37,24 @@ export function ConfirmDialog({
   confirmLabel?: string;
   cancelLabel?: string;
   danger?: boolean;
+  /**
+   * İşlem sürüyor: onay butonunda gösterge döner ve kutu KAPANMAZ.
+   * Uzun süren yıkıcı işlemler için (örn. hesap silme depoyu tarayıp temizliyor)
+   * — kapanabilseydi kullanıcı işlem yarıda kaldı sanıp tekrar başlatabilirdi.
+   */
+  pending?: boolean;
   onConfirm?: () => void;
   onClose: () => void;
 }) {
+  const dismiss = () => {
+    if (!pending) onClose();
+  };
+
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={dismiss}>
       {/* Dışarı dokununca kapanır; içteki Pressable dokunmayı yutuyor ki
           kutunun üstüne basmak kapatmasın. */}
-      <Pressable onPress={onClose} className="flex-1 bg-black/60 items-center justify-center px-8">
+      <Pressable onPress={dismiss} className="flex-1 bg-black/60 items-center justify-center px-8">
         <Pressable
           onPress={() => {}}
           // Ekran okuyucu kutuyu tek bir duyuru olarak okusun: başlık ve
@@ -65,20 +76,26 @@ export function ConfirmDialog({
             {onConfirm ? (
               <>
                 <Pressable
-                  onPress={onClose}
+                  onPress={dismiss}
+                  disabled={pending}
                   accessibilityRole="button"
-                  style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+                  style={({ pressed }) => ({ opacity: pressed ? 0.8 : pending ? 0.6 : 1 })}
                   className="flex-1 py-4 rounded-button items-center bg-surface border border-border"
                 >
                   <Text className="text-text text-base font-semibold">{cancelLabel}</Text>
                 </Pressable>
                 <Pressable
                   onPress={onConfirm}
+                  disabled={pending}
                   accessibilityRole="button"
-                  style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+                  style={({ pressed }) => ({ opacity: pressed ? 0.8 : pending ? 0.7 : 1 })}
                   className={`flex-1 py-4 rounded-button items-center ${danger ? "bg-danger" : "bg-accent"}`}
                 >
-                  <Text className="text-bg text-base font-semibold">{confirmLabel}</Text>
+                  {pending ? (
+                    <ActivityIndicator color="#0B0D0A" />
+                  ) : (
+                    <Text className="text-bg text-base font-semibold">{confirmLabel}</Text>
+                  )}
                 </Pressable>
               </>
             ) : (

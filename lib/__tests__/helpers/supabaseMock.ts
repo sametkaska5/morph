@@ -62,6 +62,21 @@ export function createSupabaseMock() {
   const storageRemovals: { bucket: string; paths: string[] }[] = [];
   /** storage.from(bucket).upload(path, ...) çağrılarının kaydı. */
   const storageUploads: { bucket: string; path: string }[] = [];
+  /** storage.from(bucket).list(prefix) çağrılarının kaydı — sıra iddiaları için. */
+  const storageLists: { bucket: string; prefix: unknown }[] = [];
+  /** list() sonuçları; boşsa "klasör yok" varsayılanına düşer. */
+  const listQueue: Result[] = [];
+  /** rpc(fn, args) çağrılarının kaydı. */
+  const rpcCalls: { fn: string; args: unknown }[] = [];
+  const rpcQueue: Result[] = [];
+  let signOutCount = 0;
+  /**
+   * Çağrı sırası: hangi işin hangisinden önce yapıldığını doğrulamak için.
+   * deleteAccount'ta bu hayati — fotoğraflar hesaptan ÖNCE silinmezse
+   * auth satırı gidince RLS depoya erişimi keser ve dosyalar erişilemez
+   * biçimde öksüz kalır.
+   */
+  const callOrder: string[] = [];
 
   /**
    * Bir tabloya yapılacak SONRAKİ sorgunun döneceği sonucu kuyruğa ekler.
@@ -118,13 +133,19 @@ export function createSupabaseMock() {
       return {
         remove: (paths: string[]) => {
           storageRemovals.push({ bucket, paths });
+          callOrder.push("storage.remove");
           return Promise.resolve({ data: null, error: null });
         },
         upload: (path: string) => {
           storageUploads.push({ bucket, path });
           return Promise.resolve({ data: { path }, error: null });
         },
-        list: () => Promise.resolve({ data: [], error: null }),
+        list: (prefix?: unknown) => {
+          storageLists.push({ bucket, prefix });
+          callOrder.push("storage.list");
+          const next = listQueue.shift();
+          return Promise.resolve({ data: next?.data ?? [], error: next?.error ?? null });
+        },
         createSignedUrl: (path: string) =>
           Promise.resolve({ data: { signedUrl: `signed:${path}` }, error: null }),
         createSignedUrls: (paths: string[]) =>
@@ -136,10 +157,33 @@ export function createSupabaseMock() {
     },
   };
 
+  function rpc(fn: string, args?: unknown) {
+    rpcCalls.push({ fn, args });
+    callOrder.push(`rpc:${fn}`);
+    const next = rpcQueue.shift();
+    return Promise.resolve({ data: next?.data ?? null, error: next?.error ?? null });
+  }
+
+  const auth = {
+    signOut: () => {
+      signOutCount += 1;
+      callOrder.push("auth.signOut");
+      return Promise.resolve({ error: null });
+    },
+  };
+
   return {
     /** Ekranlara/lib'e verilecek sahte istemci. */
-    client: { from, storage },
+    client: { from, storage, rpc, auth },
     queue,
+    /** storage.list() için sıradaki sonucu kuyruğa ekler (varsayılan: boş liste). */
+    queueStorageList(...results: Result[]) {
+      listQueue.push(...results);
+    },
+    /** rpc() için sıradaki sonucu kuyruğa ekler (varsayılan: başarılı, veri yok). */
+    queueRpc(...results: Result[]) {
+      rpcQueue.push(...results);
+    },
     /** Yapılan tüm sorgu zincirleri, çağrı sırasıyla. */
     chains,
     /** Yalnızca belirtilen tabloya yapılan zincirler. */
@@ -148,6 +192,13 @@ export function createSupabaseMock() {
     },
     storageRemovals,
     storageUploads,
+    storageLists,
+    rpcCalls,
+    get signOutCount() {
+      return signOutCount;
+    },
+    /** İşlerin gerçekleşme sırası ("storage.remove", "rpc:...", "auth.signOut"). */
+    callOrder,
   };
 }
 

@@ -227,9 +227,44 @@ Kalite kapısının üçü de temiz: ESLint sıfır sorun, `tsc --noEmit` temiz,
 
 ### Android izinleri
 
-Manifest'e yalnızca fotoğraf izinleri giriyor. Seçici `mediaTypes` verilmeden çağrıldığı için varsayılan olarak sadece görsel seçiyor, galeriye yazılan tek şey de karşılaştırma kartı — yani ses ve video erişimine hiç ihtiyaç yok. Ama `expo-image-picker` ve `expo-media-library` eklentileri `READ_MEDIA_VIDEO` / `READ_MEDIA_AUDIO`'yu kendi manifest'lerine ekliyor; `app.json`'daki `permissions` listesinden çıkarmak bu yüzden yetmiyor. `android.blockedPermissions` ile manifest merge sırasında `tools:node="remove"` işaretleniyor. Play Console geniş medya erişimi için ayrı bir gerekçe formu istiyor — kullanılmayan izinler yüzünden o riski almanın anlamı yok.
+Manifest'e giren izinlerin tamamı uygulamanın gerçekten kullandığı bir yeteneğe karşılık geliyor. Üç tanesi bunu sağlamak için **bilerek söktürülüyor** (`app.json` → `android.blockedPermissions`):
 
-Doğrulamak için: `npx expo prebuild --platform android --no-install` çalıştırıp `android/app/src/main/AndroidManifest.xml`'e bak, sonra üretilen `android/` klasörünü sil (`package.json`'daki `android`/`ios` script'lerini de geri al — prebuild onları `expo run:*` olarak değiştiriyor).
+| İzin | Nereden geliyor | Neden gerekmiyor |
+|---|---|---|
+| `READ_MEDIA_VIDEO` | `expo-image-picker`, `expo-media-library` | Seçici `mediaTypes` verilmeden çağrılıyor → varsayılan `images` |
+| `READ_MEDIA_AUDIO` | aynı eklentiler | Uygulama sesli hiçbir şeye dokunmuyor |
+| `SYSTEM_ALERT_WINDOW` | Expo prebuild şablonu (hem `src/main` hem `src/debug`) | Yalnızca debug'a özel kod kullanıyor — bkz. aşağıdaki not |
+
+**Neden `permissions` listesinden çıkarmak yetmiyor:** bu izinler bizim listemizden değil, bağımlılıkların kendi manifest'lerinden geliyor. Manifest merge sırasında yine ekleniyorlar. `blockedPermissions` ise onlara `tools:node="remove"` işareti koyuyor, yani merge sonunda düşüyorlar.
+
+`SYSTEM_ALERT_WINDOW`'a dair not: Expo şablonu bu izni `android/app/src/main/AndroidManifest.xml`'e de yazıyor, dolayısıyla **release AAB'ye de giriyordu**. Oysa tek kullananlar debug'a özel: `expo-dev-menu/android/src/debug/.../DevMenuDevToolsDelegate.kt` ve React Native'in `devsupport/DebugOverlayController.kt`'si — release build'de ikisi de hiç çalışmıyor. Ayrıca `android/app/src/debug/AndroidManifest.xml` izni **ayrıca** tanımlıyor ve build tipi manifest'i main'den yüksek öncelikli olduğu için development build'in dev menüsü etkilenmiyor; sökülen yalnızca release.
+
+`SYSTEM_ALERT_WINDOW` Play'in "kısıtlı izin" beyan listesinde değil, yani yayını **engellemiyor** — ama uygulamanın hiç kullanmadığı, mağaza listesinde görünen ve kötüye kullanıldığında overlay/tapjacking yüzeyi açan özel bir erişim. Kaldırılması hijyen; `READ_MEDIA_*` ise Play Console'un geniş medya erişimi için istediği ayrı gerekçe formunu tetiklediğinden daha somut bir kazanç.
+
+**Doğrulamak için** (izinlere veya eklentilere dokunan her değişiklikten sonra):
+
+```bash
+npx expo prebuild --platform android --no-install
+```
+
+Ardından `android/app/src/main/AndroidManifest.xml`'de `tools:node="remove"` işaretlerini kontrol et. Merge'ün gerçek sonucunu görmek istersen Gradle'a sordur:
+
+```bash
+cd android && ./gradlew :app:processReleaseMainManifest :app:processDebugMainManifest
+```
+
+Sonuç `android/app/build/intermediates/merged_manifest/<variant>/` altında. İki uyarı: `processReleaseMainManifest` yerelde Sentry'nin yükleme adımını tetikleyip build'i düşürüyor, başına `SENTRY_DISABLE_AUTO_UPLOAD=true` koy (aynı sebep, bkz. yukarıdaki Sentry bölümü). İşin bitince **üretilen `android/` klasörünü sil** — proje yönetilen (CNG) akışta, `android/` yerelde tutulmaz; `package.json`'daki `android`/`ios` script'lerini de geri al, prebuild onları `expo start --*` yerine `expo run:*` olarak değiştiriyor.
+
+Bu yolla ölçülmüş son durum — **release** varyantının birleşmiş manifest'indeki `android.permission.*` izinleri:
+
+```
+ACCESS_NETWORK_STATE  ACCESS_WIFI_STATE  CAMERA  INTERNET  POST_NOTIFICATIONS
+READ_APP_BADGE  READ_EXTERNAL_STORAGE  READ_MEDIA_IMAGES
+READ_MEDIA_VISUAL_USER_SELECTED  RECEIVE_BOOT_COMPLETED  VIBRATE
+WAKE_LOCK  WRITE_EXTERNAL_STORAGE
+```
+
+`SYSTEM_ALERT_WINDOW`, `READ_MEDIA_VIDEO`, `READ_MEDIA_AUDIO` ve `RECORD_AUDIO` listede yok. **Debug** varyantında ise `SYSTEM_ALERT_WINDOW` duruyor (medya izinleri orada da düşüyor) — yani dev menüsü çalışmaya devam ediyor, tasarlanan ayrım tutuyor.
 
 ## Bilinen açık uçlar
 

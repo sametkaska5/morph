@@ -3,7 +3,7 @@
     "name": "Remory",
     "slug": "remory",
     "scheme": "remory",
-    "//version": "runtimeVersion politikası appVersion — bu alan aynı zamanda GÜNCELLEME UYUMLULUĞUNU belirliyor. Native tarafı değiştiren her değişiklikte ELLE artırılmalı (bkz. README). 0.2.0: Android izin listesi daraltıldı, blockedPermissions eklendi.",
+    "//version": "runtimeVersion politikası appVersion — bu alan aynı zamanda GÜNCELLEME UYUMLULUĞUNU belirliyor. Native tarafı değiştiren her değişiklikte ELLE artırılmalı (bkz. README). 0.2.0: Android izin listesi daraltıldı; READ_MEDIA_VIDEO/AUDIO ve SYSTEM_ALERT_WINDOW blockedPermissions ile manifest'ten söküldü.",
     "version": "0.2.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
@@ -72,10 +72,11 @@
         "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
         "android.permission.READ_MEDIA_IMAGES"
       ],
-      "//blockedPermissions": "Uygulama yalnızca FOTOĞRAF okuyor: seçici mediaTypes vermeden çağrılıyor (varsayılan 'images') ve galeriye yazılan tek şey karşılaştırma kartı. Ses/video izinlerini biz istemiyoruz ama expo-image-picker ve expo-media-library eklentileri kendi manifest'lerine ekliyor — listeden çıkarmak yetmez, bu yüzden blockedPermissions ile manifest'ten söküyoruz. Play Console geniş medya erişimi için ayrı gerekçe formu istiyor; kullanılmayan iki izin yüzünden o formu doldurmak (ve reddedilme riskini almak) gereksiz.",
+      "//blockedPermissions": "Hiçbiri uygulamanın kullandığı bir yeteneğe karşılık gelmiyor; üçü de bağımlılıkların manifest'lerinden geliyor, o yüzden `permissions` listesinden çıkarmak YETMEZ — blockedPermissions manifest merge sırasında tools:node=\"remove\" işaretliyor. READ_MEDIA_VIDEO/AUDIO: seçici mediaTypes vermeden çağrılıyor (varsayılan 'images') ve galeriye yazılan tek şey karşılaştırma kartı — ses/videoya hiç dokunmuyoruz, ama expo-image-picker ile expo-media-library ikisini de ekliyor. Play Console geniş medya erişimi için ayrı gerekçe formu istiyor, kullanılmayan izinler için o riski almanın anlamı yok. SYSTEM_ALERT_WINDOW: Expo prebuild şablonu bunu hem src/debug hem src/main manifest'ine yazıyor; main'dekiler release AAB'ye de giriyor. Kullananlar yalnızca debug'a özel (expo-dev-menu/android/src/debug/.../DevMenuDevToolsDelegate.kt ve RN devsupport/DebugOverlayController.kt), release'de o kodlar hiç çalışmıyor. src/debug manifest'i izni AYRICA tanımladığı ve build tipi manifest'i main'den yüksek öncelikli olduğu için development build etkilenmiyor — sökülen yalnızca release.",
       "blockedPermissions": [
         "android.permission.READ_MEDIA_VIDEO",
-        "android.permission.READ_MEDIA_AUDIO"
+        "android.permission.READ_MEDIA_AUDIO",
+        "android.permission.SYSTEM_ALERT_WINDOW"
       ]
     },
     "extra": {

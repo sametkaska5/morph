@@ -1,6 +1,6 @@
 /**
  * Supabase veritabanı tipleri — supabase/migrations/ altındaki şemanın
- * (0001…0010) TypeScript karşılığı, `supabase gen types` çıktı formatında.
+ * (0001…0012) TypeScript karşılığı, `supabase gen types` çıktı formatında.
  *
  * NASIL GÜNCELLENİR: Yeni bir migration şemayı değiştirdiğinde bu dosyayı da
  * güncelle. Proje Supabase CLI ile link'liyse (supabase link --project-ref …)
@@ -18,6 +18,27 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
   public: {
     Tables: {
+      // İstemciden ERİŞİLMEZ: RLS açık ve hiçbir policy yok, yalnızca
+      // public.email_exists (security definer) yazıyor. Şemada var olduğu için
+      // burada da duruyor — `supabase gen types` üretse aynısını üretirdi.
+      email_lookup_throttle: {
+        Row: {
+          client_key: string;
+          window_started_at: string;
+          attempts: number;
+        };
+        Insert: {
+          client_key: string;
+          window_started_at?: string;
+          attempts?: number;
+        };
+        Update: {
+          client_key?: string;
+          window_started_at?: string;
+          attempts?: number;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           id: string;

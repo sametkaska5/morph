@@ -26,7 +26,7 @@ supabase link --project-ref <proje-ref>
 supabase db push
 ```
 
-Migration'lar `supabase/migrations/` altında sırayla uygulanır: `0001_init.sql` temel ERD + RLS, sonrakiler auth trigger, storage politikaları, ölçüm tipleri, `workout` gün tipi, avatar, hesap silme RPC'si, fotoğraf thumbnail'leri ve antrenman programı tabloları (`workout_items` / `workout_sets`).
+Migration'lar `supabase/migrations/` altında sırayla uygulanır: `0001_init.sql` temel ERD + RLS, sonrakiler auth trigger, storage politikaları, ölçüm tipleri, `workout` gün tipi, avatar, hesap silme RPC'si, fotoğraf thumbnail'leri, antrenman programı tabloları (`workout_items` / `workout_sets`) ve giriş ekranının hesap kontrolü (`email_exists` + hız sınırı).
 
 Şemayı değiştiren bir migration eklediğinde TypeScript tiplerini de yenile — `lib/database.types.ts` client'a `createClient<Database>` ile bağlı, bayat kalırsa derleme hataları yanlış yerden çıkar:
 
@@ -58,12 +58,13 @@ npx expo start
 
 ```
 app/
-  _layout.tsx          kök layout (providers, query client, auth gate)
-  index.tsx            açılış yönlendirmesi
+  _layout.tsx          kök layout (providers, query client, auth gate, splash)
+  index.tsx            açılış yönlendirmesi (karşılama / giriş kararı)
+  +not-found.tsx       eşleşmeyen route — derin bağlantı çıkmazından kurtarır
   (auth)/index.tsx     giriş
   forgot-password.tsx  şifre sıfırlama
   (onboarding)/
-    welcome.tsx        karşılama ekranı
+    welcome.tsx        karşılama ekranı (yalnızca ilk açılışta)
   (tabs)/              ana navigasyon
     _layout.tsx        sekme çubuğu (capture butonu doğrudan kamera açar)
     index.tsx          Ana Ekran
@@ -86,6 +87,7 @@ app/
   settings/
     notifications.tsx  bildirim tercihleri
     measurements.tsx   ölçüm tipleri yönetimi
+    password.tsx       şifre değiştirme (mevcut şifreyle yeniden kimlik doğrulaması)
     help.tsx           yardım
   privacy-policy.tsx, terms.tsx   yasal metinler
 
@@ -97,6 +99,7 @@ components/
   ConfirmDialog.tsx    temalı onay/bilgi kutusu — yıkıcı işlemlerde native Alert yerine
   PhotoStack.tsx       ızgarada kapağın arkasındaki yaprak destesi + açılma animasyonu
   EntryPhotoStrip.tsx  detayda bir günün fotoğrafları arası geçiş + kapak/silme
+  UpdateBanner.tsx     "yeni sürüm hazır" şeridi — çevrimdışı şeridiyle aynı yerde
   DraggableSheet.tsx, CaptureOptionsSheet.tsx, LegalScreen.tsx
 
 lib/
@@ -106,6 +109,7 @@ lib/
   useAuth.tsx          oturum context'i
   useIsOnline.ts       ağ durumu (netinfo)
   useKeyboardFocus.ts  klavye açılınca odaklanan alanı görünür tutar
+  onboarding.ts        karşılama ekranının "görüldü" bayrağı (cihazda, AsyncStorage)
 
   — veri katmanı (ekranlar buradan okur, kendi sorgularını yazmaz)
   entries.ts           girdi listeleri + detay + düzenleme + silme hook'ları
@@ -115,6 +119,7 @@ lib/
   profile.ts, profileStats.ts, account.ts   profil & hesap
   measurementTypes.ts, units.ts             ölçümler & birimler
   notifications.ts, notificationSettings.ts yerel bildirimler + bildirime dokununca kaydın detayına yönlendirme
+  appUpdates.ts        kablosuz güncelleme: öne gelişte kontrol, hazır olunca kullanıcıya bırakma
 
   — yazma & fotoğraf
   entryMutations.ts    fotoğraflı kaydın yazma yolu (offline kuyruk dahil)
@@ -144,6 +149,12 @@ supabase/migrations/   0001–0010 şema + RLS + storage politikaları, antrenma
 - **Native `Alert.alert` kullanılmaz.** Bilgi/uyarı için `showAlert(baslik, mesaj)` (bkz. `lib/appAlert.ts`), onay gerektiren yıkıcı işlemler için `<ConfirmDialog>`. Alert sistemin kendi penceresi: koyu temanın ortasında beyaz bir kutu olarak belirir, iOS/Android'de bambaşka görünür ve testte içeriği okunamaz. `showAlert` React dışından da çağrılabilir, o yüzden modüllerde de kullanılabiliyor.
 - **Hata, boşlukla karıştırılmaz.** Bir sorgu patladığında `isLoading` da false olur ve `data` undefined kalır: hata dalı yazılmazsa ekran "hiç kaydın yok" gibi görünür. Form ekranlarında bu daha ağır — boş dolan formun üstüne basılan "Kaydet" var olan veriyi siler. Bu yüzden **veri okuyan her form, sorgu hata verdiğinde hiç açılmaz**; hydration koşulları da `!error` içerir.
 - **Offline-first**: mutasyonlar çevrimdışıyken kuyruğa alınır (`registerEntryMutationDefaults` + `resumePausedMutations`), önbellek AsyncStorage'a kalıcılaştırılır. Bir sorgunun veri şekli değişirse `app/_layout.tsx`'teki `PERSIST_CACHE_BUSTER`'ı artır.
+- **Açılış sırası: splash → karar → ekran.** `expo-splash-screen` fontlar hazır olana kadar ekranda tutuluyor (`preventAutoHideAsync` global kapsamda, `hideAsync` ilk render commit'inden sonra) — eskiden splash kendiliğinden kayboluyordu ve arada düz siyah bir kare görünüyordu. Font yüklemesi HATA verirse de devam ediliyor: `fontsLoaded` sonsuza kadar false kalabildiği için uygulama açılışta sessizce kilitleniyordu; sistem fontuyla açılmak hiç açılmamaktan iyi. Ardından `app/index.tsx` karar veriyor — oturum varsa karşılama atlanır, yoksa ve daha önce görülmediyse karşılama, diğer her durumda giriş.
+- **Hesap kontrolü hız sınırlı ve başarısızlığı "bilmiyorum" demektir.** `email_exists`, giriş ekranındaki "hesabım mı yok, şifrem mi yanlış" belirsizliğini kaldırıyor; karşılığında bir e-postanın kayıtlı olup olmadığı anon anahtarla sorulabiliyor. Tek tek sızan bu bilgi zararsız, ama sınırsız bırakılırsa bir e-posta listesi döngüye sokulup "bu listeden kimler Remory kullanıyor" toplu olarak cevaplanabilir — o noktada sızan şey bir kullanıcı listesi. Fonksiyon bu yüzden IP başına 10 dakikada 10 çağrıyla sınırlı (bkz. migration 0012). Sınır aşılınca hata fırlıyor ve istemci bunu **`"unknown"`** olarak ele alıp genel mesaja düşüyor — `"missing"` DEĞİL. Fark kritik: `"missing"` dönseydi hesabı olan kullanıcıya hesabının olmadığı söylenip kayıt ekranına gönderilirdi, üstelik hiçbir hata belirtisi olmadan. `accountLookup` testi bunu kilitliyor.
+- **Renkle anlatılan hiçbir şey yalnızca renkle kalmaz.** Seçili durum, "hedefe uygun / uzak" yargısı, etkin/kapalı düğme — hepsi görselde renkle ayrışıyor ama ekran okuyucu ve renk körü kullanıcı için görünmez. Seçimler `accessibilityRole="radio"` + `accessibilityState={{ selected }}` ile, yargılar etiket metnine sözle yazılarak taşınıyor (bkz. `measurementRowLabel`, `app/compare/index.tsx`).
+- **Metni gösterge ile değişen düğmelerde etiket SABİT verilir.** "Kaydet", "Paylaş", "Giriş yap" gibi düğmeler işlem sürerken metni `ActivityIndicator`'a bırakıyor; etiket verilmezse düğmenin erişilebilir adı tam da en kritik anda kayboluyor ve ekran okuyucu sadece "düğme" diyor. Aynı yerlerde `accessibilityState={{ busy, disabled }}` de veriliyor.
+- **Dokunmayı yutan sarmalayıcılar düğme değildir.** Sheet ve modal içeriklerini saran `<Pressable onPress={() => {}}>` yalnızca dışarı tıklamayı engelliyor; `accessible={false}` ile ekran okuyucuya sunulmuyor, kapatan arka plan ise `accessibilityLabel="Kapat"` alıyor. Aksi halde kullanıcı isimsiz iki düğme arasında dolaşıyordu.
+- **Şifre değiştirmek yeniden kimlik doğrulaması ister.** Supabase'in `updateUser({ password })` çağrısı eski şifreyi sormuyor — açık oturum yeterli. Yani kilidi açık bir telefonu eline geçiren biri şifreyi değiştirip hesabın sahibini kilitleyebilirdi. `settings/password.tsx` değiştirmeden önce `signInWithPassword` ile mevcut şifreyi doğruluyor (aynı kullanıcı için yeni oturum açar, `SIGNED_OUT` tetiklemez, önbellek temizlenmez). Bu adım kaldırılırsa ekran gözle bakınca aynen çalışmaya devam eder; `passwordScreen` testi o yüzden var.
 - **Oturum yenilemesi AppState'e bağlı.** `autoRefreshToken: true` tek başına yetmiyor: yenileme bir JS zamanlayıcısıyla yapılıyor, işletim sistemi ise arka plandaki uygulamanın zamanlayıcılarını donduruyor. Uygulama uzun süre arka planda kalınca token'ın süresi doluyor ve dönüşteki ilk istekler 401 alıyor — kullanıcı için bu, sebepsiz bir çıkış gibi görünüyor. `registerAuthAutoRefresh()` (bkz. `lib/supabase.ts`, kök layout'ta bir kez çağrılır) önplana geçişte `startAutoRefresh()` çağırıyor; bu yalnızca zamanlayıcıyı kurmakla kalmıyor, kaçırılan yenilemeyi ilk veri isteğinden önce telafi ediyor.
 
 ## Test
@@ -157,6 +168,8 @@ Testler `lib/__tests__/` altında, iki gruba ayrılıyor:
 **Saf mantık** — tarih, birim dönüşümü, ölçüm girdisi doğrulama, kapak-fotoğraf seçimi, grafik matematiği (`chart`), seri/trend hesapları (`stats`), hata metni eşlemesi (`errors`), bildirim yükünden kayıt kimliği çıkarma (`notificationTap`) ve oturum yenilemesinin AppState'e bağlanması (`authAutoRefresh`). Son ikisi "sessizce bozulan" davranışlar: kaldırıldıklarında hiçbir hata çıkmıyor, yalnızca kullanıcı bildirime dokununca yanlış yere düşüyor ya da arka plandan dönüşte oturumu kopmuş gibi görünüyor. `jest.setup.js` sahte Supabase env'i verip AsyncStorage ve Sentry'yi mock'layarak bu modüllerin ağa çıkmadan yüklenmesini sağlıyor.
 
 **Yazma yolu** — `entryMutations`, `workout`, `deleteEntry`. Uygulamanın en riskli kodu (veri kaybı senaryosu) ve saf olmadığı için `lib/__tests__/helpers/supabaseMock.ts` üzerinden test ediliyor: zincirlenebilir Supabase API'sini taklit eden, tablo başına sonuç kuyruğu tutan ve yapılan her çağrıyı kaydeden küçük bir harness. Testler "hangi tabloya, hangi sırayla, hangi yükle yazıldı" sorusunu doğruluyor — bayat fotoğraf temizliği, boşaltılan ölçümün silinmesi, silmede foreign key sırası gibi daha önce gerçekten yaşanmış hataları kilitliyor.
+
+**Yönlendirme** — açılış kararı (`app/index.tsx`) ve karşılama ekranı `onboardingRoute` testinde kilitli: ilk açılış karşılamaya gider, görüldükten sonra gitmez, oturum varsa hiç gösterilmez, oturum yüklenirken erken yönlendirme yapılmaz ve depolama patlarsa kullanıcı karşılamada KİLİTLENMEZ. `+not-found` ekranının kurtarma düğmesi de testli (`replace`, `push` değil — yoksa geri tuşu kullanıcıyı çıkmaza geri getirirdi).
 
 **Bileşen/ekran** — `ErrorState` ve on bir ekran (`profile/edit`, `entry/program`, `entry/workout`, `entry/edit/[id]`, `entry/[id]`, ana ekran, anı akışı, arama, karşılaştırma seçimi/sonucu, istatistikler, yıllık takvim) `@testing-library/react-native` ile render edilerek test ediliyor. İki odak var: (1) form doldurma — dört ekranda form `useEffect` yerine render sırasında "önceki değerle karşılaştır" kalıbıyla dolduruluyor, testler iki sessiz kırılmayı kilitliyor (formun hiç dolmaması ve kullanıcının yazdığının her render'da ezilmesi); (2) durum geçişleri — yükleme / hata / boş / veri, ve hata durumunda ham metin yerine `ErrorState` + çalışan "Tekrar dene".
 
@@ -181,11 +194,29 @@ Ortam değişkenleri `.env`'den gelmiyor — `.env` gitignore'da ve EAS onu gör
 eas env:push preview --path .env
 ```
 
-### Sentry kaynak haritası yüklemesi kapalı
+### Sentry kaynak haritaları
 
-`eas.json`'da release profillerinde `SENTRY_DISABLE_AUTO_UPLOAD=true` var. Sebebi: Sentry'nin Gradle eklentisi **yalnızca release derlemesinde** kaynak haritalarını sunucuya yüklemeye çalışıyor ve organizasyon/proje bilgisi olmadan `sentry-cli` hata döndürüp **build'i düşürüyor** (`An organization ID or slug is required`). Debug derlemesinde bu adım hiç çalışmadığı için `development` profili sorunsuz geçiyordu.
+Release build'lerinde kaynak haritaları Sentry'ye yükleniyor, yani yığın izleri küçültülmüş kod yerine gerçek dosya/satır olarak görünüyor. Üç parça birlikte çalışıyor ve **üçü de gerekli**:
 
-Sentry'nin kendisi çalışmaya devam ediyor — hatalar panoya düşüyor. Yalnızca yığın izleri küçültülmüş kod üzerinden görünüyor, okunması zor. Düzeltmek için Sentry'de bir auth token üretip EAS'e gizli değişken olarak eklemek ve `app.json`'daki plugin'e `organization`/`project` yazmak gerekiyor; o zaman bu satır kaldırılabilir.
+| Parça | Nerede | Ne işe yarıyor |
+|---|---|---|
+| `organization` / `project` | `app.json` → Sentry plugin | Hangi projeye yükleneceği |
+| `url` | `app.json` → Sentry plugin | **EU bölgesi** — aşağıya bak |
+| `SENTRY_AUTH_TOKEN` | EAS gizli değişkeni | Yükleme yetkisi |
+
+Plugin bunlardan `android/sentry.properties`'i üretiyor; doğrulamak için `npx expo prebuild --platform android --no-install` çalıştırıp dosyaya bakabilirsin (sonra `android/` klasörünü silmeyi ve `package.json` script'lerini geri almayı unutma).
+
+> ⚠️ **`url` satırı bu projede zorunlu.** Sentry organizasyonu **EU (Frankfurt)** bölgesinde — DSN'deki `ingest.de.sentry.io` bunu söylüyor. Plugin'in varsayılanı ise `https://sentry.io/` (US). O varsayılanla `sentry-cli` kimlik doğrulayamıyor: **token doğru, org doğru, proje doğru olsa bile** yükleme reddedilip build düşüyor. Hata mesajı da sebebi göstermiyor.
+
+**Auth token asla repoda tutulmuyor.** Plugin `authToken` seçeneğini kabul ediyor ama kendisi bunu kullanmaya karşı uyarıyor; token bunun yerine EAS gizli değişkeni olarak duruyor:
+
+```bash
+eas secret:create --scope project --name SENTRY_AUTH_TOKEN --type string
+```
+
+Token'ın kapsamları: `project:releases` ve `org:read`. Yenilemek gerekirse Sentry → Settings → Auth Tokens.
+
+> Geçmiş not: bu ayarlar yokken `eas.json`'ın release profillerinde `SENTRY_DISABLE_AUTO_UPLOAD=true` vardı, çünkü Gradle eklentisi yalnızca release derlemesinde yüklemeye çalışıp org/proje bilgisi olmadan build'i düşürüyordu (`An organization ID or slug is required`). Artık gerekmiyor ve kaldırıldı. Aynı hatayı yerelde `./gradlew` ile denerken görürsen sebebi budur — o durumda `SENTRY_DISABLE_AUTO_UPLOAD=true` ile çalıştır.
 
 ### Kablosuz güncelleme (EAS Update)
 
@@ -205,6 +236,14 @@ Bu yüzden `eas.json`'daki **`appVersionSource` `local` olmak zorunda**. `remote
 
 Pratikte: JS-only değişiklik → `eas update` yeter. Native değişiklik → `version`'ı artır **ve** yeni build al.
 
+#### Güncelleme kullanıcıya nasıl ulaşıyor
+
+`expo-updates` açılışta kendiliğinden bir kez bakıp indiriyor, ama indirdiğini **ancak bir sonraki soğuk açılışta** uyguluyor. Uygulamayı günlerce arka planda tutan kullanıcı için bu pratikte "hiçbir zaman" demek: güncelleme cihazda hazır bekler, kimsenin haberi olmaz. `lib/appUpdates.ts` iki şey ekliyor — uygulama öne geldiğinde tekrar bakmak (15 dakikada birden sık değil, aksi halde günde onlarca gereksiz istek) ve hazır olduğunda `UpdateBanner`'ı göstermek.
+
+Yeniden başlatma **asla kendiliğinden** yapılmıyor, yalnızca kullanıcı dokununca: reload o an ekranda ne varsa siler (yazılmakta olan not, seçilmiş fotoğraf). Kaydetme sürerken (`useIsMutating`) düğme kapalı — yarıda kesilen bir fotoğraf yüklemesi kullanıcı için veri kaybı gibi görünürdü. Kuyruğa alınmış çevrimdışı kayıtlar reload'dan etkilenmiyor; mutation'lar AsyncStorage'a kalıcılaştırıldığı için `resumePausedMutations` onları devralıyor.
+
+> `ready` bayrağı bilerek expo-updates'in kendi `isUpdatePending`'inden okunuyor, kendi state'imizden değil. Açılıştaki otomatik indirme bizim kodumuzdan geçmiyor — kendi bayrağımızı tutsaydık o durumda hiç açılmaz ve zaten hazır olan güncelleme duyurulmazdı.
+
 ## Kalite kontrolleri
 
 Üç komut projenin kalite kapısı — üçü de temiz geçmeden değişiklik gönderme:
@@ -223,7 +262,7 @@ Biçimlendirme Prettier'ın işi (`npm run format` yazar, `npm run format:check`
 
 Ana akışlar uçtan uca çalışır durumda: auth, kayıt oluşturma/düzenleme/silme, fotoğrafsız gün ve antrenman programı, offline ekleme + geri senkronizasyon, karşılaştırma, istatistikler, paylaşılabilir kart, bildirimler, profil ve ayarlar.
 
-Kalite kapısının üçü de temiz: ESLint sıfır sorun, `tsc --noEmit` temiz, 38 test paketi / 418 test geçiyor. Kod tabanında `any` yok — `@typescript-eslint/no-explicit-any` hata seviyesinde açık.
+Kalite kapısının üçü de temiz: ESLint sıfır sorun, `tsc --noEmit` temiz, 44 test paketi / 460 test geçiyor. Kod tabanında `any` yok — `@typescript-eslint/no-explicit-any` hata seviyesinde açık.
 
 ### Android izinleri
 
@@ -250,7 +289,7 @@ npx expo prebuild --platform android --no-install
 Ardından `android/app/src/main/AndroidManifest.xml`'de `tools:node="remove"` işaretlerini kontrol et. Merge'ün gerçek sonucunu görmek istersen Gradle'a sordur:
 
 ```bash
-cd android && ./gradlew :app:processReleaseMainManifest :app:processDebugMainManifest
+cd android && SENTRY_DISABLE_AUTO_UPLOAD=true ./gradlew :app:processReleaseMainManifest :app:processDebugMainManifest
 ```
 
 Sonuç `android/app/build/intermediates/merged_manifest/<variant>/` altında. İki uyarı: `processReleaseMainManifest` yerelde Sentry'nin yükleme adımını tetikleyip build'i düşürüyor, başına `SENTRY_DISABLE_AUTO_UPLOAD=true` koy (aynı sebep, bkz. yukarıdaki Sentry bölümü). İşin bitince **üretilen `android/` klasörünü sil** — proje yönetilen (CNG) akışta, `android/` yerelde tutulmaz; `package.json`'daki `android`/`ios` script'lerini de geri al, prebuild onları `expo start --*` yerine `expo run:*` olarak değiştiriyor.
@@ -268,7 +307,8 @@ WAKE_LOCK  WRITE_EXTERNAL_STORAGE
 
 ## Bilinen açık uçlar
 
-- Onboarding tek ekranda (`welcome.tsx`); planlanan ek adımlar henüz yok.
-- Yasal metinler, onboarding ve `settings/help.tsx`'in render testi yok — içerikleri statik. Veri yazan ve geri alınamaz akışların hepsi testli.
+- Onboarding tek ekranda (`welcome.tsx`); planlanan ek adımlar henüz yok. Akış bağlı ve testli — adım eklemek istendiğinde `app/index.tsx`'teki karara dokunmadan `(onboarding)` altına yeni ekran koymak yeterli.
+- Yasal metinler ve `settings/help.tsx`'in render testi yok — içerikleri statik. Veri yazan ve geri alınamaz akışların hepsi testli.
+- `assets/images/adaptive-icon.png` ile `splash-icon.png` bire bir aynı dosya. Android adaptif ikonun dış bölgesini kırptığı için logonun kenarları kesiliyor — güvenli alanı olan ayrı bir varyant gerekiyor.
 - `npm run gen:types` yalnızca proje Supabase CLI'a link'liyken çalışır; aksi halde `lib/database.types.ts` elle güncellenmeli.
 - Galeriye kaydetme (`app/compare/index.tsx`), `expo-media-library`'yi try/catch'li `require` ile yüklüyor: bu native modül Expo Go'da bulunmadığı için import anında throw eder, yakalanır ve "Kaydet" bilinçli olarak devre dışı kalıp kullanıcıyı development build'e / "Paylaş"a yönlendirir. Beklenen davranış — galeri kaydı için development/production build gerekir.

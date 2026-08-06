@@ -29,6 +29,36 @@ function fmtDate(d: string) {
   return new Date(d).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" });
 }
 
+/**
+ * Değişim satırının ekran okuyucuya okunacak hâli.
+ *
+ * Satır görselde dört ayrı metin düğümü (ad, başlangıç, bitiş, değişim) ve
+ * etiketsizken ekran okuyucu bunları ilişkisiz parçalar olarak sıralıyordu:
+ * "Kilo", "80", "75", "↓ 5 kg". Neyin neye dönüştüğü kayboluyordu.
+ *
+ * Bir de şu var: değişimin hedefe uygun olup olmadığı SADECE renkle anlatılıyor
+ * (yeşil/kırmızı). Renk körü kullanıcı ve ekran okuyucu bu bilgiyi hiç
+ * alamıyordu — etikete sözle yazıyoruz.
+ */
+export function measurementRowLabel(row: {
+  name: string;
+  unit: string;
+  startVal: number | null;
+  endVal: number | null;
+  delta: number | null;
+  isGood: boolean;
+}): string {
+  const from = row.startVal != null ? `${row.startVal} ${row.unit}` : "kayıt yok";
+  const to = row.endVal != null ? `${row.endVal} ${row.unit}` : "kayıt yok";
+
+  if (row.delta == null) return `${row.name}: ${from} iken ${to}`;
+  if (row.delta === 0) return `${row.name}: ${from}, değişim yok`;
+
+  const direction = row.delta > 0 ? "arttı" : "azaldı";
+  const judgement = row.isGood ? "hedefe uygun" : "hedeften uzak";
+  return `${row.name}: ${from} iken ${to} oldu, ${Math.abs(row.delta)} ${row.unit} ${direction}, ${judgement}`;
+}
+
 export default function Compare() {
   const { a, b } = useLocalSearchParams<{ a: string; b: string }>();
   const { data, isLoading, error, refetch } = useComparison(a, b);
@@ -69,6 +99,7 @@ export default function Compare() {
       <View className="px-4 mt-2">
         <Pressable
           onPress={() => router.replace("/compare/pick")}
+          accessibilityRole="button"
           style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
           className="border border-accent rounded-[14px] py-3 items-center"
         >
@@ -159,8 +190,17 @@ function ComparisonBody({ data }: { data: ComparisonData }) {
     <View className="mt-3">
       <View ref={photoBlockRef} collapsable={false} className="mx-4 rounded-card overflow-hidden flex-row h-72 mb-4">
         <View className="flex-1 bg-surface relative">
+          {/* Ekranın ASIL içeriği bu iki fotoğraf; etiketsizken ekran okuyucu
+              hiçbir şey duyurmuyordu ve karşılaştırma boş bir kutu gibi geliyordu. */}
           {start.photoUrl ? (
-            <Image source={{ uri: start.photoUrl }} style={{ flex: 1 }} resizeMode="cover" />
+            <Image
+              source={{ uri: start.photoUrl }}
+              accessible
+              accessibilityRole="image"
+              accessibilityLabel={`Önce: ${fmtDate(start.date)}`}
+              style={{ flex: 1 }}
+              resizeMode="cover"
+            />
           ) : null}
           <View className="absolute top-2.5 left-2.5 bg-black/75 rounded-md px-2 py-1">
             <Text className="text-text text-xs font-semibold">{fmtDate(start.date)}</Text>
@@ -169,7 +209,14 @@ function ComparisonBody({ data }: { data: ComparisonData }) {
         <View style={{ width: 1 }} className="bg-white/15" />
         <View className="flex-1 bg-surface relative">
           {end.photoUrl ? (
-            <Image source={{ uri: end.photoUrl }} style={{ flex: 1 }} resizeMode="cover" />
+            <Image
+              source={{ uri: end.photoUrl }}
+              accessible
+              accessibilityRole="image"
+              accessibilityLabel={`Sonra: ${fmtDate(end.date)}`}
+              style={{ flex: 1 }}
+              resizeMode="cover"
+            />
           ) : null}
           <View className="absolute top-2.5 right-2.5 bg-black/75 border border-accent rounded-md px-2 py-1">
             <Text className="text-text text-xs font-semibold">{fmtDate(end.date)}</Text>
@@ -178,9 +225,15 @@ function ComparisonBody({ data }: { data: ComparisonData }) {
       </View>
 
       <View className="mx-4 mb-4 flex-row gap-2">
+        {/* Etiket SABİT veriliyor: işlem sürerken metin yerini ActivityIndicator'a
+            bırakıyor ve düğmenin erişilebilir adı tamamen kayboluyordu — ekran
+            okuyucu "düğme" deyip geçiyordu. `disabled` de ayrıca bildiriliyor. */}
         <Pressable
           onPress={handleSave}
           disabled={pendingAction !== null}
+          accessibilityRole="button"
+          accessibilityLabel="Galeriye kaydet"
+          accessibilityState={{ disabled: pendingAction !== null, busy: pendingAction === "save" }}
           style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
           className="flex-1 flex-row items-center justify-center gap-2 border border-border rounded-[12px] py-3 bg-surface"
         >
@@ -196,6 +249,9 @@ function ComparisonBody({ data }: { data: ComparisonData }) {
         <Pressable
           onPress={handleShare}
           disabled={pendingAction !== null}
+          accessibilityRole="button"
+          accessibilityLabel="Karşılaştırmayı paylaş"
+          accessibilityState={{ disabled: pendingAction !== null, busy: pendingAction === "share" }}
           style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
           className="flex-1 flex-row items-center justify-center gap-2 border border-accent rounded-[12px] py-3 bg-accentSoft"
         >
@@ -219,6 +275,8 @@ function ComparisonBody({ data }: { data: ComparisonData }) {
           {rows.map((r, i) => (
             <View
               key={r.id}
+              accessible
+              accessibilityLabel={measurementRowLabel(r)}
               className={`flex-row items-center justify-between py-2 ${
                 i < rows.length - 1 ? "border-b border-border" : ""
               }`}

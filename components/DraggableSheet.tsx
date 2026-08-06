@@ -70,11 +70,33 @@ export function DraggableSheet({
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <Animated.View style={[{ flex: 1 }, backdropStyle]}>
-          <Pressable onPress={onClose} className="flex-1 bg-black/60 justify-end">
+          {/* Arka plan hem karartma hem kapatma hedefi. Etiketsizken ekran
+              okuyucu onu "isimsiz düğme" olarak duyuruyordu — ne olduğu ve
+              basılınca ne olacağı belirsizdi. */}
+          <Pressable
+            onPress={onClose}
+            accessibilityRole="button"
+            accessibilityLabel="Kapat"
+            className="flex-1 bg-black/60 justify-end"
+          >
             <Animated.View style={sheetStyle}>
-              <Pressable onPress={() => {}} className="bg-bg border-t border-border rounded-t-[24px] px-5 pb-10">
+              {/* Bu Pressable yalnızca dokunmayı yutuyor (sheet'e basmak
+                  kapatmasın diye) — bir eylem değil, o yüzden ekran okuyucuya
+                  düğme olarak sunulmuyor. accessibilityViewIsModal odağı
+                  sheet'in içinde tutuyor. */}
+              <Pressable
+                onPress={() => {}}
+                accessible={false}
+                accessibilityViewIsModal
+                className="bg-bg border-t border-border rounded-t-[24px] px-5 pb-10"
+              >
                 <GestureDetector gesture={panGesture}>
-                  <View className="items-center py-3">
+                  {/* Sürükleme tutamağı görsel bir ipucu; okunacak bir içeriği yok. */}
+                  <View
+                    accessibilityElementsHidden
+                    importantForAccessibility="no-hide-descendants"
+                    className="items-center py-3"
+                  >
                     <View className="w-10 h-1.5 rounded-full bg-white/25" />
                   </View>
                 </GestureDetector>

@@ -54,9 +54,16 @@ export function ConfirmDialog({
     <Modal visible={visible} transparent animationType="fade" onRequestClose={dismiss}>
       {/* Dışarı dokununca kapanır; içteki Pressable dokunmayı yutuyor ki
           kutunun üstüne basmak kapatmasın. */}
-      <Pressable onPress={dismiss} className="flex-1 bg-black/60 items-center justify-center px-8">
+      <Pressable
+        onPress={dismiss}
+        accessibilityRole="button"
+        accessibilityLabel="Kapat"
+        className="flex-1 bg-black/60 items-center justify-center px-8"
+      >
         <Pressable
           onPress={() => {}}
+          // Dokunmayı yutan sarmalayıcı; bir eylem değil, düğme olarak sunulmamalı.
+          accessible={false}
           // Ekran okuyucu kutuyu tek bir duyuru olarak okusun: başlık ve
           // açıklama ayrı ayrı gezilecek metinler değil, tek bir soru.
           accessibilityViewIsModal

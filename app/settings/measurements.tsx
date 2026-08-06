@@ -119,6 +119,10 @@ export default function MeasurementSettingsScreen() {
             {defaults.map((t, i) => (
               <View
                 key={t.id}
+                // İsim ve birim ayrı düğümler: "Kilo" ve "kg" ilişkisiz iki
+                // parça olarak okunuyordu. Tek duyuru hâline getiriyoruz.
+                accessible
+                accessibilityLabel={`${t.name}, ${t.unit}`}
                 className={`flex-row items-center justify-between px-4 py-3 ${
                   i < defaults.length - 1 ? "border-b border-border" : ""
                 }`}
@@ -141,14 +145,29 @@ export default function MeasurementSettingsScreen() {
                     i < custom.length - 1 ? "border-b border-border" : ""
                   }`}
                 >
-                  <View>
+                  {/* Sil düğmesi ayrı bir odak hedefi olarak kalmalı, o yüzden
+                      SATIRIN tamamını değil yalnızca metin kısmını grupluyoruz.
+                      Birim de bu etikete giriyor ve kendi düğümü gizleniyor —
+                      aksi halde aynı bilgi iki kez okunurdu. */}
+                  <View
+                    accessible
+                    accessibilityLabel={`${t.name}, ${t.unit}, ${
+                      t.target_direction === "decrease_is_good" ? "azalması iyi" : "artması iyi"
+                    }`}
+                  >
                     <Text className="text-text text-base capitalize">{t.name}</Text>
                     <Text className="text-textFaint text-sm mt-0.5">
                       {t.target_direction === "decrease_is_good" ? "azalması iyi" : "artması iyi"}
                     </Text>
                   </View>
                   <View className="flex-row items-center gap-3">
-                    <Text className="text-textMuted text-sm">{t.unit}</Text>
+                    <Text
+                      accessibilityElementsHidden
+                      importantForAccessibility="no"
+                      className="text-textMuted text-sm"
+                    >
+                      {t.unit}
+                    </Text>
                     <Pressable
                       hitSlop={10}
                       accessibilityRole="button"
@@ -166,12 +185,15 @@ export default function MeasurementSettingsScreen() {
 
           <Text className="text-textFaint text-sm font-semibold mb-2 tracking-wide">YENİ ÖLÇÜM EKLE</Text>
           <View className="bg-surface border border-border rounded-card p-4 mb-6">
+            {/* Etiket placeholder'a bırakılmıyor: yazmaya başlanınca placeholder
+                kayboluyor ve alanın erişilebilir adı da onunla gidiyor. */}
             <TextInput
               ref={nameRef}
               value={name}
               onChangeText={setName}
               placeholder="İsim (örn. Kol Çevresi)"
               placeholderTextColor="#8B8A82"
+              accessibilityLabel="Ölçüm ismi"
               onFocus={() => revealField(nameRef.current)}
               className="text-text text-base bg-bg rounded-lg px-3 py-3 mb-3"
             />
@@ -181,13 +203,19 @@ export default function MeasurementSettingsScreen() {
               onChangeText={setUnit}
               placeholder="Birim (örn. cm)"
               placeholderTextColor="#8B8A82"
+              accessibilityLabel="Ölçüm birimi"
               onFocus={() => revealField(unitRef.current)}
               className="text-text text-base bg-bg rounded-lg px-3 py-3 mb-3"
             />
 
-            <View className="flex-row gap-2 mb-3">
+            {/* İki seçenekli bir radyo grubu. Hangisinin SEÇİLİ olduğu yalnızca
+                renkle anlatılıyordu — ekran okuyucu ikisini de aynı okuyor,
+                kullanıcı hangisinin etkin olduğunu anlayamıyordu. */}
+            <View accessibilityRole="radiogroup" className="flex-row gap-2 mb-3">
               <Pressable
                 onPress={() => setDirection("decrease_is_good")}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: direction === "decrease_is_good" }}
                 style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
                 className={`flex-1 py-3 rounded-lg items-center border ${
                   direction === "decrease_is_good" ? "bg-accent border-accent" : "bg-white/5 border-white/15"
@@ -199,6 +227,8 @@ export default function MeasurementSettingsScreen() {
               </Pressable>
               <Pressable
                 onPress={() => setDirection("increase_is_good")}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: direction === "increase_is_good" }}
                 style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
                 className={`flex-1 py-3 rounded-lg items-center border ${
                   direction === "increase_is_good" ? "bg-accent border-accent" : "bg-white/5 border-white/15"
@@ -210,9 +240,14 @@ export default function MeasurementSettingsScreen() {
               </Pressable>
             </View>
 
+            {/* Etiket sabit: eklerken metin ActivityIndicator'a dönüşüyor ve
+                düğmenin erişilebilir adı kayboluyordu. */}
             <Pressable
               onPress={handleAdd}
               disabled={addMutation.isPending}
+              accessibilityRole="button"
+              accessibilityLabel="Ölçüm ekle"
+              accessibilityState={{ disabled: addMutation.isPending, busy: addMutation.isPending }}
               style={({ pressed }) => ({ opacity: pressed ? 0.85 : addMutation.isPending ? 0.7 : 1 })}
               className="bg-accent rounded-lg py-3 items-center"
             >

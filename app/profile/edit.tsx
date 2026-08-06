@@ -155,9 +155,16 @@ export default function EditProfileScreen() {
         className="bg-surface border border-border rounded-button px-4 text-text text-base mb-6"
       />
 
+      {/* Etiket sabit: kaydederken metin ActivityIndicator'a dönüşüyor. */}
       <Pressable
         onPress={handleSave}
         disabled={updateMutation.isPending || uploading}
+        accessibilityRole="button"
+        accessibilityLabel="Kaydet"
+        accessibilityState={{
+          disabled: updateMutation.isPending || uploading,
+          busy: updateMutation.isPending || uploading,
+        }}
         style={{ opacity: updateMutation.isPending || uploading ? 0.7 : 1 }}
         className="bg-accent rounded-button py-4 items-center mb-8"
       >

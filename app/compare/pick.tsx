@@ -153,9 +153,16 @@ export default function PickComparison() {
       )}
 
       <View className="px-4 pb-6 pt-3">
+        {/* Düğme neden kapalı, görselde yalnızca soluk renkten anlaşılıyordu.
+            İpucu kaç fotoğraf gerektiğini söylüyor. */}
         <Pressable
           onPress={handleContinue}
           disabled={selected.length !== 2}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: selected.length !== 2 }}
+          accessibilityHint={
+            selected.length === 2 ? undefined : "Karşılaştırmak için iki fotoğraf seçmelisin"
+          }
           style={({ pressed }) => ({ opacity: pressed && selected.length === 2 ? 0.85 : 1 })}
           className={`rounded-button py-4 items-center ${selected.length === 2 ? "bg-accent" : "bg-surface"}`}
         >

@@ -306,6 +306,7 @@ export default function AuthScreen() {
           <Pressable
             onPress={() => router.push("/forgot-password")}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityRole="button"
             style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
             className="items-end mb-2 py-1"
           >
@@ -351,9 +352,14 @@ export default function AuthScreen() {
           </View>
         ) : null}
 
+        {/* Etiket sabit: yüklenirken metin ActivityIndicator'a dönüşüyor ve
+            düğmenin erişilebilir adı kayboluyordu. */}
         <Pressable
           onPress={handleSubmit}
           disabled={loading}
+          accessibilityRole="button"
+          accessibilityLabel={mode === "login" ? "Giriş yap" : "Hesabı oluştur"}
+          accessibilityState={{ disabled: loading, busy: loading }}
           style={({ pressed }) => ({ opacity: pressed ? 0.85 : loading ? 0.7 : 1 })}
           className="bg-accent rounded-button py-4 items-center mt-4"
         >

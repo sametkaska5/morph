@@ -56,8 +56,13 @@ export default function HelpScreen() {
         ))}
       </View>
 
+      {/* Uygulamadan ÇIKIP e-posta uygulamasını açıyor — ekran okuyucu
+          kullanıcısı bunu önceden bilmeli, yoksa uygulama çökmüş gibi gelir. */}
       <Pressable
         onPress={sendFeedback}
+        accessibilityRole="button"
+        accessibilityLabel="Geri bildirim gönder"
+        accessibilityHint="E-posta uygulamanı açar"
         style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
         className="bg-surface border border-border rounded-button px-4 py-4 flex-row items-center gap-3 mb-5"
       >
@@ -69,6 +74,7 @@ export default function HelpScreen() {
       <View className="bg-surface border border-border rounded-card overflow-hidden mb-5">
         <Pressable
           onPress={() => router.push("/privacy-policy")}
+          accessibilityRole="button"
           style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
           className="flex-row items-center gap-3 px-4 py-3 border-b border-border"
         >
@@ -78,6 +84,7 @@ export default function HelpScreen() {
         </Pressable>
         <Pressable
           onPress={() => router.push("/terms")}
+          accessibilityRole="button"
           style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
           className="flex-row items-center gap-3 px-4 py-3"
         >

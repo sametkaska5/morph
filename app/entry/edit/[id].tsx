@@ -396,9 +396,17 @@ export default function EditEntry() {
         </Text>
       ) : null}
 
+      {/* Etiket sabit: kaydederken metin ActivityIndicator'a dönüşüyor ve
+          düğmenin erişilebilir adı kayboluyordu. */}
       <Pressable
         onPress={handleUpdate}
         disabled={updateMutation.isPending || uploading}
+        accessibilityRole="button"
+        accessibilityLabel="Kaydet"
+        accessibilityState={{
+          disabled: updateMutation.isPending || uploading,
+          busy: updateMutation.isPending || uploading,
+        }}
         style={({ pressed }) => ({ opacity: pressed ? 0.85 : updateMutation.isPending || uploading ? 0.7 : 1 })}
         className="bg-accent p-4 rounded-button items-center"
       >
@@ -412,6 +420,7 @@ export default function EditEntry() {
       <Pressable
         onPress={() => router.back()}
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        accessibilityRole="button"
         style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
         className="mt-4 items-center mb-8"
       >

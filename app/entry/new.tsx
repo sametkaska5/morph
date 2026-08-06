@@ -166,8 +166,14 @@ export default function NewEntry() {
         <Image source={{ uri: photo.uri }} className="w-full h-72 rounded-card mb-4" resizeMode="cover" />
       ) : null}
 
+      {/* "Tarih" ve değer ayrı iki metin düğümü; etiketsizken ekran okuyucu
+          ikisini ilişkisiz okuyor ve bunun DOKUNULABİLİR olduğu hiç belli
+          olmuyordu. Etiket + ipucu ikisini de çözüyor. */}
       <Pressable
         onPress={() => setShowPicker(true)}
+        accessibilityRole="button"
+        accessibilityLabel={`Tarih: ${date.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}`}
+        accessibilityHint="Tarih seçiciyi açar"
         style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
         className="bg-surface border border-border rounded-button px-4 py-4 mb-3 flex-row items-center justify-between"
       >
@@ -286,6 +292,7 @@ export default function NewEntry() {
       <Pressable
         onPress={() => router.back()}
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        accessibilityRole="button"
         style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
         className="mt-4 items-center mb-8"
       >

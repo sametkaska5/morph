@@ -568,7 +568,14 @@ export default function Istatistikler() {
                   Bir fotoğraf seç — serin karta otomatik eklenir, indirip paylaşabilirsin.
                 </Text>
               </View>
-              <Pressable onPress={() => setShareModalVisible(false)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              {/* Yalnızca ikon — metin çocuğu olmadığı için etiket ŞART,
+                  yoksa ekran okuyucu "düğme" deyip geçiyor. */}
+              <Pressable
+                onPress={() => setShareModalVisible(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                accessibilityRole="button"
+                accessibilityLabel="Paylaşımı kapat"
+              >
                 <Feather name="x" size={20} color="#F5F3EC" />
               </Pressable>
             </View>
@@ -587,9 +594,16 @@ export default function Istatistikler() {
                     {shareablePhotos.map((photo) => {
                       const isActive = selectedSharePhoto?.id === photo.id;
                       return (
+                        // Hangi fotoğrafın seçili olduğu yalnızca KENARLIK
+                        // RENGİYLE anlatılıyordu — ekran okuyucu ve renk körü
+                        // kullanıcı için görünmez bir bilgi. `selected` durumu
+                        // bunu sözle taşıyor.
                         <Pressable
                           key={photo.id}
                           onPress={() => setSelectedSharePhotoId(photo.id)}
+                          accessibilityRole="radio"
+                          accessibilityLabel={`${new Date(photo.date).toLocaleDateString("tr-TR", { day: "numeric", month: "long" })} tarihli fotoğraf`}
+                          accessibilityState={{ selected: isActive }}
                           className={`rounded-[16px] overflow-hidden border ${isActive ? "border-accent" : "border-border"}`}
                         >
                           <Image source={{ uri: photo.photoUrl! }} style={{ width: 90, height: 90 }} resizeMode="cover" />
@@ -636,9 +650,17 @@ export default function Istatistikler() {
                 </View>
 
                 <View className="flex-row gap-2">
+                  {/* Etiketler sabit: işlem sürerken metin ActivityIndicator'a
+                      dönüşüyor ve düğmelerin erişilebilir adı kayboluyordu. */}
                   <Pressable
                     onPress={() => handleShareCard("save")}
                     disabled={sharePendingAction !== null}
+                    accessibilityRole="button"
+                    accessibilityLabel="Kartı galeriye indir"
+                    accessibilityState={{
+                      disabled: sharePendingAction !== null,
+                      busy: sharePendingAction === "save",
+                    }}
                     style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
                     className="flex-1 flex-row items-center justify-center gap-2 border border-border rounded-[12px] py-3 bg-surface"
                   >
@@ -654,6 +676,12 @@ export default function Istatistikler() {
                   <Pressable
                     onPress={() => handleShareCard("share")}
                     disabled={sharePendingAction !== null}
+                    accessibilityRole="button"
+                    accessibilityLabel="Kartı paylaş"
+                    accessibilityState={{
+                      disabled: sharePendingAction !== null,
+                      busy: sharePendingAction === "share",
+                    }}
                     style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
                     className="flex-1 flex-row items-center justify-center gap-2 border border-accent rounded-[12px] py-3 bg-accentSoft"
                   >

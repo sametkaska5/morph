@@ -18,6 +18,7 @@ function CaptureOption({
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
       style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
       className="flex-row items-center gap-3 px-4 py-4 rounded-button bg-surface border border-border"
     >

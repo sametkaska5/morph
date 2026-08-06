@@ -36,6 +36,7 @@ function ActionMenuOption({
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
       style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
       className={`flex-row items-center gap-3 px-4 py-4 rounded-button border ${
         danger ? "bg-danger/10 border-danger/30" : "bg-surface border-border"
@@ -353,9 +354,17 @@ export default function EntryDetail() {
     >
       <Pressable
         onPress={() => setShowActionMenu(false)}
+        accessibilityRole="button"
+        accessibilityLabel="Kapat"
         className="flex-1 bg-black/60 items-center justify-center px-8"
       >
-        <Pressable onPress={() => {}} className="w-full bg-bg border border-border rounded-card p-5">
+        {/* Dokunmayı yutan sarmalayıcı — eylem değil, düğme olarak sunulmamalı. */}
+        <Pressable
+          onPress={() => {}}
+          accessible={false}
+          accessibilityViewIsModal
+          className="w-full bg-bg border border-border rounded-card p-5"
+        >
           <Text className="text-text text-xl font-bold mb-1 text-center">İşlemler</Text>
           <Text className="text-textMuted text-sm mb-5 text-center">Bu anı için ne yapmak istiyorsun?</Text>
           <View className="gap-3">
@@ -380,6 +389,7 @@ export default function EntryDetail() {
           <Pressable
             onPress={() => setShowActionMenu(false)}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityRole="button"
             style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
             className="items-center mt-4 py-2"
           >

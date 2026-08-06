@@ -81,6 +81,8 @@ export default function ForgotPasswordScreen() {
       <Pressable
         onPress={() => router.back()}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        accessibilityRole="button"
+        accessibilityLabel="Geri dön"
         style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1, position: "absolute", top: 56, left: 24 })}
       >
         <Feather name="chevron-left" size={22} color="#F5F3EC" />
@@ -141,9 +143,13 @@ export default function ForgotPasswordScreen() {
         {infoMsg && step === "reset" ? <Text className="text-accent text-sm mb-2">{infoMsg}</Text> : null}
         {errorMsg ? <Text className="text-danger text-base mb-2">{errorMsg}</Text> : null}
 
+        {/* Etiket sabit: yüklenirken metin ActivityIndicator'a dönüşüyor. */}
         <Pressable
           onPress={step === "request" ? handleSendCode : handleResetPassword}
           disabled={loading}
+          accessibilityRole="button"
+          accessibilityLabel={step === "request" ? "Kod gönder" : "Şifreyi güncelle"}
+          accessibilityState={{ disabled: loading, busy: loading }}
           style={({ pressed }) => ({ opacity: pressed ? 0.85 : loading ? 0.7 : 1 })}
           className="bg-accent rounded-button py-4 items-center mt-4"
         >
@@ -161,6 +167,8 @@ export default function ForgotPasswordScreen() {
             onPress={handleSendCode}
             disabled={loading}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: loading }}
             style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
             className="mt-5 items-center py-2"
           >

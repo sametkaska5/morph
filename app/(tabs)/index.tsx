@@ -135,6 +135,7 @@ function EmptyState() {
       </Text>
       <Pressable
         onPress={openCapturePicker}
+        accessibilityRole="button"
         style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
         className="bg-accent rounded-button px-5 py-4 flex-row items-center gap-2"
       >

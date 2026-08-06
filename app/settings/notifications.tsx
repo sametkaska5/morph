@@ -183,6 +183,9 @@ export default function NotificationSettingsScreen() {
 
           <Pressable
             onPress={() => setShowPicker(true)}
+            accessibilityRole="button"
+            accessibilityLabel={`Hatırlatma saati: ${settings.reminder_time.slice(0, 5)}`}
+            accessibilityHint="Saat seçiciyi açar"
             style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
             className="bg-surface border border-border rounded-button px-4 py-4 flex-row items-center justify-between"
           >

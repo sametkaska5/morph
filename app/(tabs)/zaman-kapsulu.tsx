@@ -15,11 +15,13 @@ import { ErrorState } from "@/components/ErrorState";
 import { useScreenInsets } from "@/lib/useScreenInsets";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
-// (tabs)/_layout.tsx'teki tabBarStyle.height ile eşleşmeli — FlatList'in gerçek
+// (tabs)/_layout.tsx'teki TAB_CONTENT_HEIGHT ile eşleşmeli — FlatList'in gerçek
 // görünür alanı SCREEN_HEIGHT değil, tab bar'ın kapladığı kadar eksiği; sayfa
 // yüksekliği (pageHeight) bunu hesaba katmazsa pagingEnabled snap noktaları
 // gerçek viewport ile uyuşmayıp kaydırmada bir seferde 2-3 sayfa atlıyordu.
-const TAB_BAR_HEIGHT = 84;
+// Yalnızca YEDEK değer: asıl yükseklik sarmalayıcının gerçek ölçümünden geliyor
+// (measuredHeight), o yüzden buradaki sapma ilk kareden sonra düzeliyor.
+const TAB_BAR_HEIGHT = 68;
 
 // memo: sayfalama yeni sayfa eklediğinde ya da layout ölçümü değiştiğinde
 // liste yeniden render oluyor — memo sayesinde prop'ları değişmeyen monte
@@ -73,7 +75,17 @@ const CapsulePage = memo(function CapsulePage({
     >
       {/* ÖN YÜZ — fotoğraf */}
       <Animated.View
-        style={[{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backfaceVisibility: "hidden" }, frontStyle]}
+        style={[
+          {
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backfaceVisibility: "hidden",
+          },
+          frontStyle,
+        ]}
       >
         {entry.photoUrl ? (
           <Image
@@ -110,7 +122,17 @@ const CapsulePage = memo(function CapsulePage({
 
       {/* ARKA YÜZ — o güne ait ölçümler + not */}
       <Animated.View
-        style={[{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backfaceVisibility: "hidden" }, backStyle]}
+        style={[
+          {
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backfaceVisibility: "hidden",
+          },
+          backStyle,
+        ]}
         className="bg-bg px-5"
       >
         <View className="flex-1 justify-center">
@@ -160,7 +182,9 @@ const CapsulePage = memo(function CapsulePage({
               className="bg-surface border border-border rounded-card p-4 mt-4"
             >
               <View className="flex-row items-center justify-between mb-1.5">
-                <Text className="text-textFaint text-sm font-semibold tracking-wide">ANTRENMAN PROGRAMI</Text>
+                <Text className="text-textFaint text-sm font-semibold tracking-wide">
+                  ANTRENMAN PROGRAMI
+                </Text>
                 <Feather name="chevron-right" size={16} color="#8B8A82" />
               </View>
               {(entry.program ?? []).slice(0, 4).map((p, i) => (
@@ -172,7 +196,9 @@ const CapsulePage = memo(function CapsulePage({
                 </View>
               ))}
               {(entry.program ?? []).length > 4 ? (
-                <Text className="text-textFaint text-sm mt-1">+{(entry.program ?? []).length - 4} hareket daha</Text>
+                <Text className="text-textFaint text-sm mt-1">
+                  +{(entry.program ?? []).length - 4} hareket daha
+                </Text>
               ) : null}
             </Pressable>
           ) : null}
@@ -235,7 +261,12 @@ export default function ZamanKapsulu() {
   const entries = data?.pages.flat();
 
   if (isLoading) {
-    return <View className="flex-1 bg-bg" onLayout={(e) => setMeasuredHeight(e.nativeEvent.layout.height)} />;
+    return (
+      <View
+        className="flex-1 bg-bg"
+        onLayout={(e) => setMeasuredHeight(e.nativeEvent.layout.height)}
+      />
+    );
   }
 
   if (error) {
@@ -252,7 +283,9 @@ export default function ZamanKapsulu() {
         <View className="w-16 h-16 rounded-full bg-accentSoft border border-accent items-center justify-center mb-4">
           <Feather name="calendar" size={26} color="#8CE05A" />
         </View>
-        <Text className="text-text text-xl font-semibold mb-2 text-center">Henüz bir kaydın yok</Text>
+        <Text className="text-text text-xl font-semibold mb-2 text-center">
+          Henüz bir kaydın yok
+        </Text>
         <Text className="text-textMuted text-base text-center leading-6 mb-5 max-w-[260px]">
           İlk anını ekledikçe burada zaman içinde kayıp gidebileceksin.
         </Text>
@@ -283,7 +316,13 @@ export default function ZamanKapsulu() {
         removeClippedSubviews
         getItemLayout={(_, index) => ({ length: pageHeight, offset: pageHeight * index, index })}
         renderItem={({ item, index }) => (
-          <CapsulePage entry={item} index={index} total={entries.length} unitPref={unitPref} pageHeight={pageHeight} />
+          <CapsulePage
+            entry={item}
+            index={index}
+            total={entries.length}
+            unitPref={unitPref}
+            pageHeight={pageHeight}
+          />
         )}
         onEndReached={() => {
           if (hasNextPage) fetchNextPage();
@@ -291,7 +330,10 @@ export default function ZamanKapsulu() {
         onEndReachedThreshold={0.5}
         ListFooterComponent={
           isFetchingNextPage ? (
-            <View style={{ height: pageHeight, alignItems: "center", justifyContent: "center" }} className="bg-bg">
+            <View
+              style={{ height: pageHeight, alignItems: "center", justifyContent: "center" }}
+              className="bg-bg"
+            >
               <ActivityIndicator color="#8CE05A" />
             </View>
           ) : null

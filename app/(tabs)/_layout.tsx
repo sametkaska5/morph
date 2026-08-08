@@ -10,6 +10,26 @@ import { useAppUpdate } from "@/lib/appUpdates";
 import { openCapturePicker } from "@/lib/capture";
 import { UpdateBanner } from "@/components/UpdateBanner";
 
+/**
+ * Sekme çubuğunun güvenli alan HARİÇ yüksekliği ve simgelerin üstündeki boşluk.
+ *
+ * Değerler, simge+etiket bloğunun ÜSTÜNDEKİ ve ALTINDAKİ boşluğu eşitlemek için
+ * seçildi — göz bu iki aralığı karşılaştırıyor ve eşit olmadığında çubuk
+ * "orantısız" görünüyor. Hesap (dp):
+ *
+ *   blok yüksekliği    = simge 24 + boşluk + etiket ≈ 44
+ *   iç şerit           = 68 - 12 = 56  →  blok ortalanınca üstte/altta 6'şar
+ *   ayraç → simge üstü = 12 + 6 = 18
+ *   etiket → sistem tuşu üstü = 6 + (48 - 24) / 2 = 18   ✓
+ *
+ * Son terim, Android'in kendi gezinme çubuğunun iç boşluğu: 48dp'lik alanda
+ * 24dp'lik tuşlar ortalanıyor, yani üstte 12dp boşluk kalıyor. O boşluk bizim
+ * hesabımıza dahil çünkü kullanıcı iki simge sırası arasındaki TOPLAM aralığı
+ * görüyor.
+ */
+const TAB_CONTENT_HEIGHT = 68;
+const TAB_PADDING_TOP = 12;
+
 const ACCENT = "#8CE05A";
 const MUTED = "#6B6A62";
 const BG = "#0A0A08";
@@ -80,61 +100,68 @@ export default function TabsLayout() {
         <UpdateBanner onApply={applyUpdate} withSafeArea={isOnline} busy={isSaving} />
       ) : null}
       <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: ACCENT,
-        tabBarInactiveTintColor: MUTED,
-        tabBarStyle: {
-          backgroundColor: BG,
-          borderTopColor: "rgba(255,255,255,0.08)",
-          borderTopWidth: 0.5,
-          // Android'in 3 tuşlu gezinme çubuğu (veya iOS home indicator) olan
-          // cihazlarda sabit yükseklik, sekmeleri sistem tuşlarının olduğu bölgeye
-          // çok yaklaştırıp dokunmayı zorlaştırıyordu — güvenli alanı (insets.bottom)
-          // ekleyip içeriği o kadar yukarı itiyoruz.
-          height: 84 + insets.bottom,
-          paddingTop: 8,
-          paddingBottom: insets.bottom,
-        },
-        tabBarLabelStyle: { fontSize: 12 },
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Ana Ekran",
-          tabBarIcon: ({ color }) => <Feather name="home" size={24} color={color} />,
+        screenOptions={{
+          headerShown: false,
+          tabBarActiveTintColor: ACCENT,
+          tabBarInactiveTintColor: MUTED,
+          tabBarStyle: {
+            backgroundColor: BG,
+            borderTopColor: "rgba(255,255,255,0.08)",
+            borderTopWidth: 0.5,
+            // Android'in 3 tuşlu gezinme çubuğu (veya iOS home indicator) olan
+            // cihazlarda sabit yükseklik, sekmeleri sistem tuşlarının olduğu bölgeye
+            // çok yaklaştırıp dokunmayı zorlaştırıyordu — güvenli alanı (insets.bottom)
+            // ekleyip içeriği o kadar yukarı itiyoruz.
+            //
+            // İçerik yüksekliği 84 DEĞİL 68: tasarım sistemindeki 84, güvenli alanı
+            // OLMAYAN bir cihazda ölçülmüştü. 3 tuşlu gezinme çubuğunda (~48px)
+            // 84+48=132px çıkıyordu ve simgeler ekranın altından kopuk duruyordu.
+            // 68+48=116 daha derli toplu; jest çubuğunda (~16px) 84 ediyor, yani
+            // eski değerin aynısı. Dokunma hedefi 68-12=56px, 48px asgarisinin
+            // üstünde. Boşluk dengesinin hesabı TAB_CONTENT_HEIGHT'ın yanında.
+            height: TAB_CONTENT_HEIGHT + insets.bottom,
+            paddingTop: TAB_PADDING_TOP,
+            paddingBottom: insets.bottom,
+          },
+          tabBarLabelStyle: { fontSize: 12 },
         }}
-      />
-      <Tabs.Screen
-        name="zaman-kapsulu"
-        options={{
-          title: "Anı Akışı",
-          tabBarIcon: ({ color }) => <Feather name="calendar" size={24} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="capture"
-        options={{
-          title: "",
-          tabBarIcon: () => null,
-          tabBarButton: () => <CaptureButton />,
-        }}
-      />
-      <Tabs.Screen
-        name="istatistikler"
-        options={{
-          title: "İstatistikler",
-          tabBarIcon: ({ color }) => <Feather name="bar-chart-2" size={24} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="profil"
-        options={{
-          title: "Profil",
-          tabBarIcon: ({ color }) => <Feather name="user" size={24} color={color} />,
-        }}
-      />
+      >
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: "Ana Ekran",
+            tabBarIcon: ({ color }) => <Feather name="home" size={24} color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="zaman-kapsulu"
+          options={{
+            title: "Anı Akışı",
+            tabBarIcon: ({ color }) => <Feather name="calendar" size={24} color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="capture"
+          options={{
+            title: "",
+            tabBarIcon: () => null,
+            tabBarButton: () => <CaptureButton />,
+          }}
+        />
+        <Tabs.Screen
+          name="istatistikler"
+          options={{
+            title: "İstatistikler",
+            tabBarIcon: ({ color }) => <Feather name="bar-chart-2" size={24} color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="profil"
+          options={{
+            title: "Profil",
+            tabBarIcon: ({ color }) => <Feather name="user" size={24} color={color} />,
+          }}
+        />
       </Tabs>
     </View>
   );

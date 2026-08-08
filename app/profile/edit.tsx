@@ -12,8 +12,10 @@ import { uploadAvatar } from "@/lib/storage";
 import { supabase } from "@/lib/supabase";
 import { alertError } from "@/lib/alerts";
 import { ErrorState } from "@/components/ErrorState";
+import { useScreenInsets } from "@/lib/useScreenInsets";
 
 export default function EditProfileScreen() {
+  const screen = useScreenInsets();
   const { user } = useAuth();
   const { data: profile, isLoading, error, refetch } = useProfile(user?.id);
   const updateMutation = useUpdateProfile(user?.id);
@@ -99,7 +101,9 @@ export default function EditProfileScreen() {
 
   return (
     <KeyboardAwareScrollView
-      className="flex-1 bg-bg px-5 pt-14"
+      className="flex-1 bg-bg px-5"
+      style={{ paddingTop: screen.top }}
+      contentContainerStyle={{ paddingBottom: screen.bottom }}
       enableOnAndroid
       extraScrollHeight={30}
       keyboardShouldPersistTaps="handled"

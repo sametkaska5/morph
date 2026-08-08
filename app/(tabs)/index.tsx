@@ -10,6 +10,7 @@ import { useTimelineEntries, type EntryRow } from "@/lib/entries";
 import { useReduceMotion } from "@/lib/useReduceMotion";
 import { PhotoStack } from "@/components/PhotoStack";
 import { ErrorState } from "@/components/ErrorState";
+import { useScreenInsets } from "@/lib/useScreenInsets";
 
 const { width } = Dimensions.get("window");
 const GAP = 8;
@@ -147,6 +148,7 @@ function EmptyState() {
 }
 
 export default function AnaEkran() {
+  const screen = useScreenInsets();
   const { data: entries, isLoading, isRefetching, error, refetch } = useTimelineEntries();
   const isEmpty = entries?.length === 0;
 
@@ -217,7 +219,10 @@ export default function AnaEkran() {
 
   return (
     <View className="flex-1 bg-bg">
-      <View className="flex-row justify-between items-center px-4 pt-14 pb-4">
+      <View
+        className="flex-row justify-between items-center px-4 pb-4"
+        style={{ paddingTop: screen.top }}
+      >
         <View>
           <Text className="text-text text-3xl font-bold tracking-wide uppercase" accessibilityRole="header">
             remory

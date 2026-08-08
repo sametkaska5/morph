@@ -2,6 +2,7 @@ import { View, Pressable, ScrollView } from "react-native";
 import { Text } from "./Typography";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
+import { useScreenInsets } from "@/lib/useScreenInsets";
 
 export function LegalScreen({
   title,
@@ -12,8 +13,14 @@ export function LegalScreen({
   updatedAt: string;
   sections: { heading: string; body: string }[];
 }) {
+  const screen = useScreenInsets();
+
   return (
-    <ScrollView className="flex-1 bg-bg pt-14 px-4" contentContainerStyle={{ paddingBottom: 32 }}>
+    <ScrollView
+      className="flex-1 bg-bg px-4"
+      style={{ paddingTop: screen.top }}
+      contentContainerStyle={{ paddingBottom: screen.bottom }}
+    >
       <View className="flex-row items-center gap-3 mb-2">
         <Pressable
           onPress={() => router.back()}

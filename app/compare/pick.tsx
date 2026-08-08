@@ -11,6 +11,7 @@ import { fetchComparisonBetween } from "@/lib/comparison";
 import { usePickableEntries, type PickableEntry } from "@/lib/entries";
 import { queryKeys } from "@/lib/queryKeys";
 import { ErrorState } from "@/components/ErrorState";
+import { useScreenInsets } from "@/lib/useScreenInsets";
 
 const { width } = Dimensions.get("window");
 const THUMB_SIZE = (width - 20 * 2 - 8 * 2) / 3;
@@ -77,6 +78,7 @@ const PickThumb = memo(function PickThumb({
 });
 
 export default function PickComparison() {
+  const screen = useScreenInsets();
   const { user } = useAuth();
   const { data: entries, isLoading, error, refetch } = usePickableEntries(user?.id);
   const queryClient = useQueryClient();
@@ -109,7 +111,7 @@ export default function PickComparison() {
   }
 
   return (
-    <View className="flex-1 bg-bg" style={{ paddingTop: 56 }}>
+    <View className="flex-1 bg-bg" style={{ paddingTop: screen.top }}>
       <View className="flex-row items-center justify-between px-4 mb-1">
         <Pressable
           onPress={() => router.back()}
@@ -152,7 +154,7 @@ export default function PickComparison() {
         />
       )}
 
-      <View className="px-4 pb-6 pt-3">
+      <View className="px-4 pt-3" style={{ paddingBottom: screen.insets.bottom + 24 }}>
         {/* Düğme neden kapalı, görselde yalnızca soluk renkten anlaşılıyordu.
             İpucu kaç fotoğraf gerektiğini söylüyor. */}
         <Pressable

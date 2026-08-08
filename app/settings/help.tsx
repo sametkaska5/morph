@@ -3,6 +3,7 @@ import { Text } from "@/components/Typography";
 import { router } from "expo-router";
 import Constants from "expo-constants";
 import Feather from "@expo/vector-icons/Feather";
+import { useScreenInsets } from "@/lib/useScreenInsets";
 
 const ACCENT = "#8CE05A";
 const SUPPORT_EMAIL = "sametkaska5@gmail.com";
@@ -23,6 +24,7 @@ const FAQ = [
 ];
 
 export default function HelpScreen() {
+  const screen = useScreenInsets();
   const version = Constants.expoConfig?.version ?? "—";
 
   function sendFeedback() {
@@ -30,7 +32,11 @@ export default function HelpScreen() {
   }
 
   return (
-    <ScrollView className="flex-1 bg-bg pt-14 px-4" contentContainerStyle={{ paddingBottom: 32 }}>
+    <ScrollView
+      className="flex-1 bg-bg px-4"
+      style={{ paddingTop: screen.top }}
+      contentContainerStyle={{ paddingBottom: screen.bottom }}
+    >
       <View className="flex-row items-center gap-3 mb-6">
         <Pressable
           onPress={() => router.back()}

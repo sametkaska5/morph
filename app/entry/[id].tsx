@@ -21,6 +21,7 @@ import { alertError } from "@/lib/alerts";
 import { ErrorState } from "@/components/ErrorState";
 import { EntryPhotoStrip, useActivePhoto } from "@/components/EntryPhotoStrip";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { useScreenInsets } from "@/lib/useScreenInsets";
 
 function ActionMenuOption({
   icon,
@@ -74,6 +75,7 @@ function workoutSetLabel(s: { reps: number | null; weight: number | null }): str
  * için sayfalar artık tamamen atlanıyor.
  */
 const EntryPage = memo(function EntryPage({ entryId }: { entryId: string }) {
+  const screen = useScreenInsets();
   const { user } = useAuth();
   const { data, isLoading, error, refetch } = useEntryDetail(entryId);
 
@@ -159,7 +161,7 @@ const EntryPage = memo(function EntryPage({ entryId }: { entryId: string }) {
         busy={busy}
       />
 
-      <View className="px-5 pt-6 pb-12">
+      <View className="px-5 pt-6" style={{ paddingBottom: screen.bottom + 24 }}>
         <Text className="text-text text-3xl font-bold mb-6">
           {data?.date ? new Date(data.date).toLocaleDateString("tr-TR") : ""}
         </Text>
@@ -218,6 +220,7 @@ const EntryPage = memo(function EntryPage({ entryId }: { entryId: string }) {
 /* ---------------- PAGE ---------------- */
 
 export default function EntryDetail() {
+  const screen = useScreenInsets();
   const params = useLocalSearchParams();
 
   const id = useMemo(() => {
@@ -301,35 +304,45 @@ export default function EntryDetail() {
         renderItem={({ item }) => <EntryPage entryId={item} />}
       />
 
-      {/* Üst kontroller sayfalayıcının DIŞINDA: kaydırırken yerinde kalıyorlar. */}
-      <Pressable
-        onPress={() => router.back()}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        accessibilityRole="button"
-        accessibilityLabel="Geri dön"
-        style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
-        className="absolute top-14 left-4 z-10 w-11 h-11 bg-black/40 rounded-full items-center justify-center"
-      >
-        <Feather name="chevron-left" size={22} color="#fff" />
-      </Pressable>
+      {/* Üst kontroller sayfalayıcının DIŞINDA: kaydırırken yerinde kalıyorlar.
+          Dikey konum güvenli alandan geliyor: burası tam ekran bir sayfa, yani
+          durum çubuğunun ARKASINA çiziyor ve sabit 56px, çentiği büyük
+          cihazlarda butonları saatin üstüne bindiriyordu. Konum sarmalayıcı
+          View'de duruyor çünkü Pressable'ın fonksiyon-form style'ına konan
+          yerleşim özellikleri bu projede güvenilir çalışmıyor. */}
+      <View style={{ position: "absolute", top: screen.top, left: 16, zIndex: 10 }}>
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel="Geri dön"
+          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          className="w-11 h-11 bg-black/40 rounded-full items-center justify-center"
+        >
+          <Feather name="chevron-left" size={22} color="#fff" />
+        </Pressable>
+      </View>
 
-      <Pressable
-        onPress={() => setShowActionMenu(true)}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        accessibilityRole="button"
-        accessibilityLabel="Anı için işlemler"
-        style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
-        className="absolute top-14 right-4 z-10 w-11 h-11 bg-black/40 rounded-full items-center justify-center"
-      >
-        <Feather name="more-vertical" size={20} color="#fff" />
-      </Pressable>
+      <View style={{ position: "absolute", top: screen.top, right: 16, zIndex: 10 }}>
+        <Pressable
+          onPress={() => setShowActionMenu(true)}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel="Anı için işlemler"
+          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          className="w-11 h-11 bg-black/40 rounded-full items-center justify-center"
+        >
+          <Feather name="more-vertical" size={20} color="#fff" />
+        </Pressable>
+      </View>
 
       {/* Sayaç, yanlarda başka kayıt olduğunu belli ediyor — Anı Akışı'ndaki
           ile aynı desen. h-11 sayesinde üstteki butonlarla aynı hizada. */}
       {ids.length > 1 ? (
         <View
           pointerEvents="none"
-          className="absolute top-14 left-0 right-0 h-11 items-center justify-center z-10"
+          style={{ position: "absolute", top: screen.top, zIndex: 10 }}
+          className="left-0 right-0 h-11 items-center justify-center"
         >
           <View className="bg-black/50 rounded-pill px-3 py-1">
             <Text className="text-text text-xs font-medium">

@@ -1,6 +1,7 @@
 import { ReactNode, useEffect } from "react";
 import { View, Pressable, Modal } from "react-native";
 import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -27,6 +28,10 @@ export function DraggableSheet({
   onClose: () => void;
   children: ReactNode;
 }) {
+  // Sheet ekranın EN ALTINA yaslanıyor, yani gezinme çubuğunun üstüne denk
+  // geliyor. Sabit `pb-10` (40px) 3 tuşlu gezinme çubuğunun (~48px) altında
+  // kalıyordu: en alttaki seçenek sistem tuşlarının arkasına giriyordu.
+  const insets = useSafeAreaInsets();
   const translateY = useSharedValue(600);
   const backdropOpacity = useSharedValue(0);
 
@@ -88,7 +93,8 @@ export function DraggableSheet({
                 onPress={() => {}}
                 accessible={false}
                 accessibilityViewIsModal
-                className="bg-bg border-t border-border rounded-t-[24px] px-5 pb-10"
+                style={{ paddingBottom: insets.bottom + 24 }}
+                className="bg-bg border-t border-border rounded-t-[24px] px-5"
               >
                 <GestureDetector gesture={panGesture}>
                   {/* Sürükleme tutamağı görsel bir ipucu; okunacak bir içeriği yok. */}

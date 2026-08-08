@@ -26,6 +26,7 @@ import {
 } from "@/lib/stats";
 import { alertError } from "@/lib/alerts";
 import { MeasurementChart, VISIBLE_POINTS } from "@/components/MeasurementChart";
+import { useScreenInsets } from "@/lib/useScreenInsets";
 
 let MediaLibrary: typeof MediaLibraryType | null = null;
 try {
@@ -39,6 +40,7 @@ try {
 const CHART_H = 110;
 
 export default function Istatistikler() {
+  const screen = useScreenInsets();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { data: types } = useMeasurementTypes(user?.id);
@@ -231,7 +233,7 @@ export default function Istatistikler() {
   return (
     <ScrollView
       className="flex-1 bg-bg"
-      contentContainerStyle={{ paddingTop: 56, paddingBottom: 32 }}
+      contentContainerStyle={{ paddingTop: screen.top, paddingBottom: 32 }}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}

@@ -6,8 +6,10 @@ import Feather from "@expo/vector-icons/Feather";
 import { supabase } from "@/lib/supabase";
 import { authErrorMessage } from "@/lib/errors";
 import { captureError } from "@/lib/monitoring";
+import { useScreenInsets } from "@/lib/useScreenInsets";
 
 export default function ForgotPasswordScreen() {
+  const screen = useScreenInsets();
   const [step, setStep] = useState<"request" | "reset">("request");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -77,16 +79,26 @@ export default function ForgotPasswordScreen() {
   }
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} className="flex-1 bg-bg">
-      <Pressable
-        onPress={() => router.back()}
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        accessibilityRole="button"
-        accessibilityLabel="Geri dön"
-        style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1, position: "absolute", top: 56, left: 24 })}
-      >
-        <Feather name="chevron-left" size={22} color="#F5F3EC" />
-      </Pressable>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      className="flex-1 bg-bg"
+      style={{ paddingBottom: screen.insets.bottom }}
+    >
+      {/* Konum sarmalayıcı View'de, Pressable'ın kendi style'ında DEĞİL: bu
+          projede fonksiyon-form style'a konan yerleşim özellikleri üç ayrı
+          yerde sessizce uygulanmadı. Fonksiyon-form artık yalnızca basılma
+          opaklığını taşıyor. Üst konum da sabit 56px değil güvenli alandan. */}
+      <View style={{ position: "absolute", top: screen.top, left: 24, zIndex: 10 }}>
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityRole="button"
+          accessibilityLabel="Geri dön"
+          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+        >
+          <Feather name="chevron-left" size={22} color="#F5F3EC" />
+        </Pressable>
+      </View>
 
       <View className="flex-1 justify-center px-6">
         <Text className="text-text text-3xl font-bold mb-1">Şifreni sıfırla</Text>

@@ -12,6 +12,7 @@ import { useUnitPreference, displayUnit, toDisplayValue, type UnitPref } from "@
 import { openCapturePicker } from "@/lib/capture";
 import { useCapsuleEntries, type CapsuleEntry } from "@/lib/entries";
 import { ErrorState } from "@/components/ErrorState";
+import { useScreenInsets } from "@/lib/useScreenInsets";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 // (tabs)/_layout.tsx'teki tabBarStyle.height ile eşleşmeli — FlatList'in gerçek
@@ -36,6 +37,7 @@ const CapsulePage = memo(function CapsulePage({
   unitPref: UnitPref;
   pageHeight: number;
 }) {
+  const screen = useScreenInsets();
   const [flipped, setFlipped] = useState(false);
   const flip = useSharedValue(0);
 
@@ -201,7 +203,12 @@ const CapsulePage = memo(function CapsulePage({
         </Pressable>
       </Animated.View>
 
-      <View className="absolute top-14 left-0 right-0 flex-row justify-between items-center px-4">
+      {/* Sayfa tam ekran, yani durum çubuğunun ARKASINA çiziyor (edge-to-edge):
+          başlık şeridi güvenli alandan konumlanmalı, sabit 56px'ten değil. */}
+      <View
+        style={{ top: screen.top }}
+        className="absolute left-0 right-0 flex-row justify-between items-center px-4"
+      >
         <Text className="text-text text-xl font-semibold">Anı Akışı</Text>
         <View className="bg-black/50 rounded-pill px-3 py-1">
           <Text className="text-text text-xs font-medium">

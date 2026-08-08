@@ -16,8 +16,10 @@ import { useWorkoutDay, saveWorkoutDay, type WorkoutDayType } from "@/lib/workou
 import { queryKeys } from "@/lib/queryKeys";
 import { alertError } from "@/lib/alerts";
 import { ErrorState } from "@/components/ErrorState";
+import { useScreenInsets } from "@/lib/useScreenInsets";
 
 export default function WorkoutDayScreen() {
+  const screen = useScreenInsets();
   const params = useLocalSearchParams();
   const paramDate = Array.isArray(params.date) ? params.date[0] : params.date;
 
@@ -128,7 +130,7 @@ export default function WorkoutDayScreen() {
       onScroll={onScroll}
       scrollEventThrottle={16}
       className="flex-1 bg-bg"
-      contentContainerStyle={{ padding: 20, paddingTop: 56, paddingBottom: 20 + keyboardPadding }}
+      contentContainerStyle={{ padding: 20, paddingTop: screen.top, paddingBottom: screen.bottom + keyboardPadding }}
       keyboardShouldPersistTaps="handled"
     >
       <View className="flex-row justify-between items-center mb-4">

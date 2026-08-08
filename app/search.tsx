@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/useAuth";
 import { photoCacheKey } from "@/lib/storage";
 import { useSearchIndex, type SearchEntry } from "@/lib/entries";
 import { ErrorState } from "@/components/ErrorState";
+import { useScreenInsets } from "@/lib/useScreenInsets";
 
 // memo: her tuş vuruşu sonuç listesini yeniden filtreliyor ama satır objeleri
 // aynı kalıyor — memo olmadan görünür tüm satırlar (expo-image dahil) her
@@ -42,6 +43,7 @@ const ResultRow = memo(function ResultRow({ entry }: { entry: SearchEntry }) {
 });
 
 export default function SearchScreen() {
+  const screen = useScreenInsets();
   const { user } = useAuth();
   const { data: entries, isLoading, error, refetch } = useSearchIndex(user?.id);
   const [query, setQuery] = useState("");
@@ -59,7 +61,7 @@ export default function SearchScreen() {
   }, [query, entries]);
 
   return (
-    <View className="flex-1 bg-bg pt-14 px-4">
+    <View className="flex-1 bg-bg px-4" style={{ paddingTop: screen.top }}>
       <View className="flex-row items-center gap-3 mb-4">
         <Pressable
           onPress={() => router.back()}
@@ -117,7 +119,7 @@ export default function SearchScreen() {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => <ResultRow entry={item} />}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 32 }}
+          contentContainerStyle={{ paddingBottom: screen.bottom }}
         />
       )}
     </View>

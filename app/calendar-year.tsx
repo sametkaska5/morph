@@ -8,6 +8,7 @@ import { toLocalDateKey, MONTH_NAMES } from "@/lib/date";
 import { useYearEntries } from "@/lib/entries";
 import { dayRoute } from "@/lib/dayRoute";
 import { ErrorState } from "@/components/ErrorState";
+import { useScreenInsets } from "@/lib/useScreenInsets";
 
 function getMonthGrid(year: number, monthIndex: number) {
   const firstDay = new Date(year, monthIndex, 1);
@@ -119,6 +120,7 @@ function MonthCalendar({
 }
 
 export default function CalendarYear() {
+  const screen = useScreenInsets();
   const { user } = useAuth();
   const [year, setYear] = useState(new Date().getFullYear());
   const { data: statusMap, isLoading, error, refetch } = useYearEntries(user?.id, year);
@@ -142,7 +144,7 @@ export default function CalendarYear() {
   }
 
   return (
-    <ScrollView className="flex-1 bg-bg" contentContainerStyle={{ paddingTop: 56, paddingBottom: 32, paddingHorizontal: 20 }}>
+    <ScrollView className="flex-1 bg-bg" contentContainerStyle={{ paddingTop: screen.top, paddingBottom: screen.bottom, paddingHorizontal: 20 }}>
       <View className="flex-row items-center justify-between mb-1">
         <Pressable
           onPress={() => router.back()}

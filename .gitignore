@@ -17,6 +17,11 @@ graphify-out/.graphify_root
 graphify-out/cache/
 graphify-out/cost.json
 
+# `eas update`in yayınlamadan önce ürettiği paket (JS bundle + tüm asset'ler,
+# ~50 MB). Tamamen üretilebilir bir çıktı ve her güncellemede baştan yazılıyor —
+# takip edilirse her `eas update` sonrası devasa ve anlamsız bir diff çıkıyor.
+dist/
+
 # Supabase CLI'ın `link` sonrası bıraktığı yerel durum: bağlı proje referansı,
 # pooler bağlantı adresi ve uzak sunucudan okunan sürüm bilgileri. Makineye ve
 # o anki bağlantıya özel, üretilebilir — migration'lar (takip EDİLEN kısım)

@@ -17,6 +17,7 @@ import {
   cancelStreakRiskNotification,
 } from "@/lib/notifications";
 import { ErrorState } from "@/components/ErrorState";
+import { useScreenInsets } from "@/lib/useScreenInsets";
 
 const ACCENT = "#8CE05A";
 
@@ -65,6 +66,7 @@ function SettingSwitch({
 }
 
 export default function NotificationSettingsScreen() {
+  const screen = useScreenInsets();
   const { user } = useAuth();
   const { data: settings, isLoading, error, refetch } = useNotificationSettings(user?.id);
   const updateMutation = useUpdateNotificationSettings(user?.id);
@@ -127,7 +129,10 @@ export default function NotificationSettingsScreen() {
   }
 
   return (
-    <View className="flex-1 bg-bg pt-14 px-4">
+    <View
+      className="flex-1 bg-bg px-4"
+      style={{ paddingTop: screen.top, paddingBottom: screen.insets.bottom }}
+    >
       <View className="flex-row items-center gap-3 mb-6">
         <Pressable
           onPress={() => router.back()}

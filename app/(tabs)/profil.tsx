@@ -15,6 +15,7 @@ import { DraggableSheet } from "@/components/DraggableSheet";
 import { ErrorState } from "@/components/ErrorState";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { alertError } from "@/lib/alerts";
+import { useScreenInsets } from "@/lib/useScreenInsets";
 
 /** Feather ikon adları — yanlış yazılmış bir ad artık derlemede yakalanıyor. */
 type FeatherIcon = keyof typeof Feather.glyphMap;
@@ -99,6 +100,7 @@ function UnitOption({
 }
 
 export default function Profil() {
+  const screen = useScreenInsets();
   const { user } = useAuth();
   const { data: stats, isLoading, error: statsError, refetch: refetchStats } = useProfileStats(user?.id);
   const { data: profile } = useProfile(user?.id);
@@ -129,7 +131,7 @@ export default function Profil() {
 
   return (
     <>
-    <ScrollView className="flex-1 bg-bg" contentContainerStyle={{ paddingTop: 56, paddingBottom: 32 }}>
+    <ScrollView className="flex-1 bg-bg" contentContainerStyle={{ paddingTop: screen.top, paddingBottom: 32 }}>
       <Text className="text-text text-3xl font-bold px-4 pb-4" accessibilityRole="header">
         Profil
       </Text>

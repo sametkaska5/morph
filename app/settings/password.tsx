@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/useAuth";
 import { authErrorMessage, isInvalidCredentials } from "@/lib/errors";
 import { captureError } from "@/lib/monitoring";
 import { showAlert } from "@/lib/appAlert";
+import { useScreenInsets } from "@/lib/useScreenInsets";
 
 /** Kayıt ekranındaki kuralla aynı — iki yerde farklı olursa kullanıcı çelişki görür. */
 const MIN_PASSWORD_LENGTH = 6;
@@ -27,6 +28,7 @@ const MIN_PASSWORD_LENGTH = 6;
  * dolayısıyla önbellek temizlenmiyor ve kullanıcı ekranda kalmaya devam ediyor.
  */
 export default function ChangePasswordScreen() {
+  const screen = useScreenInsets();
   const { user } = useAuth();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -107,7 +109,10 @@ export default function ChangePasswordScreen() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       className="flex-1 bg-bg"
     >
-      <View className="flex-1 px-4 pt-14">
+      <View
+        className="flex-1 px-4"
+        style={{ paddingTop: screen.top, paddingBottom: screen.insets.bottom }}
+      >
         <View className="flex-row items-center gap-3 mb-6">
           <Pressable
             onPress={() => router.back()}

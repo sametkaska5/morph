@@ -8,8 +8,10 @@ import { useAuth } from "@/lib/useAuth";
 import { authErrorMessage, isInvalidCredentials } from "@/lib/errors";
 import { checkAccountExists } from "@/lib/accountLookup";
 import { captureError } from "@/lib/monitoring";
+import { useScreenInsets } from "@/lib/useScreenInsets";
 
 export default function AuthScreen() {
+  const screen = useScreenInsets();
   const { session, loading: authLoading } = useAuth();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
@@ -155,6 +157,7 @@ export default function AuthScreen() {
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         className="flex-1 bg-bg"
+        style={{ paddingTop: screen.insets.top, paddingBottom: screen.insets.bottom }}
       >
         <View className="flex-1 px-6">
           <View className="flex-1 justify-center">
@@ -253,6 +256,7 @@ export default function AuthScreen() {
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       className="flex-1 bg-bg"
+      style={{ paddingTop: screen.insets.top, paddingBottom: screen.insets.bottom }}
     >
       {/* Instagram/Facebook deseni: form dikeyde ortalanmış, kip değiştirme
           bağlantısı ekranın EN ALTINA sabit ve üstünde ince bir ayraçla

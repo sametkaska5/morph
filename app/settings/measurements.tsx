@@ -21,10 +21,12 @@ import {
 import { useKeyboardFocus } from "@/lib/useKeyboardFocus";
 import { ErrorState } from "@/components/ErrorState";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { useScreenInsets } from "@/lib/useScreenInsets";
 
 const ACCENT = "#8CE05A";
 
 export default function MeasurementSettingsScreen() {
+  const screen = useScreenInsets();
   const { user } = useAuth();
   const { data: types, isLoading, error, refetch } = useMeasurementTypes(user?.id);
   const addMutation = useAddMeasurementType(user?.id);
@@ -78,8 +80,9 @@ export default function MeasurementSettingsScreen() {
       ref={scrollRef}
       onScroll={onScroll}
       scrollEventThrottle={16}
-      className="flex-1 bg-bg pt-14 px-4"
-      contentContainerStyle={{ paddingBottom: 32 + keyboardPadding }}
+      className="flex-1 bg-bg px-4"
+      style={{ paddingTop: screen.top }}
+      contentContainerStyle={{ paddingBottom: screen.bottom + keyboardPadding }}
       keyboardShouldPersistTaps="handled"
     >
       <ConfirmDialog

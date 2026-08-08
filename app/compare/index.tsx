@@ -12,6 +12,7 @@ import { ErrorState } from "@/components/ErrorState";
 import { alertError } from "@/lib/alerts";
 import { useAuth } from "@/lib/useAuth";
 import { useUnitPreference, displayUnit, toDisplayValue } from "@/lib/units";
+import { useScreenInsets } from "@/lib/useScreenInsets";
 
 // Expo Go'nun bazı derlemelerinde expo-media-library'nin native modülü mevcut değil;
 // paket import edilir edilmez throw ediyor. Statik import Babel tarafından her koşulda
@@ -60,11 +61,12 @@ export function measurementRowLabel(row: {
 }
 
 export default function Compare() {
+  const screen = useScreenInsets();
   const { a, b } = useLocalSearchParams<{ a: string; b: string }>();
   const { data, isLoading, error, refetch } = useComparison(a, b);
 
   return (
-    <ScrollView className="flex-1 bg-bg" contentContainerStyle={{ paddingTop: 56, paddingBottom: 30 }}>
+    <ScrollView className="flex-1 bg-bg" contentContainerStyle={{ paddingTop: screen.top, paddingBottom: screen.bottom }}>
       <View className="flex-row items-center justify-between px-4 mb-1">
         <Pressable
           onPress={() => router.back()}

@@ -196,25 +196,54 @@ eas env:push preview --path .env
 
 ### Sentry kaynak haritaları
 
-Release build'lerinde kaynak haritaları Sentry'ye yükleniyor, yani yığın izleri küçültülmüş kod yerine gerçek dosya/satır olarak görünüyor. Üç parça birlikte çalışıyor ve **üçü de gerekli**:
+Release build'lerinde kaynak haritaları Sentry'ye yükleniyor, yani yığın izleri küçültülmüş kod yerine gerçek dosya/satır olarak görünüyor. İki parça birlikte çalışıyor:
 
 | Parça | Nerede | Ne işe yarıyor |
 |---|---|---|
 | `organization` / `project` | `app.json` → Sentry plugin | Hangi projeye yükleneceği |
-| `url` | `app.json` → Sentry plugin | **EU bölgesi** — aşağıya bak |
 | `SENTRY_AUTH_TOKEN` | EAS gizli değişkeni | Yükleme yetkisi |
 
 Plugin bunlardan `android/sentry.properties`'i üretiyor; doğrulamak için `npx expo prebuild --platform android --no-install` çalıştırıp dosyaya bakabilirsin (sonra `android/` klasörünü silmeyi ve `package.json` script'lerini geri almayı unutma).
 
-> ⚠️ **`url` satırı bu projede zorunlu.** Sentry organizasyonu **EU (Frankfurt)** bölgesinde — DSN'deki `ingest.de.sentry.io` bunu söylüyor. Plugin'in varsayılanı ise `https://sentry.io/` (US). O varsayılanla `sentry-cli` kimlik doğrulayamıyor: **token doğru, org doğru, proje doğru olsa bile** yükleme reddedilip build düşüyor. Hata mesajı da sebebi göstermiyor.
+> ⚠️ **Plugin'e `url` verme.** Bir kez `https://de.sentry.io/` olarak eklendi ve release build'lerini düşürdü, geri alındı. Sebep: org **EU (Frankfurt)** bölgesinde olsa bile (DSN'deki `ingest.de.sentry.io`) API giriş adresi yine `https://sentry.io`. Sentry kimlik/organizasyon katmanını orada, olay verisini bölgede tutuyor; `sentry-cli` sentry.io'ya girip bölgeye kendisi yönleniyor. Girişi `de.sentry.io`'ya sabitlemek bu yönlendirmeyi kırıyor. Organizasyon token'ı zaten içinde hem `url` hem `region_url` taşıdığı için bölge bilgisi kaybolmuyor — veri AB'de kalmaya devam ediyor.
 
 **Auth token asla repoda tutulmuyor.** Plugin `authToken` seçeneğini kabul ediyor ama kendisi bunu kullanmaya karşı uyarıyor; token bunun yerine EAS gizli değişkeni olarak duruyor:
 
 ```bash
-eas secret:create --scope project --name SENTRY_AUTH_TOKEN --type string
+npx eas-cli env:set --name SENTRY_AUTH_TOKEN --value "<token>" --visibility secret --environment preview --environment production
 ```
 
-Token'ın kapsamları: `project:releases` ve `org:read`. Yenilemek gerekirse Sentry → Settings → Auth Tokens.
+Token **organizasyon token'ı** olmalı (`sntrys_` ile başlar, Sentry → Settings → Auth Tokens). Kullanıcı token'ının aksine bölge adresini kendi içinde taşıyor, o yüzden ayrıca `url` yapılandırması gerekmiyor.
+
+> `sntrys_` sonrası şifreli değil, base64 kodlanmış JSON — token'ı gören org adını ve bölgesini okuyabiliyor. Log/terminal çıktısı paylaşırken token'ı yazan satırı kes; `sentry-cli`'ın kendi çıktısı token'ı `Bearer sntrys_e***` diye maskeliyor, sızdıran genelde komut satırının kendisi oluyor.
+
+> ⚠️ **Token'ı EAS'a yazarken interaktif isteme yapıştırma.** Bir kez öyle yapıldı ve saklanan değer bozuldu: `Authorization` başlığı geçersiz hale geldi, Sentry'nin önündeki Google yük dengeleyicisi isteği daha Sentry'ye ulaşmadan reddetti. Değeri belirleyici şekilde kur — dosyaya kaydet, kırp, öyle gönder:
+>
+> ```bash
+> $t = (Get-Content token.txt -Raw).Trim(); "uzunluk: $($t.Length) | bas: $($t.Substring(0,8))"
+> ```
+>
+> Beklenen: `sntrys_e` ile başlar, uzunluk ~195. Doğruysa `--value $t` ile yaz, sonra dosyayı sil.
+
+**Hata ayıklarken:** yükleme build'in son adımı, yani sorun 10 dakika sonra ortaya çıkıyor. Yerelde saniyeler içinde çoğaltabilirsin — build'in çalıştırdığı komutun aynısı:
+
+```bash
+npx expo export:embed --platform android --dev false --bundle-output ./tmp/index.android.bundle --sourcemap-output ./tmp/index.android.bundle.map --assets-dest ./tmp/assets
+npx sentry-cli react-native gradle --bundle ./tmp/index.android.bundle --sourcemap ./tmp/index.android.bundle.map --release "com.remory.app@<sürüm>" --dist 1
+```
+
+`SENTRY_LOG_LEVEL=debug` istek/yanıtı da basar (token maskeli). Build tarafında aynı bilgiyi almak için `eas.json`'ın ilgili profiline geçici olarak `"env": { "SENTRY_LOG_LEVEL": "debug" }` eklenebilir.
+
+Yanıtı okurken ilk bakılacak yer **hatayı kimin döndürdüğü**:
+
+| Görünen | Kaynak | Anlamı |
+|---|---|---|
+| `HTTP/1.1` + JSON gövde | Sentry API | Aşağıdaki durum kodlarına bak |
+| `HTTP/1.0` + `Error 400 (Bad Request)!!1` HTML | Google yük dengeleyici | İstek Sentry'ye **hiç ulaşmadı** — büyük olasılıkla bozuk `Authorization` başlığı |
+
+Sentry'den gelen kodlar: **401** token geçersiz, **403** kapsam yetersiz (`www-authenticate` başlığı eksik kapsamı adıyla yazıyor), **404** org bulunamadı, **400** istek gövdesi yanlış.
+
+Bir de `Authorization: Bearer` satırına bak: `sentry-cli` token'ın ilk 8 karakterini bırakıp gerisini maskeliyor. `Bearer sntrys_e***` beklenen görüntü; `Bearer ***` ise saklanan değer boş ya da bozuk demektir.
 
 > Geçmiş not: bu ayarlar yokken `eas.json`'ın release profillerinde `SENTRY_DISABLE_AUTO_UPLOAD=true` vardı, çünkü Gradle eklentisi yalnızca release derlemesinde yüklemeye çalışıp org/proje bilgisi olmadan build'i düşürüyordu (`An organization ID or slug is required`). Artık gerekmiyor ve kaldırıldı. Aynı hatayı yerelde `./gradlew` ile denerken görürsen sebebi budur — o durumda `SENTRY_DISABLE_AUTO_UPLOAD=true` ile çalıştır.
 

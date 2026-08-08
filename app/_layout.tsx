@@ -2,7 +2,9 @@ import "../global.css";
 import { useEffect, useRef } from "react";
 import { Stack, router } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { QueryClient, onlineManager } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
@@ -176,6 +178,46 @@ function NotificationRouter() {
   return null;
 }
 
+/**
+ * Gezinme çubuğunun kapladığı şeridi uygulama arka planıyla örten perde.
+ *
+ * targetSdk 36 ile Android 15+ edge-to-edge'i ZORUNLU kılıyor ve sistem
+ * çubuklarını saydam yapıyor: kaydırılan içerik gezinme çubuğunun ARKASINDAN
+ * geçiyor. Ekranların alt boşluğu (bkz. lib/useScreenInsets.ts) içeriğin SONUNUN
+ * çubuğu temizlemesini garanti ediyor ama kaydırmanın ortasında yazılar sistem
+ * tuşlarının arkasında görünmeye devam ediyordu.
+ *
+ * Denenip ELENEN yol: alt boşluğu ScrollView'ın `style`'ına taşımak. Dolgu
+ * kırpma yapmıyor — içerik dolgu alanına taşmaya devam ediyor, yani hiçbir şey
+ * değişmiyor. Kaydırma alanını gerçekten kısaltmak için her ekranı fazladan bir
+ * sarmalayıcı View'e almak gerekirdi (11 ekranda yapısal değişiklik).
+ *
+ * Bu perde aynı sonucu tek yerden veriyor: şerit uygulama arka planıyla aynı
+ * renk olduğu için görünmüyor, altından geçen içeriği gizliyor.
+ * pointerEvents="none" — dokunuşları yutmuyor, sistem tuşları normal çalışıyor.
+ *
+ * Sekmeli ekranlarda görünür bir etkisi yok: sekme çubuğu o şeridi zaten aynı
+ * renkle dolduruyor.
+ */
+function SystemBarScrim() {
+  const insets = useSafeAreaInsets();
+  if (insets.bottom === 0) return null;
+
+  return (
+    <View
+      pointerEvents="none"
+      style={{
+        position: "absolute",
+        left: 0,
+        right: 0,
+        bottom: 0,
+        height: insets.bottom,
+        backgroundColor: "#0A0A08",
+      }}
+    />
+  );
+}
+
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
@@ -246,6 +288,7 @@ export default function RootLayout() {
               <Stack.Screen name="settings/password" options={{ presentation: "modal" }} />
               <Stack.Screen name="settings/help" options={{ presentation: "modal" }} />
             </Stack>
+            <SystemBarScrim />
             <CaptureOptionsSheet />
             <AppAlert />
           </AuthProvider>

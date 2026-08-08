@@ -1,9 +1,4 @@
-import {
-  View,
-  Pressable,
-  ActivityIndicator,
-  ScrollView,
-} from "react-native";
+import { View, Pressable, ActivityIndicator, ScrollView } from "react-native";
 import { showAlert } from "@/lib/appAlert";
 // expo-image (RN'in kendi Image'ı DEĞİL): anı akışı ve detay ekranı zaten
 // expo-image kullanıyor ve aynı fotoğrafı cacheKey ile diskte tutuyor. RN Image
@@ -28,10 +23,12 @@ import { useEditableEntry } from "@/lib/entries";
 import { queryKeys } from "@/lib/queryKeys";
 import { actionErrorMessage } from "@/lib/errors";
 import { ErrorState } from "@/components/ErrorState";
+import { useScreenInsets } from "@/lib/useScreenInsets";
 
 /* ---------------- PAGE ---------------- */
 
 export default function EditEntry() {
+  const screen = useScreenInsets();
   const params = useLocalSearchParams();
   const id = Array.isArray(params.id) ? params.id[0] : String(params.id);
 
@@ -47,7 +44,9 @@ export default function EditEntry() {
   // Eskiden fotoğraf seçilir seçilmez yükleniyordu: kullanıcı kaydetmeden çıkarsa
   // (ya da üst üste birkaç foto seçerse) storage'da hiçbir kaydın işaret etmediği
   // yetim dosyalar kalıyordu. Yüklemeyi kayda ertelemek bu kaynağı tümüyle kapatır.
-  const [pendingImage, setPendingImage] = useState<{ base64: string; thumbBase64: string } | null>(null);
+  const [pendingImage, setPendingImage] = useState<{ base64: string; thumbBase64: string } | null>(
+    null,
+  );
   // SADECE yeni seçilen fotoğrafın yerel uri'si (önizleme için). Kayıtlı fotoğrafın
   // linki artık sorgudan geliyor (bkz. useEntry) — state'te ayrıca tutup efektle
   // doldurmak gereksiz bir bekleme turu yaratıyordu.
@@ -161,7 +160,12 @@ export default function EditEntry() {
 
         const { data: newPhoto, error: photoError } = await supabase
           .from("photos")
-          .insert({ entry_id: id, storage_path: storagePath, thumb_path: newThumbPath, order_index: 0 })
+          .insert({
+            entry_id: id,
+            storage_path: storagePath,
+            thumb_path: newThumbPath,
+            order_index: 0,
+          })
           .select()
           .single();
         if (photoError) throw photoError;
@@ -173,7 +177,9 @@ export default function EditEntry() {
           await supabase.storage
             .from("photos")
             .remove(
-              [existingPhotoRow.storage_path, existingPhotoRow.thumb_path].filter(Boolean) as string[]
+              [existingPhotoRow.storage_path, existingPhotoRow.thumb_path].filter(
+                Boolean,
+              ) as string[],
             );
           await supabase.from("photos").delete().eq("id", existingPhotoRow.id);
         }
@@ -246,7 +252,10 @@ export default function EditEntry() {
       return s === "invalid" || s === "negative" || s === "too_high";
     });
     if (hasInvalid) {
-      showAlert("Geçersiz ölçüm", "Bazı ölçüm değerleri geçerli değil. Kırmızı uyarıları düzeltip tekrar dene.");
+      showAlert(
+        "Geçersiz ölçüm",
+        "Bazı ölçüm değerleri geçerli değil. Kırmızı uyarıları düzeltip tekrar dene.",
+      );
       return;
     }
     updateMutation.mutate();
@@ -274,158 +283,174 @@ export default function EditEntry() {
   }
 
   return (
-    <ScrollView
-      ref={scrollRef}
-      onScroll={onScroll}
-      scrollEventThrottle={16}
-      className="flex-1 bg-bg px-5 pt-14"
-      contentContainerStyle={{ paddingBottom: keyboardPadding }}
-      keyboardShouldPersistTaps="handled"
-    >
-      <Text className="text-text text-xl font-bold mb-6">Düzenle</Text>
-
-      <Pressable
-        onPress={pickImage}
-        accessibilityRole="button"
-        accessibilityLabel="Fotoğrafı değiştir"
-        style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
-        className="mb-6 relative"
+    <View className="flex-1 bg-bg">
+      {/* SABİT başlık çubuğu — gerekçesi entry/new.tsx'te. İki kardeş ekran aynı
+          desende. Bu ekranda daha önce hiç geri kontrolü yoktu; İptal onu da
+          getiriyor. */}
+      <View
+        className="flex-row justify-between items-center px-5 pb-3 border-b border-border"
+        style={{ paddingTop: screen.top }}
       >
-        {displayUri ? (
-          <Image
-            source={{ uri: displayUri, cacheKey: displayCacheKey }}
-            // Tam boy diskte yoksa küçük kopya anında görünsün; boş kare
-            // beklemesi yerine kullanıcı düşük çözünürlüklü hâli hemen görüyor,
-            // tam boy hazır olunca üstüne geçiyor.
-            placeholder={placeholderSource}
-            placeholderContentFit="cover"
-            // Boyut className ile DEĞİL style ile veriliyor: NativeWind bu
-            // projede expo-image'a className uygulamıyor (uygulamadaki diğer
-            // tüm expo-image kullanımları da style kullanıyor). className
-            // verilince görsel boyutsuz kalıp hiç görünmüyordu.
-            // w-full/h-64/rounded-card karşılıkları: %100 / 256 / 20.
-            style={{ width: "100%", height: 256, borderRadius: 20 }}
-            contentFit="cover"
-            cachePolicy="memory-disk"
-            recyclingKey={data?.photoPath ?? undefined}
-            transition={150}
-          />
-        ) : (
-          <View className="w-full h-64 bg-surface rounded-card items-center justify-center">
-            <Text className="text-textMuted text-base">Fotoğraf seç</Text>
-          </View>
-        )}
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          accessibilityRole="button"
+          accessibilityLabel="İptal et ve geri dön"
+          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+        >
+          <Text className="text-textMuted text-base">İptal</Text>
+        </Pressable>
 
-        {uploading && (
-          <View className="absolute inset-0 bg-black/40 items-center justify-center rounded-card">
-            <ActivityIndicator color="#fff" />
-          </View>
-        )}
-      </Pressable>
+        <Text className="text-text text-xl font-bold">Düzenle</Text>
 
-      <View className="bg-surface border border-border p-4 rounded-card mb-6">
-        <Text className="text-textFaint text-sm font-semibold uppercase tracking-wide mb-3">Ölçümler</Text>
-        {allTypes?.map((t, i) => {
-          const errorText = measurementErrorText(
-            validateMeasurementInput(values[t.id] ?? "", displayUnit(t.unit, unitPref))
-          );
-          return (
-            <View key={t.id} className="mb-3">
-              <View className="flex-row justify-between items-center">
-                {/* Ölçüm adı ikincil bir etiket değil, girilen değerin ne olduğunu
-                    söyleyen asıl metin — 14pt gri yerine 16pt gövde boyutu. */}
-                <Text className="text-textMuted text-base capitalize">{t.name}</Text>
-                <View className="flex-row items-center gap-2">
-                  <TextInput
-                    ref={(el) => { inputRefs.current[i] = el; }}
-                    value={values[t.id] ?? ""}
-                    onChangeText={(val) => setValues((prev) => ({ ...prev, [t.id]: val }))}
-                    keyboardType="decimal-pad"
-                    placeholder={`— ${displayUnit(t.unit, unitPref)}`}
-                    placeholderTextColor="#8B8A82"
-                    returnKeyType="next"
-                    blurOnSubmit={false}
-                    // Klavye açıkken odak buraya geçtiğinde kendiliğinden kaydırma
-                    // olmadığı için alanı elle görünür alana taşıyoruz.
-                    onFocus={() => revealField(inputRefs.current[i])}
-                    onSubmitEditing={() => {
-                      const next = inputRefs.current[i + 1];
-                      if (next) next.focus();
-                      else noteRef.current?.focus();
-                    }}
-                    className={`text-base font-semibold text-right w-20 ${errorText ? "text-danger" : "text-text"}`}
-                  />
-                  <Pressable
-                    hitSlop={8}
-                    accessibilityRole="button"
-                    accessibilityLabel="Sonraki alana geç"
-                    style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-                    onPress={() => {
-                      const next = inputRefs.current[i + 1];
-                      if (next) next.focus();
-                      else noteRef.current?.focus();
-                    }}
-                  >
-                    <Feather name="chevron-right" size={16} color="#8B8A82" />
-                  </Pressable>
-                </View>
-              </View>
-              {errorText ? (
-                <Text className="text-danger text-xs mt-1 text-right">{errorText}</Text>
-              ) : null}
-            </View>
-          );
-        })}
+        {/* Etiket sabit: kaydederken metin ActivityIndicator'a dönüşüyor ve
+            düğmenin erişilebilir adı kayboluyordu. */}
+        <Pressable
+          onPress={handleUpdate}
+          disabled={updateMutation.isPending || uploading}
+          accessibilityRole="button"
+          accessibilityLabel="Kaydet"
+          accessibilityState={{
+            disabled: updateMutation.isPending || uploading,
+            busy: updateMutation.isPending || uploading,
+          }}
+          style={({ pressed }) => ({
+            opacity: pressed ? 0.85 : updateMutation.isPending || uploading ? 0.7 : 1,
+          })}
+          className="bg-accent rounded-[12px] px-4 h-11 items-center justify-center"
+        >
+          {updateMutation.isPending ? (
+            <ActivityIndicator color="#0B0D0A" size="small" />
+          ) : (
+            <Text className="text-bg text-base font-semibold">Kaydet</Text>
+          )}
+        </Pressable>
       </View>
 
-      <TextInput
-        ref={noteRef}
-        value={note}
-        onChangeText={setNote}
-        accessibilityLabel="Not"
-        placeholder="Not..."
-        placeholderTextColor="#8B8A82"
-        onFocus={() => revealField(noteRef.current)}
-        className="bg-surface border border-border text-text text-base p-4 rounded-card h-28 mb-6"
-        multiline
-      />
-
-      {updateMutation.isError ? (
-        <Text className="text-danger text-base mb-3" accessibilityRole="alert">
-          {actionErrorMessage(updateMutation.error)}
-        </Text>
-      ) : null}
-
-      {/* Etiket sabit: kaydederken metin ActivityIndicator'a dönüşüyor ve
-          düğmenin erişilebilir adı kayboluyordu. */}
-      <Pressable
-        onPress={handleUpdate}
-        disabled={updateMutation.isPending || uploading}
-        accessibilityRole="button"
-        accessibilityLabel="Kaydet"
-        accessibilityState={{
-          disabled: updateMutation.isPending || uploading,
-          busy: updateMutation.isPending || uploading,
-        }}
-        style={({ pressed }) => ({ opacity: pressed ? 0.85 : updateMutation.isPending || uploading ? 0.7 : 1 })}
-        className="bg-accent p-4 rounded-button items-center"
+      <ScrollView
+        ref={scrollRef}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        className="flex-1 bg-bg px-5"
+        contentContainerStyle={{ paddingTop: 24, paddingBottom: screen.bottom + keyboardPadding }}
+        keyboardShouldPersistTaps="handled"
       >
-        {updateMutation.isPending ? (
-          <ActivityIndicator color="#0B0D0A" />
-        ) : (
-          <Text className="text-bg text-base font-bold">Kaydet</Text>
-        )}
-      </Pressable>
+        <Pressable
+          onPress={pickImage}
+          accessibilityRole="button"
+          accessibilityLabel="Fotoğrafı değiştir"
+          style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+          className="mb-6 relative"
+        >
+          {displayUri ? (
+            <Image
+              source={{ uri: displayUri, cacheKey: displayCacheKey }}
+              // Tam boy diskte yoksa küçük kopya anında görünsün; boş kare
+              // beklemesi yerine kullanıcı düşük çözünürlüklü hâli hemen görüyor,
+              // tam boy hazır olunca üstüne geçiyor.
+              placeholder={placeholderSource}
+              placeholderContentFit="cover"
+              // Boyut className ile DEĞİL style ile veriliyor: NativeWind bu
+              // projede expo-image'a className uygulamıyor (uygulamadaki diğer
+              // tüm expo-image kullanımları da style kullanıyor). className
+              // verilince görsel boyutsuz kalıp hiç görünmüyordu.
+              // w-full/h-64/rounded-card karşılıkları: %100 / 256 / 20.
+              style={{ width: "100%", height: 256, borderRadius: 20 }}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              recyclingKey={data?.photoPath ?? undefined}
+              transition={150}
+            />
+          ) : (
+            <View className="w-full h-64 bg-surface rounded-card items-center justify-center">
+              <Text className="text-textMuted text-base">Fotoğraf seç</Text>
+            </View>
+          )}
 
-      <Pressable
-        onPress={() => router.back()}
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        accessibilityRole="button"
-        style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-        className="mt-4 items-center mb-8"
-      >
-        <Text className="text-textMuted text-base">İptal</Text>
-      </Pressable>
-    </ScrollView>
+          {uploading && (
+            <View className="absolute inset-0 bg-black/40 items-center justify-center rounded-card">
+              <ActivityIndicator color="#fff" />
+            </View>
+          )}
+        </Pressable>
+
+        <View className="bg-surface border border-border p-4 rounded-card mb-6">
+          <Text className="text-textFaint text-sm font-semibold uppercase tracking-wide mb-3">
+            Ölçümler
+          </Text>
+          {allTypes?.map((t, i) => {
+            const errorText = measurementErrorText(
+              validateMeasurementInput(values[t.id] ?? "", displayUnit(t.unit, unitPref)),
+            );
+            return (
+              <View key={t.id} className="mb-3">
+                <View className="flex-row justify-between items-center">
+                  {/* Ölçüm adı ikincil bir etiket değil, girilen değerin ne olduğunu
+                    söyleyen asıl metin — 14pt gri yerine 16pt gövde boyutu. */}
+                  <Text className="text-textMuted text-base capitalize">{t.name}</Text>
+                  <View className="flex-row items-center gap-2">
+                    <TextInput
+                      ref={(el) => {
+                        inputRefs.current[i] = el;
+                      }}
+                      value={values[t.id] ?? ""}
+                      onChangeText={(val) => setValues((prev) => ({ ...prev, [t.id]: val }))}
+                      keyboardType="decimal-pad"
+                      placeholder={`— ${displayUnit(t.unit, unitPref)}`}
+                      placeholderTextColor="#8B8A82"
+                      returnKeyType="next"
+                      blurOnSubmit={false}
+                      // Klavye açıkken odak buraya geçtiğinde kendiliğinden kaydırma
+                      // olmadığı için alanı elle görünür alana taşıyoruz.
+                      onFocus={() => revealField(inputRefs.current[i])}
+                      onSubmitEditing={() => {
+                        const next = inputRefs.current[i + 1];
+                        if (next) next.focus();
+                        else noteRef.current?.focus();
+                      }}
+                      className={`text-base font-semibold text-right w-20 ${errorText ? "text-danger" : "text-text"}`}
+                    />
+                    <Pressable
+                      hitSlop={8}
+                      accessibilityRole="button"
+                      accessibilityLabel="Sonraki alana geç"
+                      style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+                      onPress={() => {
+                        const next = inputRefs.current[i + 1];
+                        if (next) next.focus();
+                        else noteRef.current?.focus();
+                      }}
+                    >
+                      <Feather name="chevron-right" size={16} color="#8B8A82" />
+                    </Pressable>
+                  </View>
+                </View>
+                {errorText ? (
+                  <Text className="text-danger text-xs mt-1 text-right">{errorText}</Text>
+                ) : null}
+              </View>
+            );
+          })}
+        </View>
+
+        <TextInput
+          ref={noteRef}
+          value={note}
+          onChangeText={setNote}
+          accessibilityLabel="Not"
+          placeholder="Not..."
+          placeholderTextColor="#8B8A82"
+          onFocus={() => revealField(noteRef.current)}
+          className="bg-surface border border-border text-text text-base p-4 rounded-card h-28 mb-6"
+          multiline
+        />
+
+        {updateMutation.isError ? (
+          <Text className="text-danger text-base mb-3" accessibilityRole="alert">
+            {actionErrorMessage(updateMutation.error)}
+          </Text>
+        ) : null}
+      </ScrollView>
+    </View>
   );
 }

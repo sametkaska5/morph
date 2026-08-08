@@ -1,5 +1,13 @@
 import { useState, useRef } from "react";
-import { View, Image, Pressable, Platform, ScrollView, ActivityIndicator } from "react-native";
+import {
+  View,
+  Image,
+  Pressable,
+  Platform,
+  ScrollView,
+  ActivityIndicator,
+  useWindowDimensions,
+} from "react-native";
 import { showAlert } from "@/lib/appAlert";
 import { Text, TextInput } from "@/components/Typography";
 import { router } from "expo-router";
@@ -17,8 +25,14 @@ import { validateMeasurementInput, measurementErrorText } from "@/lib/measuremen
 import { alertError } from "@/lib/alerts";
 import type { EntryRow } from "@/lib/entries";
 import { queryKeys } from "@/lib/queryKeys";
+import { useScreenInsets } from "@/lib/useScreenInsets";
+
+/** Önizlemenin çıkabileceği en fazla yükseklik — çok uzun (9:16, panorama)
+ *  fotoğraflar formun tamamını ekran dışına itmesin diye. */
+const MAX_PREVIEW_HEIGHT = 480;
 
 export default function NewEntry() {
+  const screen = useScreenInsets();
   const photo = useCaptureStore((s) => s.photo);
   const clearPhoto = useCaptureStore((s) => s.clear);
   // Fotoğraf var ama base64'ü henüz üretilmedi (arka plan küçültme sürüyor).
@@ -38,6 +52,23 @@ export default function NewEntry() {
   const inputRefs = useRef<(TextInput | null)[]>([]);
   const noteRef = useRef<TextInput | null>(null);
   const { scrollRef, onScroll, revealField, keyboardPadding } = useKeyboardFocus();
+
+  /* ---------------- ÖNİZLEME ÖLÇÜSÜ ----------------
+     Önizleme fotoğrafın KENDİ oranında çiziliyor; eskiden kutu tam genişlik ×
+     sabit 288px'ti ve `cover` ile dolduruluyordu, yani dikey fotoğrafların üstü
+     ve altı kırpılıyordu — kullanıcı çektiği karenin yarısını göremiyordu.
+
+     Genişlik ELLE hesaplanıyor, `width: "100%"` + `aspectRatio` + `maxHeight`
+     üçlüsü DEĞİL: yükseklik maxHeight'e takılınca oranı korumak için genişlik de
+     küçülüyor ve fotoğrafın sağında boşluk kalıyordu. Genişliği sabitleyip
+     yüksekliği kendimiz sınırlayınca kutu her zaman tam genişlik oluyor; yalnızca
+     aşırı uzun fotoğraflarda `cover` biraz kırpıyor.
+
+     40 = contentContainerStyle'daki padding: 20'nin iki yanı. */
+  const { width: windowWidth } = useWindowDimensions();
+  const previewWidth = windowWidth - 40;
+  const previewRatio = photo?.width && photo?.height ? photo.width / photo.height : 4 / 3;
+  const previewHeight = Math.min(previewWidth / previewRatio, MAX_PREVIEW_HEIGHT);
 
   const saveMutation = useMutation<
     Awaited<ReturnType<typeof saveEntry>>,
@@ -108,7 +139,10 @@ export default function NewEntry() {
       return s === "invalid" || s === "negative" || s === "too_high";
     });
     if (hasInvalid) {
-      showAlert("Geçersiz ölçüm", "Bazı ölçüm değerleri geçerli değil. Kırmızı uyarıları düzeltip tekrar dene.");
+      showAlert(
+        "Geçersiz ölçüm",
+        "Bazı ölçüm değerleri geçerli değil. Kırmızı uyarıları düzeltip tekrar dene.",
+      );
       return;
     }
 
@@ -137,167 +171,185 @@ export default function NewEntry() {
   }
 
   return (
-    <ScrollView
-      ref={scrollRef}
-      onScroll={onScroll}
-      scrollEventThrottle={16}
-      className="flex-1 bg-bg"
-      contentContainerStyle={{ padding: 20, paddingTop: 56, paddingBottom: 20 + keyboardPadding }}
-      keyboardShouldPersistTaps="handled"
-    >
-      <View className="flex-row justify-between items-center mb-4">
+    <View className="flex-1 bg-bg">
+      {/* SABİT başlık çubuğu — kaydırılan içeriğin DIŞINDA, o yüzden aşağı
+          kaydırınca kaybolmuyor. İptal solda, Kaydet sağda.
+          Bu üçüncü deneme: (1) Kaydet kaydırılan içeriğin sonundaydı, gezinme
+          çubuğuyla çarpışıyordu; (2) alta sabit çubuk çarpışmayı çözdü ama form
+          alanından ~110px götürüp fotoğraf önizlemesini ekran dışına itti;
+          (3) başlık satırı zaten vardı ve sağı boştu — eylemler oraya taşınınca
+          dikey alandan hiçbir şey harcanmıyor, Kaydet hem her zaman görünür hem
+          de gezinme çubuğuna hiç yaklaşmıyor.
+          İptal eski geri okunun yerini aldı: ikisi de router.back() çağırıyordu.
+          Alttaki ince ayraç, içeriğin çubuğun ALTINDAN aktığını belli ediyor. */}
+      <View
+        className="flex-row justify-between items-center px-5 pb-3 border-b border-border"
+        style={{ paddingTop: screen.top }}
+      >
         <Pressable
           onPress={() => router.back()}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           accessibilityRole="button"
-          accessibilityLabel="Geri dön"
-          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          accessibilityLabel="İptal et ve geri dön"
+          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
         >
-          <Feather name="chevron-left" size={22} color="#F5F3EC" />
+          <Text className="text-textMuted text-base">İptal</Text>
         </Pressable>
+
         <Text className="text-text text-xl font-bold">Yeni Kayıt</Text>
-        {/* Kaydet artık altta tam genişlikte birincil buton olarak duruyor
-            (düzenleme ekranıyla aynı desen). Başlığın ortada kalması için
-            sol taraftaki chevron kadar boşluk bırakıyoruz. */}
-        <View style={{ width: 22 }} />
+
+        {/* Etiket SABİT: duruma göre değiştirilirse düğmenin erişilebilir adı
+            kayboluyor (düzenleme ekranında da aynı kural). Meşguliyet
+            accessibilityState'e yazılıyor, ada değil. */}
+        <Pressable
+          onPress={handleSave}
+          disabled={photoProcessing}
+          accessibilityRole="button"
+          accessibilityLabel="Kaydı kaydet"
+          accessibilityState={{ disabled: photoProcessing, busy: photoProcessing }}
+          style={({ pressed }) => ({ opacity: pressed ? 0.85 : photoProcessing ? 0.7 : 1 })}
+          className="bg-accent rounded-[12px] px-4 h-11 items-center justify-center"
+        >
+          {photoProcessing ? (
+            <ActivityIndicator color="#0B0D0A" size="small" />
+          ) : (
+            <Text className="text-bg text-base font-semibold">Kaydet</Text>
+          )}
+        </Pressable>
       </View>
 
-      {photo?.uri ? (
-        <Image source={{ uri: photo.uri }} className="w-full h-72 rounded-card mb-4" resizeMode="cover" />
-      ) : null}
+      <ScrollView
+        ref={scrollRef}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        className="flex-1 bg-bg"
+        contentContainerStyle={{
+          padding: 20,
+          paddingBottom: screen.bottom + keyboardPadding,
+        }}
+        keyboardShouldPersistTaps="handled"
+      >
+        {photo?.uri ? (
+          <Image
+            source={{ uri: photo.uri }}
+            style={{ width: previewWidth, height: previewHeight }}
+            className="rounded-card mb-4"
+            resizeMode="cover"
+          />
+        ) : null}
 
-      {/* "Tarih" ve değer ayrı iki metin düğümü; etiketsizken ekran okuyucu
+        {/* Kaydet'in neden kapalı olduğunu söyleyen tek yer burası. Eskiden
+          düğmenin kendi etiketi "Hazırlanıyor…"a dönüyordu; düğme başlığa
+          taşınıp daralınca oraya metin sığmıyor, yerine spinner var. Durum
+          bilgisi kullanıcıdan kaybolmasın diye fotoğrafın altına alındı. */}
+        {photoProcessing ? (
+          <Text className="text-textMuted text-sm text-center mb-4">Hazırlanıyor…</Text>
+        ) : null}
+
+        {/* "Tarih" ve değer ayrı iki metin düğümü; etiketsizken ekran okuyucu
           ikisini ilişkisiz okuyor ve bunun DOKUNULABİLİR olduğu hiç belli
           olmuyordu. Etiket + ipucu ikisini de çözüyor. */}
-      <Pressable
-        onPress={() => setShowPicker(true)}
-        accessibilityRole="button"
-        accessibilityLabel={`Tarih: ${date.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}`}
-        accessibilityHint="Tarih seçiciyi açar"
-        style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
-        className="bg-surface border border-border rounded-button px-4 py-4 mb-3 flex-row items-center justify-between"
-      >
-        <Text className="text-textMuted text-base">Tarih</Text>
-        <Text className="text-text text-base font-semibold">
-          {date.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
-        </Text>
-      </Pressable>
+        <Pressable
+          onPress={() => setShowPicker(true)}
+          accessibilityRole="button"
+          accessibilityLabel={`Tarih: ${date.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}`}
+          accessibilityHint="Tarih seçiciyi açar"
+          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          className="bg-surface border border-border rounded-button px-4 py-4 mb-3 flex-row items-center justify-between"
+        >
+          <Text className="text-textMuted text-base">Tarih</Text>
+          <Text className="text-text text-base font-semibold">
+            {date.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
+          </Text>
+        </Pressable>
 
-      {showPicker && (
-        <DateTimePicker
-          value={date}
-          mode="date"
-          maximumDate={new Date()}
-          display={Platform.OS === "ios" ? "spinner" : "default"}
-          onValueChange={(_, selected) => {
-            if (Platform.OS === "android") setShowPicker(false);
-            setDate(selected);
-          }}
-          onDismiss={() => setShowPicker(false)}
-        />
-      )}
-
-      <View className="bg-surface border border-border rounded-card p-4 mb-3">
-        <Text className="text-textFaint text-sm font-semibold mb-2 tracking-wide">ÖLÇÜMLER</Text>
-        {types?.map((t, i) => {
-          const errorText = measurementErrorText(
-            validateMeasurementInput(values[t.id] ?? "", displayUnit(t.unit, unitPref))
-          );
-          return (
-            <View key={t.id} className="py-2">
-              <View className="flex-row items-center justify-between">
-                {/* Ölçüm adı ikincil bir etiket değil, girilen değerin ne olduğunu
-                    söyleyen asıl metin — 14pt gri yerine 16pt gövde boyutu. */}
-                <Text className="text-textMuted text-base capitalize">{t.name}</Text>
-                <View className="flex-row items-center gap-2">
-                  <TextInput
-                    ref={(el) => { inputRefs.current[i] = el; }}
-                    value={values[t.id] ?? ""}
-                    onChangeText={(v) => setValues((prev) => ({ ...prev, [t.id]: v }))}
-                    keyboardType="decimal-pad"
-                    placeholder={`— ${displayUnit(t.unit, unitPref)}`}
-                    placeholderTextColor="#8B8A82"
-                    returnKeyType="next"
-                    blurOnSubmit={false}
-                    // Klavye açıkken odak buraya geçtiğinde kendiliğinden kaydırma
-                    // olmadığı için alanı elle görünür alana taşıyoruz.
-                    onFocus={() => revealField(inputRefs.current[i])}
-                    onSubmitEditing={() => {
-                      const next = inputRefs.current[i + 1];
-                      if (next) next.focus();
-                      else noteRef.current?.focus();
-                    }}
-                    className={`text-base font-semibold text-right w-20 ${errorText ? "text-danger" : "text-text"}`}
-                  />
-                  <Pressable
-                    hitSlop={8}
-                    accessibilityRole="button"
-                    accessibilityLabel="Sonraki alana geç"
-                    style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-                    onPress={() => {
-                      const next = inputRefs.current[i + 1];
-                      if (next) next.focus();
-                      else noteRef.current?.focus();
-                    }}
-                  >
-                    <Feather name="chevron-right" size={16} color="#8B8A82" />
-                  </Pressable>
-                </View>
-              </View>
-              {errorText ? (
-                <Text className="text-danger text-xs mt-1 text-right">{errorText}</Text>
-              ) : null}
-            </View>
-          );
-        })}
-      </View>
-
-      <View className="bg-surface border border-border rounded-card p-4">
-        <Text className="text-textFaint text-sm font-semibold mb-2 tracking-wide">NOT</Text>
-        <TextInput
-          ref={noteRef}
-          value={note}
-          onChangeText={setNote}
-          placeholder="birkaç kelime yaz..."
-          placeholderTextColor="#8B8A82"
-          accessibilityLabel="Not"
-          onFocus={() => revealField(noteRef.current)}
-          multiline
-          className="text-text text-base min-h-[64px]"
-          maxLength={300}
-        />
-      </View>
-
-      {/* Birincil aksiyon: üstteki küçük metin bağlantısı yerine altta tam
-          genişlikte dolu buton. Düzenleme ekranıyla birebir aynı desen —
-          iki kardeş ekranda kaydetmenin yeri ve görünümü artık ayrışmıyor. */}
-      <Pressable
-        onPress={handleSave}
-        disabled={photoProcessing}
-        style={({ pressed }) => ({ opacity: pressed ? 0.85 : photoProcessing ? 0.7 : 1 })}
-        accessibilityRole="button"
-        accessibilityLabel="Kaydı kaydet"
-        className="bg-accent p-4 rounded-button items-center mt-6 flex-row justify-center gap-2"
-      >
-        {photoProcessing ? (
-          <>
-            <ActivityIndicator color="#0B0D0A" />
-            <Text className="text-bg text-base font-bold">Hazırlanıyor…</Text>
-          </>
-        ) : (
-          <Text className="text-bg text-base font-bold">Kaydet</Text>
+        {showPicker && (
+          <DateTimePicker
+            value={date}
+            mode="date"
+            maximumDate={new Date()}
+            display={Platform.OS === "ios" ? "spinner" : "default"}
+            onValueChange={(_, selected) => {
+              if (Platform.OS === "android") setShowPicker(false);
+              setDate(selected);
+            }}
+            onDismiss={() => setShowPicker(false)}
+          />
         )}
-      </Pressable>
 
-      <Pressable
-        onPress={() => router.back()}
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        accessibilityRole="button"
-        style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-        className="mt-4 items-center mb-8"
-      >
-        <Text className="text-textMuted text-base">İptal</Text>
-      </Pressable>
-    </ScrollView>
+        <View className="bg-surface border border-border rounded-card p-4 mb-3">
+          <Text className="text-textFaint text-sm font-semibold mb-2 tracking-wide">ÖLÇÜMLER</Text>
+          {types?.map((t, i) => {
+            const errorText = measurementErrorText(
+              validateMeasurementInput(values[t.id] ?? "", displayUnit(t.unit, unitPref)),
+            );
+            return (
+              <View key={t.id} className="py-2">
+                <View className="flex-row items-center justify-between">
+                  {/* Ölçüm adı ikincil bir etiket değil, girilen değerin ne olduğunu
+                    söyleyen asıl metin — 14pt gri yerine 16pt gövde boyutu. */}
+                  <Text className="text-textMuted text-base capitalize">{t.name}</Text>
+                  <View className="flex-row items-center gap-2">
+                    <TextInput
+                      ref={(el) => {
+                        inputRefs.current[i] = el;
+                      }}
+                      value={values[t.id] ?? ""}
+                      onChangeText={(v) => setValues((prev) => ({ ...prev, [t.id]: v }))}
+                      keyboardType="decimal-pad"
+                      placeholder={`— ${displayUnit(t.unit, unitPref)}`}
+                      placeholderTextColor="#8B8A82"
+                      returnKeyType="next"
+                      blurOnSubmit={false}
+                      // Klavye açıkken odak buraya geçtiğinde kendiliğinden kaydırma
+                      // olmadığı için alanı elle görünür alana taşıyoruz.
+                      onFocus={() => revealField(inputRefs.current[i])}
+                      onSubmitEditing={() => {
+                        const next = inputRefs.current[i + 1];
+                        if (next) next.focus();
+                        else noteRef.current?.focus();
+                      }}
+                      className={`text-base font-semibold text-right w-20 ${errorText ? "text-danger" : "text-text"}`}
+                    />
+                    <Pressable
+                      hitSlop={8}
+                      accessibilityRole="button"
+                      accessibilityLabel="Sonraki alana geç"
+                      style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+                      onPress={() => {
+                        const next = inputRefs.current[i + 1];
+                        if (next) next.focus();
+                        else noteRef.current?.focus();
+                      }}
+                    >
+                      <Feather name="chevron-right" size={16} color="#8B8A82" />
+                    </Pressable>
+                  </View>
+                </View>
+                {errorText ? (
+                  <Text className="text-danger text-xs mt-1 text-right">{errorText}</Text>
+                ) : null}
+              </View>
+            );
+          })}
+        </View>
+
+        <View className="bg-surface border border-border rounded-card p-4">
+          <Text className="text-textFaint text-sm font-semibold mb-2 tracking-wide">NOT</Text>
+          <TextInput
+            ref={noteRef}
+            value={note}
+            onChangeText={setNote}
+            placeholder="birkaç kelime yaz..."
+            placeholderTextColor="#8B8A82"
+            accessibilityLabel="Not"
+            onFocus={() => revealField(noteRef.current)}
+            multiline
+            className="text-text text-base min-h-[64px]"
+            maxLength={300}
+          />
+        </View>
+      </ScrollView>
+    </View>
   );
 }

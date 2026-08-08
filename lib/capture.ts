@@ -21,18 +21,18 @@ const THUMB_QUALITY = 0.6;
  * payload'a koyunca offline akış da sorunsuz çalışıyor.
  */
 export async function resizeAndCompress(uri: string) {
-  const full = await ImageManipulator.manipulateAsync(
-    uri,
-    [{ resize: { width: MAX_DIMENSION } }],
-    { compress: JPEG_QUALITY, format: ImageManipulator.SaveFormat.JPEG, base64: true }
-  );
+  const full = await ImageManipulator.manipulateAsync(uri, [{ resize: { width: MAX_DIMENSION } }], {
+    compress: JPEG_QUALITY,
+    format: ImageManipulator.SaveFormat.JPEG,
+    base64: true,
+  });
 
   // Thumbnail'i orijinalden değil, küçültülmüş kopyadan üretiyoruz — sonuç
   // görsel olarak aynı, ama büyük dosyayı ikinci kez decode etmekten kurtuluyoruz.
   const thumb = await ImageManipulator.manipulateAsync(
     full.uri,
     [{ resize: { width: THUMB_DIMENSION } }],
-    { compress: THUMB_QUALITY, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+    { compress: THUMB_QUALITY, format: ImageManipulator.SaveFormat.JPEG, base64: true },
   );
 
   return { uri: full.uri, base64: full.base64!, thumbBase64: thumb.base64! };
@@ -46,7 +46,7 @@ function warnPermissionDenied(kind: "kamera" | "galeri") {
     "İzin gerekli",
     kind === "kamera"
       ? "Fotoğraf çekebilmek için kamera iznini cihaz ayarlarından açman gerekiyor."
-      : "Galeriden seçebilmek için fotoğraf erişim iznini cihaz ayarlarından açman gerekiyor."
+      : "Galeriden seçebilmek için fotoğraf erişim iznini cihaz ayarlarından açman gerekiyor.",
   );
 }
 
@@ -130,7 +130,13 @@ async function handleResult(result: ImagePicker.ImagePickerResult | undefined) {
     //    Eskiden ağır küçültme + base64 üretimi burada await ediliyordu; kamera
     //    kapandıktan sonra kullanıcı bu iş bitene kadar (birkaç saniye) boş
     //    bekliyordu. Artık ekran hemen açılıyor, işleme arka planda dönüyor.
-    useCaptureStore.getState().setPhoto({ uri: asset.uri, takenAt, processing: true });
+    useCaptureStore.getState().setPhoto({
+      uri: asset.uri,
+      takenAt,
+      processing: true,
+      width: asset.width,
+      height: asset.height,
+    });
     router.push("/entry/new");
 
     // 2) Küçültme/base64'ü arka planda üret; bitince store'u güncelle. base64

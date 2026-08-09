@@ -18,11 +18,25 @@ module.exports = defineConfig([
       // render sırasında senkronizasyon kalıbına çevrildi (react.dev:
       // you-might-not-need-an-effect). Artık sıfır — geri sızmasın diye error.
       "react-hooks/set-state-in-effect": "error",
+    },
+  },
+  {
+    // TypeScript'e ÖZGÜ kurallar yalnızca .ts/.tsx'te. `files` olmadan bu blok
+    // .js dosyalarını da (eslint.config.js, babel.config.js, metro.config.js,
+    // tailwind.config.js, jest.setup.js) kapsıyordu; @typescript-eslint eklentisi
+    // eslint-config-expo tarafından yalnızca TS dosyaları için kaydedildiği için
+    // `npx eslint .` "could not find plugin" ile HİÇ çalışmıyordu — yani depo
+    // genelinde lint fiilen kırıktı.
+    files: ["**/*.ts", "**/*.tsx"],
+    rules: {
       // Supabase client tipli (createClient<Database>) ve veri katmanı tam
       // tiplenmiş durumda; koddaki 52 `any` temizlendi. `any` tek bir yerde bile
       // geri gelirse o noktadan sonraki tüm tip denetimi sessizce kayboluyor,
-      // bu yüzden hata seviyesinde tutuyoruz. Gerçekten kaçınılmazsa
-      // eslint-disable-next-line + GEREKÇE yaz.
+      // bu yüzden hata seviyesinde tutuyoruz. Gerçekten kaçınılmazsa satır
+      // bazlı bir devre dışı bırakma yorumu ve YANINDA GEREKÇE yaz.
+      // (Buraya o yorumun kendisini ÖRNEK olarak yazmıyoruz: ESLint yorumların
+      //  içindeki "disable-next-line" ifadesini gerçek bir direktif sanıp
+      //  "Definition for rule ... was not found" hatası veriyor.)
       "@typescript-eslint/no-explicit-any": "error",
     },
   },

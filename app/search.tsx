@@ -6,6 +6,7 @@ import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
 import { useAuth } from "@/lib/useAuth";
 import { photoCacheKey } from "@/lib/storage";
+import { formatDateKey } from "@/lib/date";
 import { useSearchIndex, type SearchEntry } from "@/lib/entries";
 import { ErrorState } from "@/components/ErrorState";
 import { useScreenInsets } from "@/lib/useScreenInsets";
@@ -14,7 +15,7 @@ import { useScreenInsets } from "@/lib/useScreenInsets";
 // aynı kalıyor — memo olmadan görünür tüm satırlar (expo-image dahil) her
 // harfte yeniden çiziliyordu.
 const ResultRow = memo(function ResultRow({ entry }: { entry: SearchEntry }) {
-  const dateLabel = new Date(entry.date).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" });
+  const dateLabel = formatDateKey(entry.date, { day: "numeric", month: "long", year: "numeric" });
 
   return (
     <Pressable
@@ -52,9 +53,11 @@ export default function SearchScreen() {
     const q = query.trim().toLocaleLowerCase("tr-TR");
     if (!q || !entries) return [];
     return entries.filter((e) => {
-      const dateLabel = new Date(e.date)
-        .toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })
-        .toLocaleLowerCase("tr-TR");
+      const dateLabel = formatDateKey(e.date, {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      }).toLocaleLowerCase("tr-TR");
       const note = (e.note ?? "").toLocaleLowerCase("tr-TR");
       return dateLabel.includes(q) || note.includes(q);
     });

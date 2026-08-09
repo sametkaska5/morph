@@ -50,26 +50,50 @@ export async function uploadAvatar(userId: string, base64: string) {
 }
 
 /**
+ * Storage'ın list() metodu VARSAYILAN OLARAK yalnızca 100 kayıt döndürüyor ve
+ * fazlasını sessizce atıyor. Hesap silmede bunun anlamı şuydu: 100'den fazla
+ * günü olan kullanıcının fotoğrafları hesap silindikten SONRA da depoda
+ * kalıyordu — kullanıcı "tüm verim silindi" diyen bir onay görüp öyle olmadığı
+ * hâlde. Sayfa sayfa, son sayfaya kadar okuyoruz.
+ */
+const LIST_PAGE = 1000;
+
+async function listAll(prefix: string) {
+  const all: { name: string }[] = [];
+  for (let offset = 0; ; offset += LIST_PAGE) {
+    const { data, error } = await supabase.storage
+      .from("photos")
+      .list(prefix, { limit: LIST_PAGE, offset });
+    if (error) throw error;
+    all.push(...(data ?? []));
+    if (!data || data.length < LIST_PAGE) break;
+  }
+  return all;
+}
+
+/**
  * Hesap silinirken kullanıcının "photos" bucket'ındaki {user_id}/ altındaki TÜM
  * dosyaları (entry fotoğrafları + avatar) kaldırır. Storage'ın list() metodu tek
  * seviye döndürdüğü için önce alt klasörleri (her entry_id + avatar), sonra
  * içindeki dosyaları listeleyip tam yollarını topluyoruz.
  */
 export async function deleteAllUserPhotos(userId: string) {
-  const { data: folders, error: listError } = await supabase.storage.from("photos").list(userId);
-  if (listError) throw listError;
+  const folders = await listAll(userId);
 
   const filePaths: string[] = [];
-  for (const folder of folders ?? []) {
-    const { data: files, error } = await supabase.storage.from("photos").list(`${userId}/${folder.name}`);
-    if (error) throw error;
-    for (const file of files ?? []) {
+  for (const folder of folders) {
+    for (const file of await listAll(`${userId}/${folder.name}`)) {
       filePaths.push(`${userId}/${folder.name}/${file.name}`);
     }
   }
 
-  if (filePaths.length > 0) {
-    const { error } = await supabase.storage.from("photos").remove(filePaths);
+  // remove() de tek istekte sınırlı sayıda yol kabul ediyor; parça parça
+  // gönderiyoruz ki tek büyük istek reddedilip her şey geride kalmasın.
+  const REMOVE_CHUNK = 500;
+  for (let i = 0; i < filePaths.length; i += REMOVE_CHUNK) {
+    const { error } = await supabase.storage
+      .from("photos")
+      .remove(filePaths.slice(i, i + REMOVE_CHUNK));
     if (error) throw error;
   }
 }

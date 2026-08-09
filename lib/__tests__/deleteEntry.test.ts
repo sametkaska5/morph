@@ -33,6 +33,12 @@ jest.mock("@tanstack/react-query", () => ({
 }));
 
 function runDelete(entryId: string) {
+  // rules-of-hooks BİLEREK devre dışı: yukarıdaki jest.mock sayesinde
+  // useDeleteEntry artık bir React hook'u değil, verdiği seçenekleri geri
+  // döndüren düz bir fonksiyon. Amaç tam olarak bu — silme mantığını render
+  // etmeden çalıştırmak. (Bu ihlal, lint'in .js dosyalarında patlaması yüzünden
+  // depo genelinde hiç çalışmadığı dönemde görünmezdi.)
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const mutation = useDeleteEntry() as unknown as {
     mutationFn: (id: string) => Promise<unknown>;
   };

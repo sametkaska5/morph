@@ -13,6 +13,7 @@ import { useLocalSearchParams, router } from "expo-router";
 import { memo, useMemo, useState } from "react";
 import Feather from "@expo/vector-icons/Feather";
 import { photoCacheKey } from "@/lib/storage";
+import { formatDateKey } from "@/lib/date";
 import { useEntryDetail, useEntryOrder, useDeleteEntry } from "@/lib/entries";
 import { useAddEntryPhotos, useSetCoverPhoto, useDeleteEntryPhoto } from "@/lib/photos";
 import { pickPhotosForEntry } from "@/lib/capture";
@@ -163,7 +164,7 @@ const EntryPage = memo(function EntryPage({ entryId }: { entryId: string }) {
 
       <View className="px-5 pt-6" style={{ paddingBottom: screen.bottom + 24 }}>
         <Text className="text-text text-3xl font-bold mb-6">
-          {data?.date ? new Date(data.date).toLocaleDateString("tr-TR") : ""}
+          {data?.date ? formatDateKey(data.date) : ""}
         </Text>
 
         {data?.measurement_values?.length ? (
@@ -422,7 +423,12 @@ export default function EntryDetail() {
       onConfirm={() => {
         setShowDeleteConfirm(false);
         // Navigasyon ekranın işi — invalidation'lar hook'un içinde.
-        deleteMutation.mutate(activeId, { onSuccess: () => router.back() });
+        // onError şart: hata olunca spinner kayboluyor, kayıt yerinde duruyor ve
+        // kullanıcıya HİÇBİR şey söylenmiyordu — silme başarılı sanılıyordu.
+        deleteMutation.mutate(activeId, {
+          onSuccess: () => router.back(),
+          onError: (err) => alertError("Anı silinemedi", err, "entry.delete"),
+        });
       }}
       onClose={() => setShowDeleteConfirm(false)}
     />

@@ -7,6 +7,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming } from "react-na
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Feather from "@expo/vector-icons/Feather";
 import { photoCacheKey } from "@/lib/storage";
+import { formatDateKey } from "@/lib/date";
 import { useAuth } from "@/lib/useAuth";
 import { useUnitPreference, displayUnit, toDisplayValue, type UnitPref } from "@/lib/units";
 import { openCapturePicker } from "@/lib/capture";
@@ -59,7 +60,7 @@ const CapsulePage = memo(function CapsulePage({
     opacity: flip.value >= 0.5 ? 1 : 0,
   }));
 
-  const formattedDate = new Date(entry.date).toLocaleDateString("tr-TR", {
+  const formattedDate = formatDateKey(entry.date, {
     day: "numeric",
     month: "long",
     year: "numeric",

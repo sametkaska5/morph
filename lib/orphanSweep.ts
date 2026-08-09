@@ -66,10 +66,17 @@ async function collectReferencedPaths(userId: string): Promise<Set<string>> {
     // entries.id (photos_entry_id_fkey) ve ters entries.cover_photo_id -> photos.id
     // (entries_cover_photo_fk). Sadece "entries" dersek PostgREST hangisini
     // kastettiğimizi bilemeyip PGRST201 veriyor — FK adını açıkça belirtiyoruz.
+    //
+    // .order("id") ŞART: sıralaması olmayan bir sorguda Postgres satır sırasını
+    // garanti etmiyor, dolayısıyla range() ile sayfalarken bir satır iki sayfada
+    // birden çıkabiliyor ya da HİÇ çıkmıyor. Burada eksik kalan bir satır
+    // "referanssız" sayılıp gerçek bir fotoğrafın SİLİNMESİ demek. Kararlı bir
+    // sıra (birincil anahtar) bunu imkânsız kılıyor.
     const { data, error } = await supabase
       .from("photos")
       .select("storage_path, thumb_path, entries!photos_entry_id_fkey!inner(user_id)")
       .eq("entries.user_id", userId)
+      .order("id", { ascending: true })
       .range(from, from + PAGE - 1);
     if (error) throw error;
 

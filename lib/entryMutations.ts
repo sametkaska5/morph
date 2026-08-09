@@ -32,9 +32,25 @@ export type SaveEntryPayload = {
 export async function saveEntry(payload: SaveEntryPayload) {
   const { userId, date, note, values, photoBase64, thumbBase64 } = payload;
 
+  // O güne ait kayıt ZATEN varsa (aynı güne ikinci fotoğraf) notunu koruyoruz.
+  // Aşağıdaki upsert notu koşulsuz yazıyordu ve yeni kayıt ekranı mevcut notu
+  // HİÇ göstermiyor — yani kullanıcı sabah yazdığı notu, akşam ikinci fotoğrafı
+  // eklerken farkında olmadan siliyordu. (Aynı güne ikinci fotoğrafın eski
+  // fotoğrafı silmesi de aynı sınıftan bir hataydı, aşağıdaki nota bakın.)
+  // Kullanıcı bu ekranda not YAZDIYSA onun yazdığı kazanır.
+  const { data: existingEntry } = await supabase
+    .from("entries")
+    .select("note")
+    .eq("user_id", userId)
+    .eq("date", date)
+    .maybeSingle();
+
   const { data: entry, error: entryError } = await supabase
     .from("entries")
-    .upsert({ user_id: userId, date, type: "log", note }, { onConflict: "user_id,date" })
+    .upsert(
+      { user_id: userId, date, type: "log", note: note ?? existingEntry?.note ?? null },
+      { onConflict: "user_id,date" }
+    )
     .select()
     .single();
   if (entryError) throw entryError;

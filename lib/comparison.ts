@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 import { getPhotoUrl } from "./storage";
 import { queryKeys } from "./queryKeys";
+import { parseLocalDate } from "./date";
 
 export type ComparisonSide = {
   entryId: string;
@@ -66,7 +67,7 @@ export async function fetchDefaultComparison(userId: string): Promise<Comparison
   const [start, end] = await Promise.all([loadSide(firstEntry), loadSide(lastEntry)]);
 
   const daysBetween = Math.round(
-    (new Date(end.date).getTime() - new Date(start.date).getTime()) / 86400000
+    (parseLocalDate(end.date).getTime() - parseLocalDate(start.date).getTime()) / 86400000
   );
 
   return {
@@ -90,12 +91,12 @@ export async function fetchComparisonBetween(entryIdA: string, entryIdB: string)
   ]);
   if (!a || !b) return null;
 
-  const [firstEntry, lastEntry] = new Date(a.date) <= new Date(b.date) ? [a, b] : [b, a];
+  const [firstEntry, lastEntry] = a.date <= b.date ? [a, b] : [b, a];
 
   // İki tarafın fotoğrafını da paralel imzalıyoruz.
   const [start, end] = await Promise.all([loadSide(firstEntry), loadSide(lastEntry)]);
   const daysBetween = Math.round(
-    (new Date(end.date).getTime() - new Date(start.date).getTime()) / 86400000
+    (parseLocalDate(end.date).getTime() - parseLocalDate(start.date).getTime()) / 86400000
   );
 
   return {

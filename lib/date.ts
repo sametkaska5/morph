@@ -10,6 +10,37 @@ export function toLocalDateKey(d: Date) {
   return `${year}-${month}-${day}`;
 }
 
+/**
+ * YYYY-MM-DD tarih anahtarını YEREL gün başlangıcı olarak Date'e çevirir.
+ *
+ * `new Date("2026-08-03")` yerine BUNU kullan: ISO tarih-only string'ini JS
+ * spec'i UTC gece yarısı sayıyor, yani UTC'nin GERİSİNDE olan saat
+ * dilimlerinde (Amerika kıtasının tamamı) o Date yerel olarak bir GÜN ÖNCEyi
+ * gösteriyor. Sonucu iki türlü görünüyordu: ekrandaki her tarih etiketi bir
+ * gün geri kayıyordu ve fotoğrafsız gün / program ekranları route'tan gelen
+ * tarihi yanlış güne yazıyordu.
+ *
+ * Türkiye (UTC+3) hep pozitif offset'te olduğu için hata yerelde hiç
+ * görünmüyor — bu yüzden tek kapıdan geçiriyoruz.
+ *
+ * Aynı gerekçe lib/date.ts'teki formatWeekRange ve lib/memoryMilestones.ts'te
+ * elle parçalama olarak zaten uygulanıyordu; bu fonksiyon o kalıbı
+ * tekilleştiriyor.
+ */
+export function parseLocalDate(dateKey: string) {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return new Date(year, (month ?? 1) - 1, day ?? 1);
+}
+
+/**
+ * Tarih anahtarını Türkçe okunur biçimde yazar. `parseLocalDate` üzerinden
+ * gittiği için saat dilimi kaymasına bağışık — ekranlar `new Date(key)
+ * .toLocaleDateString(...)` yerine bunu çağırıyor.
+ */
+export function formatDateKey(dateKey: string, options?: Intl.DateTimeFormatOptions) {
+  return parseLocalDate(dateKey).toLocaleDateString("tr-TR", options);
+}
+
 /** Verilen tarihin ait olduğu haftanın Pazartesi gününü döner (haftalar Pazartesi başlar) */
 export function getMondayOfWeek(d: Date) {
   const day = d.getDay(); // 0=Pazar..6=Cumartesi

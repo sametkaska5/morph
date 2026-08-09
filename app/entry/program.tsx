@@ -6,7 +6,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Feather from "@expo/vector-icons/Feather";
 import { useAuth } from "@/lib/useAuth";
-import { toLocalDateKey } from "@/lib/date";
+import { toLocalDateKey, parseLocalDate } from "@/lib/date";
 import { useKeyboardFocus } from "@/lib/useKeyboardFocus";
 import { useProgramDay, saveProgram, type WorkoutItemDraft, type WorkoutSetDraft } from "@/lib/workout";
 import { queryKeys } from "@/lib/queryKeys";
@@ -25,7 +25,9 @@ export default function ProgramScreen() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const [date, setDate] = useState(() => (paramDate ? new Date(paramDate) : new Date()));
+  // parseLocalDate: gerekçesi entry/workout.tsx'te — route'tan gelen tarih
+  // anahtarı UTC olarak okunursa program yanlış güne yazılıyor.
+  const [date, setDate] = useState(() => (paramDate ? parseLocalDate(paramDate) : new Date()));
   const [showPicker, setShowPicker] = useState(false);
   const dateKey = toLocalDateKey(date);
 

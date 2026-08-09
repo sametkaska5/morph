@@ -1,4 +1,11 @@
-import { toLocalDateKey, getMondayOfWeek, weekdayLetter, formatWeekRange } from "../date";
+import {
+  toLocalDateKey,
+  getMondayOfWeek,
+  weekdayLetter,
+  formatWeekRange,
+  parseLocalDate,
+  formatDateKey,
+} from "../date";
 
 describe("toLocalDateKey", () => {
   it("YEREL tarihe göre YYYY-MM-DD üretir (UTC'ye kaymaz)", () => {
@@ -78,5 +85,68 @@ describe("weekdayLetter", () => {
     expect(weekdayLetter(new Date(2026, 6, 24))).toBe("C"); // Cuma
     expect(weekdayLetter(new Date(2026, 6, 25))).toBe("C"); // Cumartesi
     expect(weekdayLetter(new Date(2026, 6, 26))).toBe("P"); // Pazar
+  });
+});
+
+/**
+ * `new Date("2026-08-03")` ISO tarih-only string'ini JS spec'i UTC gece yarısı
+ * sayıyor. UTC'nin GERİSİNDE olan saat dilimlerinde (Amerika kıtasının tamamı)
+ * o Date yerel olarak bir GÜN ÖNCEyi gösteriyor. Sonuç iki türlüydü: ekrandaki
+ * her tarih etiketi bir gün geri kayıyordu ve fotoğrafsız gün / antrenman
+ * programı ekranları route'tan gelen tarihi YANLIŞ güne yazıyordu.
+ *
+ * Türkiye (UTC+3) hep pozitif offset'te olduğu için hata yerelde hiç
+ * görünmüyordu — bu testler onu kalıcı olarak yakalıyor.
+ */
+describe("parseLocalDate", () => {
+  it("tarih anahtarını YEREL gün başlangıcı olarak okur", () => {
+    const d = parseLocalDate("2026-08-03");
+    expect(d.getFullYear()).toBe(2026);
+    expect(d.getMonth()).toBe(7); // Ağustos
+    expect(d.getDate()).toBe(3);
+    expect(d.getHours()).toBe(0);
+  });
+
+  it("gidiş-dönüş toLocalDateKey ile aynı anahtarı verir", () => {
+    for (const key of ["2026-01-01", "2026-08-03", "2025-12-31", "2024-02-29"]) {
+      expect(toLocalDateKey(parseLocalDate(key))).toBe(key);
+    }
+  });
+
+  /**
+   * Saat dilimini test içinde değiştirmek İŞE YARAMIYOR: V8 yerel saat dilimini
+   * ilk Date kullanımında önbelleğe alıyor, sonradan `process.env.TZ` yazmak onu
+   * değiştirmiyor. Bu yüzden hatayı saat dilimi taklit ederek değil, DAVRANIŞIN
+   * KENDİSİNİ sabitleyerek yakalıyoruz: parseLocalDate yerel bileşenlerden
+   * kuruluyor, `new Date(key)` ise UTC'den. Offset sıfır olmayan her ortamda bu
+   * ikisi farklı anlar — ve yalnızca ilki gün numarasını korur.
+   */
+  it("UTC gece yarısını DEĞİL yerel gece yarısını üretir", () => {
+    const local = new Date(2026, 7, 3); // 3 Ağustos 2026, yerel 00:00
+    expect(parseLocalDate("2026-08-03").getTime()).toBe(local.getTime());
+
+    if (local.getTimezoneOffset() !== 0) {
+      // Eski kalıp (`new Date("2026-08-03")`) farklı bir ana işaret ediyor;
+      // negatif offset'te bu fark günü geriye kaydıran hatanın kaynağı.
+      expect(parseLocalDate("2026-08-03").getTime()).not.toBe(
+        new Date("2026-08-03").getTime()
+      );
+    }
+  });
+});
+
+describe("formatDateKey", () => {
+  it("tarih anahtarını Türkçe biçimde yazar", () => {
+    expect(formatDateKey("2026-08-03", { day: "numeric", month: "long", year: "numeric" })).toBe(
+      "3 Ağustos 2026"
+    );
+  });
+
+  it("gün numarası anahtardaki günle birebir aynı kalır", () => {
+    // Asıl regresyon: etiketler bir gün geri kayıyordu. Ay sınırları en riskli
+    // yer — ay adı da beraber değişiyordu.
+    expect(formatDateKey("2026-01-01", { day: "numeric", month: "long" })).toBe("1 Ocak");
+    expect(formatDateKey("2026-03-01", { day: "numeric", month: "long" })).toBe("1 Mart");
+    expect(formatDateKey("2025-12-31", { day: "numeric", month: "long" })).toBe("31 Aralık");
   });
 });

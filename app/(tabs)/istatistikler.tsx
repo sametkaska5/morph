@@ -13,7 +13,7 @@ import { scheduleStreakRiskNotification } from "@/lib/notifications";
 import { useNotificationSettings } from "@/lib/notificationSettings";
 import { useMeasurementTypes } from "@/lib/measurementTypes";
 import { useUnitPreference, displayUnit, toDisplayValue } from "@/lib/units";
-import { formatWeekRange } from "@/lib/date";
+import { formatWeekRange, formatDateKey } from "@/lib/date";
 import { dayRoute, type DayRouteInput } from "@/lib/dayRoute";
 import { ErrorState } from "@/components/ErrorState";
 import {
@@ -72,7 +72,7 @@ export default function Istatistikler() {
   }, [queryClient]);
 
   function dayAccessibilityLabel(day: { date: string; type: string | null; isFuture: boolean; isToday: boolean }) {
-    const dateLabel = new Date(day.date).toLocaleDateString("tr-TR", { day: "numeric", month: "long", weekday: "long" });
+    const dateLabel = formatDateKey(day.date, { day: "numeric", month: "long", weekday: "long" });
     if (day.isFuture) return `${dateLabel}, henüz gelmedi`;
     const statusLabel =
       day.type === "log"
@@ -348,9 +348,9 @@ export default function Istatistikler() {
               <Text className="text-text text-2xl font-bold capitalize">{activeType?.name ?? ""}</Text>
               {series && series.length > 0 ? (
                 <Text className="text-textFaint text-sm mt-1">
-                  {new Date(series[0].date).toLocaleDateString("tr-TR", { day: "numeric", month: "short" })}
+                  {formatDateKey(series[0].date, { day: "numeric", month: "short" })}
                   {" – "}
-                  {new Date(series[series.length - 1].date).toLocaleDateString("tr-TR", {
+                  {formatDateKey(series[series.length - 1].date, {
                     day: "numeric",
                     month: "short",
                     year: "numeric",
@@ -385,7 +385,7 @@ export default function Istatistikler() {
             </View>
             <Text className="text-textFaint text-sm mt-1">
               {modalSelectedDate
-                ? new Date(modalSelectedDate).toLocaleDateString("tr-TR", {
+                ? formatDateKey(modalSelectedDate, {
                     day: "numeric",
                     month: "long",
                     year: "numeric",
@@ -604,13 +604,13 @@ export default function Istatistikler() {
                           key={photo.id}
                           onPress={() => setSelectedSharePhotoId(photo.id)}
                           accessibilityRole="radio"
-                          accessibilityLabel={`${new Date(photo.date).toLocaleDateString("tr-TR", { day: "numeric", month: "long" })} tarihli fotoğraf`}
+                          accessibilityLabel={`${formatDateKey(photo.date, { day: "numeric", month: "long" })} tarihli fotoğraf`}
                           accessibilityState={{ selected: isActive }}
                           className={`rounded-[16px] overflow-hidden border ${isActive ? "border-accent" : "border-border"}`}
                         >
                           <Image source={{ uri: photo.photoUrl! }} style={{ width: 90, height: 90 }} resizeMode="cover" />
                           <View className="px-2 py-1 bg-surface">
-                            <Text className="text-textFaint text-xs">{new Date(photo.date).toLocaleDateString("tr-TR", { day: "numeric", month: "short" })}</Text>
+                            <Text className="text-textFaint text-xs">{formatDateKey(photo.date, { day: "numeric", month: "short" })}</Text>
                           </View>
                         </Pressable>
                       );

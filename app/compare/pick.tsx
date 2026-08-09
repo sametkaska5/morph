@@ -7,6 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import Feather from "@expo/vector-icons/Feather";
 import { useAuth } from "@/lib/useAuth";
 import { photoCacheKey } from "@/lib/storage";
+import { formatDateKey } from "@/lib/date";
 import { fetchComparisonBetween } from "@/lib/comparison";
 import { usePickableEntries, type PickableEntry } from "@/lib/entries";
 import { queryKeys } from "@/lib/queryKeys";
@@ -32,7 +33,7 @@ const PickThumb = memo(function PickThumb({
   order: number;
   onToggle: (id: string) => void;
 }) {
-  const dateLabel = new Date(item.date).toLocaleDateString("tr-TR", {
+  const dateLabel = formatDateKey(item.date, {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -69,7 +70,7 @@ const PickThumb = memo(function PickThumb({
         ) : null}
         <View className="absolute bottom-1 left-1 bg-black/75 rounded px-1.5 py-0.5">
           <Text className="text-text text-xs">
-            {new Date(item.date).toLocaleDateString("tr-TR", { day: "numeric", month: "short" })}
+            {formatDateKey(item.date, { day: "numeric", month: "short" })}
           </Text>
         </View>
       </View>

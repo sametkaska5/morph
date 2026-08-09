@@ -16,6 +16,7 @@ import {
   cancelDailyReminder,
   cancelStreakRiskNotification,
 } from "@/lib/notifications";
+import { alertError } from "@/lib/alerts";
 import { ErrorState } from "@/components/ErrorState";
 import { useScreenInsets } from "@/lib/useScreenInsets";
 
@@ -90,31 +91,49 @@ export default function NotificationSettingsScreen() {
     return granted;
   }
 
+  /**
+   * Zamanlama/iptal işlerini SARMALIYOR.
+   *
+   * Bu fonksiyonlar işletim sistemine gidiyor ve patlayabiliyor (izin sonradan
+   * geri alındı, bekleyen bildirim sınırı doldu). Switch'in `onValueChange`'i
+   * senkron olduğu için doğrudan await edildiklerinde ortaya YAKALANMAYAN bir
+   * promise reddi çıkıyordu: anahtar açık görünüyor, tercih kaydediliyor, ama
+   * bildirim hiç kurulmuyor ve kullanıcı bunu asla öğrenmiyordu.
+   */
+  async function applySchedule(task: () => Promise<void>, where: string) {
+    try {
+      await task();
+    } catch (err) {
+      alertError("Bildirim ayarlanamadı", err, where);
+    }
+  }
+
   async function togglePastMemory(next: boolean) {
     if (!settings) return;
     if (next && !(await ensurePermission())) return;
     updateMutation.mutate({ past_memory_enabled: next });
-    if (next && user) {
-      await scheduleMemoryNotifications(user.id, settings.reminder_time);
-    } else {
-      await cancelMemoryNotifications();
-    }
+    await applySchedule(
+      () =>
+        next && user
+          ? scheduleMemoryNotifications(user.id, settings.reminder_time)
+          : cancelMemoryNotifications(),
+      "notifications.togglePastMemory"
+    );
   }
 
   async function toggleDailyReminder(next: boolean) {
     if (!settings) return;
     if (next && !(await ensurePermission())) return;
     updateMutation.mutate({ daily_reminder_enabled: next });
-    if (next) {
-      await scheduleDailyReminder(settings.reminder_time);
-    } else {
-      await cancelDailyReminder();
-    }
+    await applySchedule(
+      () => (next ? scheduleDailyReminder(settings.reminder_time) : cancelDailyReminder()),
+      "notifications.toggleDailyReminder"
+    );
   }
 
   function toggleStreak(next: boolean) {
     updateMutation.mutate({ streak_enabled: next });
-    if (!next) cancelStreakRiskNotification();
+    if (!next) applySchedule(cancelStreakRiskNotification, "notifications.toggleStreak");
   }
 
   async function handleTimeChange(selected: Date) {
@@ -124,8 +143,10 @@ export default function NotificationSettingsScreen() {
     const newTime = formatTimeFromDate(selected);
     updateMutation.mutate({ reminder_time: newTime });
 
-    if (settings.past_memory_enabled) await scheduleMemoryNotifications(user.id, newTime);
-    if (settings.daily_reminder_enabled) await scheduleDailyReminder(newTime);
+    await applySchedule(async () => {
+      if (settings.past_memory_enabled) await scheduleMemoryNotifications(user.id, newTime);
+      if (settings.daily_reminder_enabled) await scheduleDailyReminder(newTime);
+    }, "notifications.changeTime");
   }
 
   return (

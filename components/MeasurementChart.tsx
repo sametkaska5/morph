@@ -3,6 +3,7 @@ import { View, Pressable, ScrollView } from "react-native";
 import Svg, { Path, Circle, Line, Defs, LinearGradient, Stop } from "react-native-svg";
 import { Text } from "@/components/Typography";
 import { buildChartPath, CHART_PAD_X } from "@/lib/chart";
+import { formatDateKey } from "@/lib/date";
 
 /** Bu sayıdan fazla veri noktası varsa tek tek noktalar çizgiyi boğuyor. */
 const MAX_VISIBLE_DOTS = 24;
@@ -159,7 +160,7 @@ export function MeasurementChart({
         >
           <View className="bg-bg border border-accent rounded-lg px-2 py-1.5 items-center">
             <Text className="text-textFaint text-xs">
-              {new Date(selectedDate).toLocaleDateString("tr-TR", { day: "numeric", month: "short" })}
+              {formatDateKey(selectedDate, { day: "numeric", month: "short" })}
             </Text>
             <Text className="text-text text-sm font-semibold">
               {selectedValue} {unitLabel}

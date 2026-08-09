@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "./supabase";
-import { toLocalDateKey } from "./date";
+import { toLocalDateKey, parseLocalDate } from "./date";
 import { queryKeys } from "./queryKeys";
 
 /**
@@ -69,7 +69,10 @@ export async function fetchProfileStats(userId: string) {
   let monthsSinceFirst: number | null = null;
 
   if (firstDate) {
-    const first = new Date(firstDate);
+    // parseLocalDate: `new Date("2026-01-01")` UTC gece yarısı sayılıyor, sonra
+    // getFullYear/getMonth YEREL okuyor — negatif saat dilimlerinde ay bir geri
+    // kayıp "kaç aydır" sayacı yanlış çıkıyordu.
+    const first = parseLocalDate(firstDate);
     const now = new Date();
     monthsSinceFirst =
       (now.getFullYear() - first.getFullYear()) * 12 + (now.getMonth() - first.getMonth());
@@ -82,28 +85,25 @@ export async function fetchProfileStats(userId: string) {
       .single();
 
     if (kiloType) {
-      const { data: firstKilo } = await supabase
+      // Sıralamayı JS'te yapıyoruz. `order("date", { foreignTable: "entries" })`
+      // + `limit(1)` güvenilir DEĞİL: entries burada to-one bir ilişki ve
+      // PostgREST bu durumda ANA satırları (measurement_values) gömülü kolona
+      // göre sıralamayı garanti etmiyor — ilk/son kilo yerine rastgele iki satır
+      // gelip "kilo değişimi" tamamen yanlış çıkabiliyordu. lib/stats.ts
+      // useMeasurementSeries aynı tuzağa düşüp aynı şekilde düzeltilmişti.
+      const { data: kiloRows } = await supabase
         .from("measurement_values")
         .select("value, entries!inner(date, type, user_id)")
         .eq("measurement_type_id", kiloType.id)
         .eq("entries.user_id", userId)
-        .eq("entries.type", "log")
-        .order("date", { foreignTable: "entries", ascending: true })
-        .limit(1)
-        .maybeSingle();
+        .eq("entries.type", "log");
 
-      const { data: lastKilo } = await supabase
-        .from("measurement_values")
-        .select("value, entries!inner(date, type, user_id)")
-        .eq("measurement_type_id", kiloType.id)
-        .eq("entries.user_id", userId)
-        .eq("entries.type", "log")
-        .order("date", { foreignTable: "entries", ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const sorted = (kiloRows ?? [])
+        .map((r) => ({ date: r.entries.date, value: r.value }))
+        .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 
-      if (firstKilo && lastKilo) {
-        weightDiff = Number((lastKilo.value - firstKilo.value).toFixed(1));
+      if (sorted.length >= 2) {
+        weightDiff = Number((sorted[sorted.length - 1].value - sorted[0].value).toFixed(1));
       }
     }
   }

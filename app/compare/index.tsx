@@ -13,6 +13,7 @@ import { alertError } from "@/lib/alerts";
 import { useAuth } from "@/lib/useAuth";
 import { useUnitPreference, displayUnit, toDisplayValue } from "@/lib/units";
 import { useScreenInsets } from "@/lib/useScreenInsets";
+import { formatDateKey } from "@/lib/date";
 
 // Expo Go'nun bazı derlemelerinde expo-media-library'nin native modülü mevcut değil;
 // paket import edilir edilmez throw ediyor. Statik import Babel tarafından her koşulda
@@ -27,7 +28,7 @@ try {
 }
 
 function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" });
+  return formatDateKey(d, { day: "numeric", month: "long", year: "numeric" });
 }
 
 /**

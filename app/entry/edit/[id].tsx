@@ -22,6 +22,7 @@ import { validateMeasurementInput, measurementErrorText } from "@/lib/measuremen
 import { useEditableEntry } from "@/lib/entries";
 import { queryKeys } from "@/lib/queryKeys";
 import { actionErrorMessage } from "@/lib/errors";
+import { alertError } from "@/lib/alerts";
 import { ErrorState } from "@/components/ErrorState";
 import { useScreenInsets } from "@/lib/useScreenInsets";
 
@@ -126,6 +127,12 @@ export default function EditEntry() {
       const { base64, thumbBase64 } = await resizeAndCompress(asset.uri);
       setPendingImage({ base64, thumbBase64 });
       setLocalUri(asset.uri);
+    } catch (err) {
+      // Bozuk/desteklenmeyen görsel ya da bellek yetersizliği. catch olmadan bu
+      // yakalanmayan bir promise reddi oluyordu: spinner kapanıyor, önizleme
+      // değişmiyor, kullanıcı neden hiçbir şey olmadığını anlamıyordu.
+      // (lib/capture.ts aynı hatayı zaten böyle bildiriyor.)
+      alertError("Fotoğraf işlenemedi", err, "editEntry.pickImage");
     } finally {
       setUploading(false);
     }

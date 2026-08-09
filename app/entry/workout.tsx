@@ -7,7 +7,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Feather from "@expo/vector-icons/Feather";
 import { useAuth } from "@/lib/useAuth";
-import { toLocalDateKey } from "@/lib/date";
+import { toLocalDateKey, parseLocalDate } from "@/lib/date";
 import { useMeasurementTypes } from "@/lib/measurementTypes";
 import { useKeyboardFocus } from "@/lib/useKeyboardFocus";
 import { useUnitPreference, displayUnit, toDisplayValue, toMetricValue } from "@/lib/units";
@@ -29,7 +29,10 @@ export default function WorkoutDayScreen() {
   const { data: unitPref = "metric" } = useUnitPreference(user?.id);
 
   // Tarih route param'dan (istatistik şeridinden) gelebilir; yoksa bugün.
-  const [date, setDate] = useState(() => (paramDate ? new Date(paramDate) : new Date()));
+  // parseLocalDate şart: `new Date("2026-08-03")` UTC gece yarısı sayılıyor ve
+  // negatif saat dilimlerinde toLocalDateKey bir gün ÖNCEsini üretiyordu — yani
+  // kullanıcı 3 Ağustos'a dokunup 2 Ağustos'u kaydediyordu.
+  const [date, setDate] = useState(() => (paramDate ? parseLocalDate(paramDate) : new Date()));
   const [showPicker, setShowPicker] = useState(false);
   const dateKey = toLocalDateKey(date);
 

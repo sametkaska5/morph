@@ -5,6 +5,7 @@ import { Image } from "expo-image";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
 import { photoCacheKey } from "@/lib/storage";
+import { formatDateKey } from "@/lib/date";
 import { openCapturePicker } from "@/lib/capture";
 import { useTimelineEntries, type EntryRow } from "@/lib/entries";
 import { useReduceMotion } from "@/lib/useReduceMotion";
@@ -56,7 +57,7 @@ const PosterThumb = memo(function PosterThumb({
       }}
       onPressOut={() => setPressed(false)}
       accessibilityRole="button"
-      accessibilityLabel={`${new Date(entry.date).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })} tarihli anı${
+      accessibilityLabel={`${formatDateKey(entry.date, { day: "numeric", month: "long", year: "numeric" })} tarihli anı${
         entry.photo_count > 1 ? `, ${entry.photo_count} fotoğraf` : ""
       }${entry.pending ? ", senkronize edilmeyi bekliyor" : ""}`}
       style={{ width: THUMB_W, marginBottom: 16 }}
@@ -102,7 +103,7 @@ const PosterThumb = memo(function PosterThumb({
             yapısal olarak ortadan kaldırıyoruz. */}
         <View className="absolute bottom-1.5 left-1.5 bg-black/70 rounded-md px-2 py-1">
           <Text className="text-text text-xs font-semibold">
-            {new Date(entry.date).toLocaleDateString("tr-TR", { day: "numeric", month: "short" })}
+            {formatDateKey(entry.date, { day: "numeric", month: "short" })}
           </Text>
         </View>
         {entry.pending ? (

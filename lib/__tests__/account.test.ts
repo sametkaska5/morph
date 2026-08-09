@@ -142,4 +142,52 @@ describe("deleteAllUserPhotos", () => {
 
     await expect(deleteAllUserPhotos("u1")).rejects.toEqual({ message: "inner list failed" });
   });
+
+  /**
+   * storage.list() VARSAYILAN olarak yalnızca 100 kayıt döndürüyor ve fazlasını
+   * sessizce atıyor. Sayfalama olmadan 100'den fazla günü olan bir kullanıcının
+   * fotoğrafları hesap silindikten SONRA da depoda kalıyordu — kullanıcı "tüm
+   * verin silindi" diyen bir onay görüyor, gerçekte silinmiyordu.
+   */
+  describe("sayfalama", () => {
+    it("100'den fazla klasörü de kapsar — hiçbirini atlamaz", async () => {
+      const folders = Array.from({ length: 250 }, (_, i) => ({ name: `e${i}` }));
+      sb.queueStorageList({ data: folders });
+      // Her klasörün içi tek dosya.
+      folders.forEach((f) => sb.queueStorageList({ data: [{ name: `${f.name}.jpg` }] }));
+
+      await deleteAllUserPhotos("u1");
+
+      const removed = sb.storageRemovals.flatMap((r) => r.paths);
+      expect(removed).toHaveLength(250);
+      expect(removed).toContain("u1/e0/e0.jpg");
+      expect(removed).toContain("u1/e249/e249.jpg");
+    });
+
+    it("tek klasördeki 1000'den fazla dosya için sayfa sayfa okur", async () => {
+      const files = Array.from({ length: 1200 }, (_, i) => ({ name: `${i}.jpg` }));
+      sb.queueStorageList({ data: [{ name: "e1" }] }, { data: files });
+
+      await deleteAllUserPhotos("u1");
+
+      const removed = sb.storageRemovals.flatMap((r) => r.paths);
+      expect(removed).toHaveLength(1200);
+      expect(removed).toContain("u1/e1/1199.jpg");
+
+      // İkinci sayfa gerçekten offset ile istenmiş olmalı.
+      const innerLists = sb.storageLists.filter((l) => l.prefix === "u1/e1");
+      expect(innerLists).toHaveLength(2);
+      expect(innerLists[1].options?.offset).toBe(1000);
+    });
+
+    it("silmeyi parçalara böler — tek dev istek atmaz", async () => {
+      const files = Array.from({ length: 1200 }, (_, i) => ({ name: `${i}.jpg` }));
+      sb.queueStorageList({ data: [{ name: "e1" }] }, { data: files });
+
+      await deleteAllUserPhotos("u1");
+
+      expect(sb.storageRemovals.length).toBeGreaterThan(1);
+      expect(Math.max(...sb.storageRemovals.map((r) => r.paths.length))).toBeLessThanOrEqual(500);
+    });
+  });
 });

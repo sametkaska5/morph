@@ -39,11 +39,17 @@ const BASE_PAYLOAD = {
 };
 
 /**
- * entries.upsert → photos.select (mevcut sıra) → photos.insert → cover update
- * sırasıyla varsayılan başarılı sonuçlar. `existingPhotos`, o güne DAHA ÖNCE
- * eklenmiş fotoğrafları temsil eder (order_index hesabı için okunuyor).
+ * entries.select (mevcut not) → entries.upsert → photos.select (mevcut sıra) →
+ * photos.insert → cover update sırasıyla varsayılan başarılı sonuçlar.
+ * `existingPhotos`, o güne DAHA ÖNCE eklenmiş fotoğrafları temsil eder
+ * (order_index hesabı için okunuyor); `existingEntry` o günün zaten var olan
+ * kaydını (notu korumak için okunuyor).
  */
-function queueHappyPath(existingPhotos: { order_index: number }[] = []) {
+function queueHappyPath(
+  existingPhotos: { order_index: number }[] = [],
+  existingEntry: { note: string | null } | null = null
+) {
+  sb.queue("entries", { data: existingEntry }); // mevcut not sorgusu (maybeSingle)
   sb.queue("entries", { data: { id: "e1", date: BASE_PAYLOAD.date } }); // upsert().select().single()
   sb.queue("photos", { data: existingPhotos }); // mevcut order_index sorgusu
   sb.queue("photos", { data: { id: "p-new" } }); // insert().select().single()
@@ -52,6 +58,10 @@ function queueHappyPath(existingPhotos: { order_index: number }[] = []) {
 
 /** Fotoğraf INSERT zinciri — mevcut sıra sorgusundan sonraki ikinci photos çağrısı. */
 const photoInsert = () => sb.chainsFor("photos")[1];
+/** Gün UPSERT zinciri — mevcut not sorgusundan sonraki ikinci entries çağrısı. */
+const entryUpsert = () => sb.chainsFor("entries")[1];
+/** cover_photo_id UPDATE zinciri. */
+const coverUpdateChain = () => sb.chainsFor("entries")[2];
 
 beforeEach(() => {
   sb = createSupabaseMock();
@@ -72,7 +82,7 @@ describe("saveEntry — mutlu yol", () => {
     const entry = await saveEntry({ ...BASE_PAYLOAD, thumbBase64: "THUMB" });
 
     // Gün, (user_id, date) çakışmasında güncellenir — günde tek kayıt kuralı.
-    const upsert = sb.chainsFor("entries")[0];
+    const upsert = entryUpsert();
     expect(argOf(upsert, "upsert")).toEqual({
       user_id: "u1",
       date: "2026-08-01",
@@ -93,7 +103,7 @@ describe("saveEntry — mutlu yol", () => {
     });
 
     // Kapak, YENİ eklenen fotoğrafa işaret etmeli.
-    const coverUpdate = sb.chainsFor("entries")[1];
+    const coverUpdate = coverUpdateChain();
     expect(argOf(coverUpdate, "update")).toEqual({ cover_photo_id: "p-new" });
     expect(argOf(coverUpdate, "eq", 1)).toBe("e1");
 
@@ -161,13 +171,32 @@ describe("saveEntry — aynı güne ikinci fotoğraf", () => {
     expect(argOf(photoInsert(), "insert")).toMatchObject({ order_index: 0 });
   });
 
+  it("not boş bırakılırsa o günün MEVCUT notunu korur", async () => {
+    // Yeni kayıt ekranı o günün mevcut notunu hiç göstermiyor. Notu koşulsuz
+    // yazsaydık, sabah "harika bir gün" yazan kullanıcı akşam ikinci fotoğrafı
+    // eklerken notunu farkında olmadan silmiş olurdu.
+    queueHappyPath([{ order_index: 0 }], { note: "sabah yazdığım not" });
+
+    await saveEntry({ ...BASE_PAYLOAD, note: null });
+
+    expect(argOf(entryUpsert(), "upsert")).toMatchObject({ note: "sabah yazdığım not" });
+  });
+
+  it("kullanıcı yeni not yazdıysa mevcut notun yerine ONU yazar", async () => {
+    queueHappyPath([{ order_index: 0 }], { note: "eski not" });
+
+    await saveEntry({ ...BASE_PAYLOAD, note: "yeni not" });
+
+    expect(argOf(entryUpsert(), "upsert")).toMatchObject({ note: "yeni not" });
+  });
+
   it("kapağı EN SON eklenen fotoğrafa verir", async () => {
     // Kullanıcı az önce çektiği fotoğrafı ızgarada görmeyi bekler.
     queueHappyPath([{ order_index: 0 }]);
 
     await saveEntry(BASE_PAYLOAD);
 
-    const coverUpdate = sb.chainsFor("entries")[1];
+    const coverUpdate = coverUpdateChain();
     expect(argOf(coverUpdate, "update")).toEqual({ cover_photo_id: "p-new" });
   });
 });
@@ -200,6 +229,7 @@ describe("saveEntry — ölçüm değerleri", () => {
 
 describe("saveEntry — hata yolları", () => {
   it("gün upsert'ü patlarsa fotoğrafı YÜKLEMEZ (yetim dosya bırakmaz)", async () => {
+    sb.queue("entries", { data: null }); // mevcut not sorgusu
     sb.queue("entries", { error: { message: "boom" } });
 
     await expect(saveEntry(BASE_PAYLOAD)).rejects.toEqual({ message: "boom" });
@@ -207,6 +237,7 @@ describe("saveEntry — hata yolları", () => {
   });
 
   it("fotoğraf satırı eklenemezse hatayı yukarı fırlatır", async () => {
+    sb.queue("entries", { data: null }); // mevcut not sorgusu
     sb.queue("entries", { data: { id: "e1" } });
     sb.queue("photos", { data: [] }); // mevcut sıra sorgusu
     sb.queue("photos", { error: { message: "insert failed" } });

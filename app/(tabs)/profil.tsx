@@ -16,6 +16,7 @@ import { ErrorState } from "@/components/ErrorState";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { alertError } from "@/lib/alerts";
 import { useScreenInsets } from "@/lib/useScreenInsets";
+import { formatDateKey } from "@/lib/date";
 
 /** Feather ikon adları — yanlış yazılmış bir ad artık derlemede yakalanıyor. */
 type FeatherIcon = keyof typeof Feather.glyphMap;
@@ -125,7 +126,11 @@ export default function Profil() {
   }
 
   function handleSelectUnit(pref: "metric" | "imperial") {
-    setUnitMutation.mutate(pref);
+    // onError şart: yazma patlarsa sheet kapanıyor, seçim eski birimde kalıyor ve
+    // kullanıcıya hiçbir şey söylenmiyordu — tercihi kaydedilmiş sanıyordu.
+    setUnitMutation.mutate(pref, {
+      onError: (err) => alertError("Birim değiştirilemedi", err, "profile.setUnitPref"),
+    });
     setShowUnitSheet(false);
   }
 
@@ -182,7 +187,7 @@ export default function Profil() {
             <StatChip
               icon="calendar"
               label="Başlangıç"
-              value={stats?.firstDate ? new Date(stats.firstDate).toLocaleDateString("tr-TR") : "—"}
+              value={stats?.firstDate ? formatDateKey(stats.firstDate) : "—"}
             />
             <StatChip icon="camera" label="Toplam Anı" value={String(stats?.totalMemories ?? 0)} />
             <StatChip icon="zap" label="En Uzun Seri" value={`${stats?.longest ?? 0} gün`} />

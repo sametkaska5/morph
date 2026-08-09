@@ -24,6 +24,16 @@ export default function EditProfileScreen() {
   const [avatarPath, setAvatarPath] = useState<string | null>(null);
   const [displayUri, setDisplayUri] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  /**
+   * Kayıt BAŞARILI olduktan sonra depodan silinecek eski avatar yolları.
+   *
+   * Eskiden eski dosya yeni yükleme biter bitmez siliniyordu. Kullanıcı fotoğrafı
+   * seçip Kaydet'e basmadan geri dönerse profil satırı hâlâ o yolu gösteriyor
+   * ama dosya artık yok — avatar kırık bir kareye dönüşüyordu ve geri dönüşü de
+   * yoktu. Silmeyi kayda erteliyoruz; kaydedilmeyen yüklemeler yetim kalır,
+   * onları da günlük süpürme topluyor (bkz. lib/orphanSweep.ts).
+   */
+  const [staleAvatarPaths, setStaleAvatarPaths] = useState<string[]>([]);
 
   // Form alanlarını profil verisiyle doldur. Effect'te setState yapmak veri
   // geldikten sonra fazladan bir tam render turu demekti; render sırasında
@@ -59,9 +69,10 @@ export default function EditProfileScreen() {
       );
       const previousPath = avatarPath;
       const path = await uploadAvatar(user.id, manipulated.base64!);
-      // Eski profil fotoğrafını depoda öksüz bırakmamak için siliyoruz.
+      // Eski dosyayı ŞİMDİ silmiyoruz — kaydedilene kadar profil satırı hâlâ ona
+      // işaret ediyor. Kuyruğa alıp Kaydet başarılı olunca temizliyoruz.
       if (previousPath) {
-        await supabase.storage.from("photos").remove([previousPath]);
+        setStaleAvatarPaths((prev) => [...prev, previousPath]);
       }
       setAvatarPath(path);
       setDisplayUri(manipulated.uri);
@@ -76,7 +87,15 @@ export default function EditProfileScreen() {
     updateMutation.mutate(
       { name: name.trim() || null, avatar_path: avatarPath },
       {
-        onSuccess: () => router.back(),
+        onSuccess: () => {
+          // Artık kimsenin işaret etmediği eski avatar(lar)ı temizle. Hatası
+          // yutuluyor: kayıt zaten başarılı, geride kalan dosya en kötü ihtimalle
+          // yetim süpürmesinde toplanır — kullanıcıya hata göstermenin anlamı yok.
+          if (staleAvatarPaths.length > 0) {
+            supabase.storage.from("photos").remove(staleAvatarPaths).catch(() => {});
+          }
+          router.back();
+        },
         onError: (err) => alertError("Kaydedilemedi", err, "profile.update"),
       }
     );

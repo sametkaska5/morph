@@ -63,7 +63,11 @@ export function createSupabaseMock() {
   /** storage.from(bucket).upload(path, ...) çağrılarının kaydı. */
   const storageUploads: { bucket: string; path: string }[] = [];
   /** storage.from(bucket).list(prefix) çağrılarının kaydı — sıra iddiaları için. */
-  const storageLists: { bucket: string; prefix: unknown }[] = [];
+  const storageLists: {
+    bucket: string;
+    prefix: unknown;
+    options?: { limit?: number; offset?: number };
+  }[] = [];
   /** list() sonuçları; boşsa "klasör yok" varsayılanına düşer. */
   const listQueue: Result[] = [];
   /** rpc(fn, args) çağrılarının kaydı. */
@@ -140,11 +144,36 @@ export function createSupabaseMock() {
           storageUploads.push({ bucket, path });
           return Promise.resolve({ data: { path }, error: null });
         },
-        list: (prefix?: unknown) => {
-          storageLists.push({ bucket, prefix });
+        /**
+         * Gerçek istemci gibi SAYFALI davranır.
+         *
+         * Bu önemli: storage.list() varsayılan olarak yalnızca 100 kayıt
+         * döndürüyor ve fazlasını sessizce atıyor — hesap silmede 100'den fazla
+         * günü olan kullanıcının fotoğrafları geride kalıyordu. Taklit tek
+         * seferde her şeyi verirse o hata testle YAKALANAMAZ. Kuyruğa konan veri
+         * limit'ten büyükse burada dilimliyoruz ve kalanı sonraki çağrı için
+         * bekletiyoruz.
+         */
+        list: (prefix?: unknown, options?: { limit?: number; offset?: number }) => {
+          storageLists.push({ bucket, prefix, options });
           callOrder.push("storage.list");
-          const next = listQueue.shift();
-          return Promise.resolve({ data: next?.data ?? [], error: next?.error ?? null });
+
+          const next = listQueue[0];
+          if (next?.error) {
+            listQueue.shift();
+            return Promise.resolve({ data: null, error: next.error });
+          }
+
+          const all = (next?.data as unknown[]) ?? [];
+          // Varsayılan 100: istemcinin kendi varsayılanıyla aynı.
+          const limit = options?.limit ?? 100;
+          const offset = options?.offset ?? 0;
+          const page = all.slice(offset, offset + limit);
+
+          // Bu prefix'in son sayfası verildiyse kuyruktan düş.
+          if (offset + limit >= all.length) listQueue.shift();
+
+          return Promise.resolve({ data: page, error: null });
         },
         createSignedUrl: (path: string) =>
           Promise.resolve({ data: { signedUrl: `signed:${path}` }, error: null }),

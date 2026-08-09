@@ -245,6 +245,26 @@ Sentry'den gelen kodlar: **401** token geçersiz, **403** kapsam yetersiz (`www-
 
 Bir de `Authorization: Bearer` satırına bak: `sentry-cli` token'ın ilk 8 karakterini bırakıp gerisini maskeliyor. `Bearer sntrys_e***` beklenen görüntü; `Bearer ***` ise saklanan değer boş ya da bozuk demektir.
 
+#### ⚠️ Kablosuz güncellemeler ayrı bir adım istiyor
+
+Yukarıdaki her şey yalnızca **`eas build`** için geçerli — kaynak haritalarını Gradle eklentisi yüklüyor ve o yalnızca derleme sırasında çalışıyor.
+
+`eas update` ise **yeni bir JS paketi** yayınlıyor. O paketin kaynak haritaları kendiliğinden gitmiyor: build'den sonra kaç kez güncelleme gönderdiysen, telefondaki kod Sentry'nin elindeki haritalarla o kadar alakasız hale geliyor. Sonuç, hiç kurulmamışla aynı — yığın izi `index.android.bundle:1:284917`.
+
+Her `eas update`'ten **sonra** çalıştır:
+
+```bash
+npm run update:sourcemaps
+```
+
+`eas update`, yayınlarken projeyi `dist/` klasörüne çıkarıyor ve orada bırakıyor; betik de tam o klasörü okuyor, yani paket ile haritalar aynı derlemeden geliyor. Token gerekiyor:
+
+```bash
+$env:SENTRY_AUTH_TOKEN = "sntrys_ile_baslayan_token"
+```
+
+> Eklentinin `app.json`'daki adı **`@sentry/react-native/expo`** olmak zorunda. `@sentry/react-native` ile birebir aynı eklenti (`app.plugin.js` doğrudan `./expo`'yu döndürüyor) ama yükleme betiği eklentiyi ADINA göre arıyor; başka bir adla org/proje ayarlarını bulamayıp ortam değişkenlerine düşüyor.
+
 > Geçmiş not: bu ayarlar yokken `eas.json`'ın release profillerinde `SENTRY_DISABLE_AUTO_UPLOAD=true` vardı, çünkü Gradle eklentisi yalnızca release derlemesinde yüklemeye çalışıp org/proje bilgisi olmadan build'i düşürüyordu (`An organization ID or slug is required`). Artık gerekmiyor ve kaldırıldı. Aynı hatayı yerelde `./gradlew` ile denerken görürsen sebebi budur — o durumda `SENTRY_DISABLE_AUTO_UPLOAD=true` ile çalıştır.
 
 ### Kablosuz güncelleme (EAS Update)

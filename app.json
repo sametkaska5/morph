@@ -54,8 +54,9 @@
         }
       ],
       [
-        "@sentry/react-native",
+        "@sentry/react-native/expo",
         {
+          "//eklenti-adi": "'@sentry/react-native' ile BİREBİR aynı eklenti (app.plugin.js doğrudan ./expo'yu döndürüyor), ama adı bu biçimde yazılmak ZORUNDA: kablosuz güncellemelerin kaynak haritalarını yükleyen sentry-expo-upload-sourcemaps betiği eklentiyi ADINA göre arıyor ve '@sentry/react-native/expo' dışındaki bir adla org/proje ayarlarını bulamayıp ortam değişkenlerine düşüyor.",
           "//": "org/proje slug'ları gizli değil — sentry.properties'e yazılıp kaynak haritalarının hangi projeye yükleneceğini belirliyorlar. authToken BİLEREK yok: kütüphanenin kendisi app.json'a yazılmasına karşı uyarıyor, token yerine EAS gizli değişkeni SENTRY_AUTH_TOKEN kullanılıyor (npx eas-cli env:set ... --visibility secret ile preview ve production ortamlarına eklendi).",
           "//url": "BİLEREK YOK — bir kez eklenip build'i düşürdüğü için geri alındı. Org EU (Frankfurt) bölgesinde (DSN'deki 'ingest.de.sentry.io') ama API giriş adresi yine de https://sentry.io: Sentry kimlik/organizasyon katmanını orada, olay verisini de.sentry.io'da tutuyor ve sentry-cli bölgeye kendisi yönleniyor. url'i de.sentry.io'ya sabitlemek bu yönlendirmeyi kırıyor. Organizasyon token'ı (sntrys_) zaten içinde hem url hem region_url taşıyor ve buradaki ayarı eziyor — yani doğru token türüyle bu satırın tek etkisi uyarı üretmek.",
           "organization": "samet-kaska",

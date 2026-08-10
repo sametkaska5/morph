@@ -1,5 +1,5 @@
 import { memo, useMemo, useState } from "react";
-import { View, Pressable, FlatList, ActivityIndicator } from "react-native";
+import { View, Pressable, FlatList, ActivityIndicator, RefreshControl } from "react-native";
 import { Text, TextInput } from "@/components/Typography";
 import { Image } from "expo-image";
 import { router } from "expo-router";
@@ -46,7 +46,7 @@ const ResultRow = memo(function ResultRow({ entry }: { entry: SearchEntry }) {
 export default function SearchScreen() {
   const screen = useScreenInsets();
   const { user } = useAuth();
-  const { data: entries, isLoading, error, refetch } = useSearchIndex(user?.id);
+  const { data: entries, isLoading, isRefetching, error, refetch } = useSearchIndex(user?.id);
   const [query, setQuery] = useState("");
 
   const results = useMemo(() => {
@@ -123,6 +123,16 @@ export default function SearchScreen() {
           renderItem={({ item }) => <ResultRow entry={item} />}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: screen.bottom }}
+          // Arama dizini 30 dakika taze sayılıyor: az önce eklenen bir anıyı
+          // aramada bulamayan kullanıcının elinde onu tazeleyecek bir yol yoktu.
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={() => refetch()}
+              tintColor="#8CE05A"
+              colors={["#8CE05A"]}
+            />
+          }
         />
       )}
     </View>

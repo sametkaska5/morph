@@ -1,5 +1,12 @@
 import { memo, useState } from "react";
-import { View, FlatList, Pressable, ActivityIndicator, useWindowDimensions } from "react-native";
+import {
+  View,
+  FlatList,
+  Pressable,
+  ActivityIndicator,
+  RefreshControl,
+  useWindowDimensions,
+} from "react-native";
 import { Text } from "@/components/Typography";
 import { Image } from "expo-image";
 import { router } from "expo-router";
@@ -274,8 +281,16 @@ export default function ZamanKapsulu() {
   const { height: windowHeight } = useWindowDimensions();
   const pageHeight = measuredHeight || windowHeight - TAB_BAR_HEIGHT - insets.bottom;
   const { data: unitPref = "metric" } = useUnitPreference(user?.id);
-  const { data, isLoading, error, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useCapsuleEntries();
+  const {
+    data,
+    isLoading,
+    isRefetching,
+    error,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useCapsuleEntries();
   const entries = data?.pages.flat();
 
   if (isLoading) {
@@ -328,6 +343,18 @@ export default function ZamanKapsulu() {
         pagingEnabled
         showsVerticalScrollIndicator={false}
         decelerationRate="normal"
+        // Aşağı çekip yenile: akış dikey sayfalayıcı olduğu için kullanıcı
+        // zaten kaydırma jestinde — ilk sayfadayken yukarı çekmek her yerde
+        // "yenile" anlamına geliyor ve burada karşılığı yoktu. Ana ekran ve
+        // istatistiklerdeki aynı kontrol, aynı renkler.
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={() => refetch()}
+            tintColor="#8CE05A"
+            colors={["#8CE05A"]}
+          />
+        }
         initialNumToRender={1}
         maxToRenderPerBatch={2}
         windowSize={3}

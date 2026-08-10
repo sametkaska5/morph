@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, ScrollView, Pressable, ActivityIndicator } from "react-native";
+import { View, ScrollView, Pressable, ActivityIndicator, RefreshControl } from "react-native";
 import { Text } from "@/components/Typography";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
@@ -123,7 +123,7 @@ export default function CalendarYear() {
   const screen = useScreenInsets();
   const { user } = useAuth();
   const [year, setYear] = useState(new Date().getFullYear());
-  const { data: statusMap, isLoading, error, refetch } = useYearEntries(user?.id, year);
+  const { data: statusMap, isLoading, isRefetching, error, refetch } = useYearEntries(user?.id, year);
 
   // Takvim artık salt görsel değil: hafta şeridiyle AYNI kuralla (bkz.
   // lib/dayRoute.ts) o güne gidiyor. Aylar öncesine dönük bir off day
@@ -144,7 +144,20 @@ export default function CalendarYear() {
   }
 
   return (
-    <ScrollView className="flex-1 bg-bg" contentContainerStyle={{ paddingTop: screen.top, paddingBottom: screen.bottom, paddingHorizontal: 20 }}>
+    <ScrollView
+      className="flex-1 bg-bg"
+      contentContainerStyle={{ paddingTop: screen.top, paddingBottom: screen.bottom, paddingHorizontal: 20 }}
+      // Yıl ızgarası uzun ve kullanıcı yıllar arasında geziniyor; yeni eklenen
+      // bir günün burada belirmesi için ekrandan çıkıp girmek gerekiyordu.
+      refreshControl={
+        <RefreshControl
+          refreshing={isRefetching}
+          onRefresh={() => refetch()}
+          tintColor="#8CE05A"
+          colors={["#8CE05A"]}
+        />
+      }
+    >
       <View className="flex-row items-center justify-between mb-1">
         <Pressable
           onPress={() => router.back()}

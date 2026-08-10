@@ -5,6 +5,7 @@ import {
   useMutation,
   useQueryClient,
   type QueryClient,
+  type InfiniteData,
 } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 import { getPhotoUrl, getPhotoUrls, coverThumbPath, coverPhotoRow } from "./storage";
@@ -51,11 +52,26 @@ export type EntryRow = {
 /** Yaprak efektinde kapağın arkasında gösterilecek en fazla fotoğraf sayısı. */
 export const MAX_BACK_PHOTOS = 2;
 
+/**
+ * Izgara sayfa boyutu.
+ *
+ * Eskiden sayfalama YOKTU: sorgu `.limit(60)` ile sabitti, yani 60'tan eski
+ * anılar ana ekranda hiç görünmüyordu (yalnızca arama ve yıllık takvimden
+ * erişilebiliyordu). Bilinçli bir ürün kararı değil, fark edilmemiş bir sınırdı.
+ *
+ * 30 seçildi (60 değil): üç sütunlu ızgarada 10 satır, yani bir ekranın iki
+ * katından fazla — kaydırma alt sınıra ulaşmadan sonraki sayfa gelmeye başlıyor.
+ * İlk sayfa küçüldüğü için ilk çizim de hızlandı: 60 kaydın kapak + yaprak
+ * fotoğrafları tek seferde 180'e yakın imzalı link demekti, artık yarısı.
+ */
+export const TIMELINE_PAGE_SIZE = 30;
+
 export function useTimelineEntries() {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: queryKeys.entries.timeline(),
     staleTime: LIST_STALE_TIME,
-    queryFn: async (): Promise<EntryRow[]> => {
+    initialPageParam: 0,
+    queryFn: async ({ pageParam }): Promise<EntryRow[]> => {
       const { data, error } = await supabase
         .from("entries")
         .select(
@@ -63,7 +79,7 @@ export function useTimelineEntries() {
         )
         .eq("type", "log")
         .order("date", { ascending: false })
-        .limit(60);
+        .range(pageParam, pageParam + TIMELINE_PAGE_SIZE - 1);
 
       if (error) throw error;
 
@@ -111,6 +127,11 @@ export function useTimelineEntries() {
         };
       });
     },
+    // queryFn'DEN SONRA duruyor ve durmak zorunda: TypeScript sayfa tipini
+    // queryFn'in dönüş tipinden çıkarıyor, önce yazılırsa `lastPage` unknown
+    // kalıyor. Anı akışındaki sorgu da aynı sırada.
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.length === TIMELINE_PAGE_SIZE ? allPages.length * TIMELINE_PAGE_SIZE : undefined,
   });
 }
 
@@ -430,8 +451,12 @@ function findEntryInCaches(queryClient: QueryClient, entryId: string): EntrySeed
 
   // Ana ekran ızgarası: KÜÇÜK kopya (thumb). Tam boy diskte olmasa da bu genelde
   // cache'te oluyor ve anlık placeholder olarak gösterilebiliyor.
-  const timeline = queryClient.getQueryData<EntryRow[]>(queryKeys.entries.timeline());
-  const gridHit = timeline?.find((e) => e.id === entryId);
+  // Izgara artık sayfalı (useInfiniteQuery), yani cache'te düz bir dizi değil
+  // sayfa dizisi duruyor — hepsinde aramamız gerekiyor.
+  const timeline = queryClient.getQueryData<InfiniteData<EntryRow[]>>(
+    queryKeys.entries.timeline()
+  );
+  const gridHit = timeline?.pages.flat().find((e) => e.id === entryId);
   if (gridHit?.cover_photo_url) {
     seed.thumbUrl = gridHit.cover_photo_url;
     seed.thumbPath = gridHit.cover_photo_path ?? null;

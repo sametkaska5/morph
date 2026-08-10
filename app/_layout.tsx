@@ -89,7 +89,10 @@ const persister = createAsyncStoragePersister({
 // bu sürümü artır — persist edilmiş eski-şekilli cache tamamen atılıp sıfırdan
 // fetch edilir. Aksi halde restore edilen eski veri yeni koda "undefined alan" olarak
 // çarpar (bkz: zaman-kapsulu.tsx measurements alanı eklenince yaşanan çökme).
-const PERSIST_CACHE_BUSTER = "4";
+// 5: ana ekran ızgarası sayfalıya geçti (useQuery → useInfiniteQuery). Cache'te
+// duran veri artık düz bir dizi değil { pages, pageParams }; eski şekil restore
+// edilseydi `data.pages.flat()` çağrısı çökerdi.
+const PERSIST_CACHE_BUSTER = "5";
 
 // Yetim dosya süpürmesini uygulama açılışında tetikler. Görünür bir şey render
 // etmez. Süpürme fire-and-forget (maybeSweepOrphans kendi içinde günde bir kez

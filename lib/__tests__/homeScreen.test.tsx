@@ -15,6 +15,7 @@ const mockPush = jest.fn();
 const mockOpenCapturePicker = jest.fn();
 const mockReduceMotion = jest.fn();
 const mockPrefetchDetail = jest.fn();
+const mockFetchNextPage = jest.fn();
 
 jest.mock("../entries", () => ({
   useTimelineEntries: () => mockUseTimelineEntries(),
@@ -50,8 +51,21 @@ const MULTI_ENTRY: EntryRow = {
   ],
 };
 
+/**
+ * Izgara sorgusu SAYFALI (useInfiniteQuery), yani ekranın gördüğü şekil
+ * `{ pages: [[...]] }`. Testler kayıt listesini düz dizi olarak yazmaya devam
+ * etsin diye sarmalamayı burada yapıyoruz — her çağrıda `pages` yazmak testin
+ * asıl derdini (kartta ne görünüyor) gürültüye boğardı.
+ */
 function mockList(overrides: Partial<ReturnType<typeof baseState>> = {}) {
-  mockUseTimelineEntries.mockReturnValue({ ...baseState(), ...overrides });
+  const { data, ...rest } = { ...baseState(), ...overrides };
+  mockUseTimelineEntries.mockReturnValue({
+    ...rest,
+    data: data ? { pages: [data], pageParams: [0] } : undefined,
+    fetchNextPage: mockFetchNextPage,
+    hasNextPage: overrides.hasNextPage ?? false,
+    isFetchingNextPage: overrides.isFetchingNextPage ?? false,
+  });
 }
 function baseState() {
   return {
@@ -60,6 +74,8 @@ function baseState() {
     isRefetching: false,
     error: null as unknown,
     refetch: jest.fn(),
+    hasNextPage: false,
+    isFetchingNextPage: false,
   };
 }
 
@@ -189,6 +205,31 @@ describe("ana ekran", () => {
 
     expect(mockPush).not.toHaveBeenCalled();
     expect(screen.getByText("Bekliyor")).toBeTruthy();
+  });
+
+  /**
+   * Sonsuz kaydırma — ızgara eskiden sabit 60 kayıtla sınırlıydı ve bu bilinçli
+   * değildi: daha eski anılar ana ekranda HİÇ görünmüyordu.
+   *
+   * Burada `onEndReached` → `fetchNextPage` kablosu DEĞİL, kullanıcının gördüğü
+   * şey test ediliyor. Sebebi: o kabloyu tetiklemek FlatList'in sanallaştırma
+   * iç işleyişine (ölçüm + kaydırma olayı sırası) bağlı ve jest'te kırılgan.
+   * Anı akışındaki aynı mekanizma da bu yüzden test edilmiyor. Sayfa yüklenirken
+   * göstergenin çıkması ise gerçek bir kullanıcı vaadi: liste bitmedi, devamı
+   * geliyor.
+   */
+  it("sonraki sayfa yüklenirken listenin altında gösterge çıkar", async () => {
+    mockList({ hasNextPage: true, isFetchingNextPage: true });
+    await render(<AnaEkran />);
+
+    expect(screen.getByLabelText("Daha fazla anı yükleniyor")).toBeTruthy();
+  });
+
+  it("yükleme bitince gösterge kalkar", async () => {
+    mockList({ hasNextPage: true, isFetchingNextPage: false });
+    await render(<AnaEkran />);
+
+    expect(screen.queryByLabelText("Daha fazla anı yükleniyor")).toBeNull();
   });
 
   it("kayıt yokken boş durum ve ekleme çağrısı gösterir", async () => {

@@ -11,7 +11,7 @@ import {
 import { showAlert } from "@/lib/appAlert";
 import { Text, TextInput } from "@/components/Typography";
 import { router } from "expo-router";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Feather from "@expo/vector-icons/Feather";
 import { useAuth } from "@/lib/useAuth";
@@ -75,7 +75,7 @@ export default function NewEntry() {
     Awaited<ReturnType<typeof saveEntry>>,
     Error,
     SaveEntryPayload,
-    { previous?: EntryRow[] }
+    { previous?: InfiniteData<EntryRow[]> }
   >({
     mutationKey: SAVE_ENTRY_MUTATION_KEY,
     mutationFn: saveEntry,
@@ -84,7 +84,10 @@ export default function NewEntry() {
       // "senkronize edilecek" işaretli bir kayıt ekliyoruz — gerçek satır Supabase'e
       // yazılınca (online olduğunda) invalidate ile yerini gerçek veriye bırakıyor.
       await queryClient.cancelQueries({ queryKey: queryKeys.entries.timeline() });
-      const previous = queryClient.getQueryData<EntryRow[]>(queryKeys.entries.timeline());
+      // Izgara sayfalı olduğu için cache'te düz dizi değil sayfa dizisi var.
+      const previous = queryClient.getQueryData<InfiniteData<EntryRow[]>>(
+        queryKeys.entries.timeline()
+      );
 
       const optimisticEntry: EntryRow = {
         id: `pending-${payload.date}`,
@@ -103,9 +106,18 @@ export default function NewEntry() {
         pending: true,
       };
 
-      queryClient.setQueryData<EntryRow[]>(queryKeys.entries.timeline(), (old) => {
-        const rest = (old ?? []).filter((e) => e.date !== payload.date);
-        return [optimisticEntry, ...rest].sort((a, b) => (a.date < b.date ? 1 : -1));
+      queryClient.setQueryData<InfiniteData<EntryRow[]>>(queryKeys.entries.timeline(), (old) => {
+        // Aynı günün önceki kaydı HER sayfadan çıkarılıyor: kullanıcı eski bir
+        // tarihe kayıt ekliyor olabilir ve o gün ilk sayfada olmayabilir.
+        const cleaned = (old?.pages ?? []).map((page) =>
+          page.filter((e) => e.date !== payload.date)
+        );
+        const pages = cleaned.length > 0 ? cleaned : [[]];
+        // Yeni kayıt ilk sayfaya giriyor ve sayfa kendi içinde sıralanıyor.
+        // Sayfalar arası sıralama zaten tarihe göre; gerçek satır geldiğinde
+        // invalidate hepsini yeniden çekiyor.
+        pages[0] = [optimisticEntry, ...pages[0]].sort((a, b) => (a.date < b.date ? 1 : -1));
+        return { pages, pageParams: old?.pageParams ?? [0] };
       });
 
       return { previous };

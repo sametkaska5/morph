@@ -182,9 +182,21 @@ function EmptyState() {
 export default function AnaEkran() {
   const screen = useScreenInsets();
   const { thumbW, thumbH } = useThumbSize();
-  const { data: entries, isLoading, isRefetching, error, refetch } = useTimelineEntries();
+  const {
+    data,
+    isLoading,
+    isRefetching,
+    error,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useTimelineEntries();
   const prefetchDetail = usePrefetchEntryDetail();
-  const isEmpty = entries?.length === 0;
+  // Sayfaları tek listeye düzleştiriyoruz. useMemo şart: FlatList'e her render'da
+  // yeni bir dizi vermek, memo'lu hücrelerin kazandığı her şeyi geri alırdı.
+  const entries = useMemo(() => data?.pages.flat() ?? [], [data]);
+  const isEmpty = !isLoading && entries.length === 0;
 
   // Sabit renderItem: her render'da yeni closure üretmek FlatList'in satır
   // karşılaştırmasını boşa düşürüyordu; memo'lu PosterThumb ancak sabit bir
@@ -342,6 +354,26 @@ export default function AnaEkran() {
           contentContainerStyle={{ paddingHorizontal: H_PADDING, paddingBottom: 24 }}
           columnWrapperStyle={{ gap: GAP }}
           renderItem={renderPoster}
+          // Sonsuz kaydırma. Eşik 0.5 = kalan bir ekran boyu; anı akışıyla aynı
+          // değer. hasNextPage kontrolü şart, yoksa liste sonuna her gelişte
+          // boşuna sorgu atılırdı.
+          onEndReached={() => {
+            if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+          }}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            isFetchingNextPage ? (
+              // Etiket görsel göstergenin karşılığı: ekran okuyucu kullanıcısı
+              // dönenceyi göremiyor, listenin bittiğini sanırdı.
+              <View
+                className="py-6 items-center"
+                accessibilityRole="progressbar"
+                accessibilityLabel="Daha fazla anı yükleniyor"
+              >
+                <ActivityIndicator color="#8CE05A" />
+              </View>
+            ) : null
+          }
         />
       )}
     </View>

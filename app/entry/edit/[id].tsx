@@ -26,6 +26,7 @@ import { actionErrorMessage } from "@/lib/errors";
 import { alertError } from "@/lib/alerts";
 import { ErrorState } from "@/components/ErrorState";
 import { useScreenInsets } from "@/lib/useScreenInsets";
+import { hapticSuccess } from "@/lib/haptics";
 
 /* ---------------- PAGE ---------------- */
 
@@ -280,6 +281,7 @@ export default function EditEntry() {
       // cache'ten eski değeri göstermesin diye onu da tazeliyoruz. Eskiden bu
       // invalidate edilmediği için grafik ancak elle yenileyince güncelleniyordu.
       queryClient.invalidateQueries({ queryKey: queryKeys.measurementSeries.all });
+      hapticSuccess();
       router.back();
     },
   });

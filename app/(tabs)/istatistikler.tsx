@@ -27,6 +27,7 @@ import {
 import { alertError } from "@/lib/alerts";
 import { MeasurementChart, VISIBLE_POINTS } from "@/components/MeasurementChart";
 import { useScreenInsets } from "@/lib/useScreenInsets";
+import { hapticSelection } from "@/lib/haptics";
 
 let MediaLibrary: typeof MediaLibraryType | null = null;
 try {
@@ -89,7 +90,12 @@ export default function Istatistikler() {
   // de aynı kuralı kullanıyor, ikisi ayrışmasın.
   function handleDayPress(day: DayRouteInput) {
     const route = dayRoute(day);
-    if (route) router.push(route);
+    if (!route) return;
+    // Seçim deseni (başarı/uyarı değil): kullanıcı bir gün seçti, henüz bir şey
+    // tamamlamadı. Gidilecek yer yoksa titreşim de yok — aksi halde hiçbir şey
+    // olmayan dokunuşlar da onaylanmış gibi hissettirirdi.
+    hapticSelection();
+    router.push(route);
   }
 
   const currentTypeId = activeTypeId ?? types?.[0]?.id;

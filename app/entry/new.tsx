@@ -26,6 +26,7 @@ import { alertError } from "@/lib/alerts";
 import type { EntryRow } from "@/lib/entries";
 import { queryKeys } from "@/lib/queryKeys";
 import { useScreenInsets } from "@/lib/useScreenInsets";
+import { hapticSuccess } from "@/lib/haptics";
 
 /** Önizlemenin çıkabileceği en fazla yükseklik — çok uzun (9:16, panorama)
  *  fotoğraflar formun tamamını ekran dışına itmesin diye. */
@@ -167,6 +168,12 @@ export default function NewEntry() {
       thumbBase64: photo.thumbBase64,
     });
     clearPhoto();
+    // Dokunsal onay BURADA, mutation'ın onSuccess'inde DEĞİL: bu ekran
+    // offline-öncelikli, yani kayıt kuyruğa alınıp ağ gelince tamamlanabiliyor.
+    // Titreşimi ağ başarısına bağlamak, kullanıcı saatler sonra bambaşka bir
+    // şey yaparken telefonun titremesi demek olurdu. Kullanıcı açısından
+    // "tamamlandı" anı burası: kayıt alındı ve ana ekrana dönülüyor.
+    hapticSuccess();
     router.replace("/(tabs)");
   }
 

@@ -17,6 +17,7 @@ import { invalidateAfterDayWrite } from "@/lib/entries";
 import { alertError } from "@/lib/alerts";
 import { ErrorState } from "@/components/ErrorState";
 import { useScreenInsets } from "@/lib/useScreenInsets";
+import { hapticSuccess } from "@/lib/haptics";
 
 export default function WorkoutDayScreen() {
   const screen = useScreenInsets();
@@ -94,6 +95,7 @@ export default function WorkoutDayScreen() {
       // programDay atlanmıştı, yani bu ekrandan kaydedilen gün program ekranında
       // eski hâliyle görünüyordu.
       invalidateAfterDayWrite(queryClient);
+      hapticSuccess();
       router.back();
     },
     onError: (err) => alertError("Kayıt başarısız", err, "workout.saveWorkoutDay"),

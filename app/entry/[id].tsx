@@ -22,6 +22,7 @@ import { ErrorState } from "@/components/ErrorState";
 import { EntryPhotoStrip, useActivePhoto } from "@/components/EntryPhotoStrip";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useScreenInsets } from "@/lib/useScreenInsets";
+import { hapticWarning } from "@/lib/haptics";
 
 /**
  * Sayfa genişliği PENCEREDEN okunuyor ve render sırasında okunmak ZORUNDA.
@@ -451,6 +452,10 @@ export default function EntryDetail() {
         const target = pendingDeleteId;
         setPendingDeleteId(null);
         if (!target) return;
+        // Uyarı deseni (başarı değil): geri alınamaz bir işlem başlıyor.
+        // Onay anında veriliyor, silme bitince değil — kullanıcı o an bir karar
+        // verdi ve karşılığını hemen hissetmesi gerekiyor.
+        hapticWarning();
         // Navigasyon ekranın işi — invalidation'lar hook'un içinde.
         // onError şart: hata olunca spinner kayboluyor, kayıt yerinde duruyor ve
         // kullanıcıya HİÇBİR şey söylenmiyordu — silme başarılı sanılıyordu.

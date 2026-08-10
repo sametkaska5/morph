@@ -20,6 +20,7 @@ import { useUnitPreference, displayUnit, toDisplayValue, type UnitPref } from "@
 import { openCapturePicker } from "@/lib/capture";
 import { useCapsuleEntries, usePrefetchEditableEntry, type CapsuleEntry } from "@/lib/entries";
 import { usePrefetchMeasurementTypes } from "@/lib/measurementTypes";
+import { hapticLight } from "@/lib/haptics";
 import { ErrorState } from "@/components/ErrorState";
 import { useScreenInsets } from "@/lib/useScreenInsets";
 
@@ -66,6 +67,10 @@ const CapsulePage = memo(function CapsulePage({
       prefetchEdit(entry.id);
       prefetchTypes();
     }
+    // Doğrudan manipülasyon jesti: kart parmağın altında dönüyor, hafif bir
+    // fiziksel karşılık hareketi gerçek hissettiriyor. Her iki yönde de var,
+    // çünkü geri çevirmek de aynı jest.
+    hapticLight();
     setFlipped(next);
     flip.value = withTiming(next ? 1 : 0, { duration: 450 });
   }

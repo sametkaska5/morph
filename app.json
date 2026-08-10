@@ -79,7 +79,8 @@
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
-        "android.permission.READ_MEDIA_IMAGES"
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.VIBRATE"
       ],
       "//blockedPermissions": "Hiçbiri uygulamanın kullandığı bir yeteneğe karşılık gelmiyor; üçü de bağımlılıkların manifest'lerinden geliyor, o yüzden `permissions` listesinden çıkarmak YETMEZ — blockedPermissions manifest merge sırasında tools:node=\"remove\" işaretliyor. READ_MEDIA_VIDEO/AUDIO: seçici mediaTypes vermeden çağrılıyor (varsayılan 'images') ve galeriye yazılan tek şey karşılaştırma kartı — ses/videoya hiç dokunmuyoruz, ama expo-image-picker ile expo-media-library ikisini de ekliyor. Play Console geniş medya erişimi için ayrı gerekçe formu istiyor, kullanılmayan izinler için o riski almanın anlamı yok. SYSTEM_ALERT_WINDOW: Expo prebuild şablonu bunu hem src/debug hem src/main manifest'ine yazıyor; main'dekiler release AAB'ye de giriyor. Kullananlar yalnızca debug'a özel (expo-dev-menu/android/src/debug/.../DevMenuDevToolsDelegate.kt ve RN devsupport/DebugOverlayController.kt), release'de o kodlar hiç çalışmıyor. src/debug manifest'i izni AYRICA tanımladığı ve build tipi manifest'i main'den yüksek öncelikli olduğu için development build etkilenmiyor — sökülen yalnızca release.",
       "blockedPermissions": [

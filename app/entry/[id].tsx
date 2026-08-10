@@ -183,22 +183,54 @@ const EntryPage = memo(function EntryPage({
           {data?.date ? formatDateKey(data.date) : ""}
         </Text>
 
+        {/* ÖLÇÜMLER — programla aynı kalıp: gördüğün şeye dokunup düzenliyorsun.
+            Ölçümler zaten entry/edit ekranında düzenleniyor, ama oraya giden tek
+            yol sağ üstteki işlem menüsüydü; kullanıcı değiştirmek istediği sayıya
+            dokunmayı bekliyor. */}
         {data?.measurement_values?.length ? (
-          <View className="bg-surface border border-border rounded-card p-4 mb-4">
+          <Pressable
+            onPress={() => router.push(`/entry/edit/${entryId}`)}
+            accessibilityRole="button"
+            accessibilityLabel="Ölçümleri düzenle"
+            style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+            className="bg-surface border border-border rounded-card p-4 mb-4"
+          >
+            <View className="flex-row items-center justify-between mb-1">
+              <Text className="text-textFaint text-sm font-semibold tracking-wide">ÖLÇÜMLER</Text>
+              <Feather name="chevron-right" size={16} color="#8B8A82" />
+            </View>
             {data.measurement_values.map((mv, i) => (
-              <View key={i} className="flex-row justify-between py-2">
-                <Text className="text-textMuted text-base capitalize">{mv.measurement_types?.name}</Text>
-                <Text className="text-text text-base font-bold">
+              <View key={i} className="flex-row justify-between py-2 gap-3">
+                <Text className="text-textMuted text-base capitalize flex-1" numberOfLines={1}>
+                  {mv.measurement_types?.name}
+                </Text>
+                <Text className="text-text text-base font-bold shrink-0">
                   {mv.value} {mv.measurement_types?.unit}
                 </Text>
               </View>
             ))}
-          </View>
+          </Pressable>
         ) : null}
 
+        {/* PROGRAM — hem gösterim hem DÜZENLEME kapısı.
+            Eskiden salt okunurdu ve bu, programı düzenlemenin yolunu kapatıyordu:
+            dayRoute fotoğraflı günleri buraya yönlendiriyor (hafta şeridi ve yıl
+            takvimi dahil), ama buradan program ekranına hiçbir bağlantı yoktu.
+            Tek dönüş yolu Anı Akışı'nda o kartı bulup çevirmekti. */}
         {data?.workout_items?.length ? (
-          <View className="bg-surface border border-border rounded-card p-4 mb-4">
-            <Text className="text-textFaint text-sm font-semibold mb-3 tracking-wide">ANTRENMAN PROGRAMI</Text>
+          <Pressable
+            onPress={() => router.push(`/entry/program?date=${data.date}`)}
+            accessibilityRole="button"
+            accessibilityLabel="Antrenman programını düzenle"
+            style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+            className="bg-surface border border-border rounded-card p-4 mb-4"
+          >
+            <View className="flex-row items-center justify-between mb-3">
+              <Text className="text-textFaint text-sm font-semibold tracking-wide">
+                ANTRENMAN PROGRAMI
+              </Text>
+              <Feather name="chevron-right" size={16} color="#8B8A82" />
+            </View>
             {[...data.workout_items]
               .sort((a, b) => a.order_index - b.order_index)
               .map((wi, i) => {
@@ -221,14 +253,46 @@ const EntryPage = memo(function EntryPage({
                   </View>
                 );
               })}
-          </View>
+          </Pressable>
+        ) : data ? (
+          /* Programı OLMAYAN gün: eklemenin yolu da yoktu. Program ekranı ana
+             ekrandan/istatistiklerden yalnızca BUGÜN için açılıyor, yani geçmiş
+             bir güne program yazmak için tarih seçicisiyle uğraşmak gerekiyordu. */
+          <Pressable
+            onPress={() => router.push(`/entry/program?date=${data.date}`)}
+            accessibilityRole="button"
+            accessibilityLabel="Bu güne antrenman programı ekle"
+            style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+            className="bg-surface border border-border rounded-card p-4 mb-4 flex-row items-center gap-3"
+          >
+            <View className="w-9 h-9 rounded-lg bg-accentSoft items-center justify-center">
+              <Feather name="clipboard" size={18} color="#8CE05A" />
+            </View>
+            <View className="flex-1">
+              <Text className="text-text text-base font-semibold">Antrenman programı</Text>
+              <Text className="text-textFaint text-sm">Hareket ve setleri ekle</Text>
+            </View>
+            <Feather name="chevron-right" size={18} color="#8B8A82" />
+          </Pressable>
         ) : null}
 
-        {data?.note && (
-          <View className="bg-surface border border-border rounded-card p-4">
+        {/* NOT da aynı kalıpta: üç kartın ikisi dokunulabilirken üçüncüsünün
+            olmaması tutarsız olurdu. Hedef yine aynı düzenleme ekranı. */}
+        {data?.note ? (
+          <Pressable
+            onPress={() => router.push(`/entry/edit/${entryId}`)}
+            accessibilityRole="button"
+            accessibilityLabel="Notu düzenle"
+            style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+            className="bg-surface border border-border rounded-card p-4"
+          >
+            <View className="flex-row items-center justify-between mb-1">
+              <Text className="text-textFaint text-sm font-semibold tracking-wide">NOT</Text>
+              <Feather name="chevron-right" size={16} color="#8B8A82" />
+            </View>
             <Text className="text-text text-base leading-6">{data.note}</Text>
-          </View>
-        )}
+          </Pressable>
+        ) : null}
       </View>
     </ScrollView>
   );

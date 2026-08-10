@@ -249,6 +249,93 @@ describe("kayıt detayı — içerik", () => {
     expect(screen.getByText("Set girilmemiş")).toBeTruthy();
   });
 
+  /**
+   * Program SALT OKUNUR değil, düzenleme kapısı.
+   *
+   * dayRoute fotoğraflı günleri buraya yönlendiriyor (hafta şeridi ve yıl takvimi
+   * dahil), ama buradan program ekranına hiçbir bağlantı yoktu: geçmiş bir
+   * fotoğraflı güne yazılmış programı düzenlemenin tek yolu Anı Akışı'nda o kartı
+   * bulup çevirmekti. Ana ekran/istatistikler kısayolları tarih GÖNDERMİYOR,
+   * yani hep bugünü açıyor.
+   */
+  it("programa dokunmak o GÜNÜN program ekranını açar", async () => {
+    await render(<EntryDetail />);
+
+    await fireEvent.press(screen.getByLabelText("Antrenman programını düzenle"));
+
+    // Kaydın kendi tarihiyle — bugünle değil.
+    expect(mockPush).toHaveBeenCalledWith("/entry/program?date=2026-07-15");
+  });
+
+  it("programı OLMAYAN günde ekleme yolu sunar", async () => {
+    // Programsız günde de o tarihe program yazmanın bir yolu olmalı; eskiden
+    // program ekranını açıp tarih seçicisiyle uğraşmak gerekiyordu.
+    mockUseEntryDetail.mockReturnValue({
+      data: { ...DETAIL, workout_items: [] },
+      isLoading: false,
+      error: null,
+      refetch: jest.fn(),
+    });
+    await render(<EntryDetail />);
+
+    expect(screen.queryByLabelText("Antrenman programını düzenle")).toBeNull();
+    await fireEvent.press(screen.getByLabelText("Bu güne antrenman programı ekle"));
+
+    expect(mockPush).toHaveBeenCalledWith("/entry/program?date=2026-07-15");
+  });
+
+  /**
+   * Ölçümler ve not da "gördüğün şeye dokun" kalıbında.
+   *
+   * İkisi de zaten entry/edit ekranında düzenleniyordu ama oraya giden tek yol sağ
+   * üstteki işlem menüsüydü — kullanıcı değiştirmek istediği sayının üstüne
+   * dokunmayı bekliyor. Hedef, sayfalayıcıda GÖRÜNEN kaydın id'si olmalı; ekran
+   * seviyesindeki ilk id kullanılırsa kaydırdıktan sonra yanlış kayıt açılır.
+   */
+  it("ölçümlere dokunmak o kaydın düzenleme ekranını açar", async () => {
+    await render(<EntryDetail />);
+
+    await fireEvent.press(screen.getByLabelText("Ölçümleri düzenle"));
+
+    expect(mockPush).toHaveBeenCalledWith("/entry/edit/e2");
+  });
+
+  it("nota dokunmak da düzenleme ekranını açar", async () => {
+    await render(<EntryDetail />);
+
+    await fireEvent.press(screen.getByLabelText("Notu düzenle"));
+
+    expect(mockPush).toHaveBeenCalledWith("/entry/edit/e2");
+  });
+
+  it("ölçümü ve notu olmayan günde o kartlar hiç çizilmez", async () => {
+    mockUseEntryDetail.mockReturnValue({
+      data: { ...DETAIL, measurement_values: [], note: null },
+      isLoading: false,
+      error: null,
+      refetch: jest.fn(),
+    });
+    await render(<EntryDetail />);
+
+    expect(screen.queryByLabelText("Ölçümleri düzenle")).toBeNull();
+    expect(screen.queryByLabelText("Notu düzenle")).toBeNull();
+  });
+
+  it("veri gelmeden program bloğunu hiç çizmez", async () => {
+    // data undefined iken "ekle" kutusunu göstermek, kaydın tarihi bilinmediği
+    // için yanlış güne yönlendirme riski demek.
+    mockUseEntryDetail.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      error: null,
+      refetch: jest.fn(),
+    });
+    await render(<EntryDetail />);
+
+    expect(screen.queryByLabelText("Bu güne antrenman programı ekle")).toBeNull();
+    expect(screen.queryByLabelText("Antrenman programını düzenle")).toBeNull();
+  });
+
   it("hata durumunda ham metin değil ErrorState gösterir", async () => {
     const refetch = jest.fn();
     mockUseEntryDetail.mockReturnValue({

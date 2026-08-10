@@ -66,6 +66,15 @@ jest.mock("@tanstack/react-query", () => ({
 
 import NewEntry from "@/app/entry/new";
 
+/**
+ * Ölçüm alanını ETİKETİNDEN bulur ("kilo, kg" gibi). Eskiden placeholder'dan
+ * bulunuyordu (`— kg`) ama birim placeholder'dan çıkarıldı: placeholder değer
+ * yazılır yazılmaz kayboluyor, yani birim tam da kullanıcının sayıyı girdiği anda
+ * görünmez oluyordu. Etiket hem kalıcı hem erişilebilirlik için doğru yer.
+ */
+const measureField = (unit: string) => screen.getByLabelText(new RegExp(`, ${unit}$`));
+const measureValue = (unit: string) => measureField(unit).props.value;
+
 const TYPES: MeasurementType[] = [
   { id: "kilo", name: "kilo", unit: "kg", target_direction: "decrease_is_good", is_default: true, sort_order: 1 },
   { id: "bel", name: "bel", unit: "cm", target_direction: "decrease_is_good", is_default: true, sort_order: 2 },
@@ -118,7 +127,7 @@ describe("yeni kayıt — ölçüm doğrulama", () => {
   it("geçersiz ölçüm varken kaydetmez", async () => {
     await render(<NewEntry />);
 
-    await fireEvent.changeText(screen.getByPlaceholderText("— kg"), "abc");
+    await fireEvent.changeText(measureField("kg"), "abc");
     await fireEvent.press(screen.getByLabelText("Kaydı kaydet"));
 
     expect(mockMutate).not.toHaveBeenCalled();
@@ -128,7 +137,7 @@ describe("yeni kayıt — ölçüm doğrulama", () => {
   it("negatif ölçüm varken kaydetmez", async () => {
     await render(<NewEntry />);
 
-    await fireEvent.changeText(screen.getByPlaceholderText("— kg"), "-5");
+    await fireEvent.changeText(measureField("kg"), "-5");
     await fireEvent.press(screen.getByLabelText("Kaydı kaydet"));
 
     expect(mockMutate).not.toHaveBeenCalled();
@@ -137,7 +146,7 @@ describe("yeni kayıt — ölçüm doğrulama", () => {
   it("boş bırakılan ölçümü hataya saymaz, kaydı geçirir", async () => {
     await render(<NewEntry />);
 
-    await fireEvent.changeText(screen.getByPlaceholderText("— kg"), "80");
+    await fireEvent.changeText(measureField("kg"), "80");
     await fireEvent.press(screen.getByLabelText("Kaydı kaydet"));
 
     expect(mockMutate).toHaveBeenCalledWith(
@@ -150,7 +159,7 @@ describe("yeni kayıt — kaydetme", () => {
   it("fotoğrafı, notu ve ölçümleri birlikte gönderir", async () => {
     await render(<NewEntry />);
 
-    await fireEvent.changeText(screen.getByPlaceholderText("— kg"), "80");
+    await fireEvent.changeText(measureField("kg"), "80");
     await fireEvent.changeText(screen.getByLabelText("Not"), "iyi geçti");
     await fireEvent.press(screen.getByLabelText("Kaydı kaydet"));
 
@@ -171,7 +180,7 @@ describe("yeni kayıt — kaydetme", () => {
     mockUseUnitPreference.mockReturnValue({ data: "imperial" });
     await render(<NewEntry />);
 
-    await fireEvent.changeText(screen.getByPlaceholderText("— lb"), "176.4");
+    await fireEvent.changeText(measureField("lb"), "176.4");
     await fireEvent.press(screen.getByLabelText("Kaydı kaydet"));
 
     // 176.4 lb = 80.01 kg. Asıl mesele sayının 176.4 OLMAMASI — çevrim
@@ -224,5 +233,50 @@ describe("yeni kayıt — tarih", () => {
     await fireEvent.press(screen.getByLabelText("Kaydı kaydet"));
 
     expect(mockMutate).toHaveBeenCalledWith(expect.objectContaining({ date: key }));
+  });
+});
+
+/**
+ * Birim, DEĞER YAZILDIKTAN SONRA da görünmek zorunda.
+ *
+ * Eskiden birim yalnızca placeholder'da yaşıyordu (`— kg`). Placeholder değer
+ * yazılır yazılmaz kaybolduğu için birim tam da kullanıcının sayıyı girdiği anda
+ * görünmez oluyordu. Üstelik alan sabit 80px olduğundan uzun birimler
+ * ("kilogram" gibi) placeholder'da da kırpılıyordu.
+ */
+describe("yeni kayıt — ölçüm birimi", () => {
+  const LONG_UNIT: MeasurementType = {
+    id: "cevre",
+    name: "kol çevresi",
+    unit: "santimetre",
+    target_direction: "increase_is_good",
+    is_default: false,
+    sort_order: 100,
+  };
+
+  it("birim, değer girildikten sonra da ekranda kalır", async () => {
+    await render(<NewEntry />);
+
+    // Placeholder hâlindeyken birim görünüyor...
+    expect(screen.getByText("kg")).toBeTruthy();
+
+    await fireEvent.changeText(measureField("kg"), "80");
+
+    // ...ve değer yazıldıktan sonra da duruyor (asıl regresyon bu).
+    expect(screen.getByText("kg")).toBeTruthy();
+    expect(measureValue("kg")).toBe("80");
+  });
+
+  it("uzun birimi kırpmadan gösterir ve kendisi kısalır", async () => {
+    mockUseMeasurementTypes.mockReturnValue({ data: [LONG_UNIT] });
+    await render(<NewEntry />);
+
+    const unitLabel = screen.getByText("santimetre");
+    // Tek satıra sıkışıp taşmak yerine kendisi kısalıyor; satır bozulmuyor.
+    expect(unitLabel.props.numberOfLines).toBe(1);
+
+    // Alan da etiketiyle bulunabiliyor — birim adı ne kadar uzun olursa olsun.
+    await fireEvent.changeText(measureField("santimetre"), "38");
+    expect(measureValue("santimetre")).toBe("38");
   });
 });

@@ -428,8 +428,10 @@ export default function EditEntry() {
                 <View className="flex-row justify-between items-center">
                   {/* Ölçüm adı ikincil bir etiket değil, girilen değerin ne olduğunu
                     söyleyen asıl metin — 14pt gri yerine 16pt gövde boyutu. */}
-                  <Text className="text-textMuted text-base capitalize">{t.name}</Text>
-                  <View className="flex-row items-center gap-2">
+                  <Text className="text-textMuted text-base capitalize flex-1" numberOfLines={1}>
+                    {t.name}
+                  </Text>
+                  <View className="flex-row items-center gap-2 shrink-0">
                     <TextInput
                       ref={(el) => {
                         inputRefs.current[i] = el;
@@ -438,7 +440,12 @@ export default function EditEntry() {
                       onChangeText={(val) => setValues((prev) => ({ ...prev, [t.id]: val }))}
                       editable={formReady}
                       keyboardType="decimal-pad"
-                      placeholder={`— ${displayUnit(t.unit, unitPref)}`}
+                      placeholder="—"
+                      // Alanın ekran okuyucuya söyleyeceği ad. Ölçüm adı AYRI bir Text
+                      // düğümü olduğu için alan isimsiz kalıyordu: ekran okuyucu
+                      // yalnızca "metin girişi" diyip geçiyordu. Birim de etikete
+                      // giriyor, aksi halde neyin girildiği duyulmuyor.
+                      accessibilityLabel={`${t.name}, ${displayUnit(t.unit, unitPref)}`}
                       placeholderTextColor="#8B8A82"
                       returnKeyType="next"
                       blurOnSubmit={false}
@@ -450,8 +457,20 @@ export default function EditEntry() {
                         if (next) next.focus();
                         else noteRef.current?.focus();
                       }}
-                      className={`text-base font-semibold text-right w-20 ${errorText ? "text-danger" : "text-text"}`}
+                      className={`text-base font-semibold text-right w-16 ${errorText ? "text-danger" : "text-text"}`}
                     />
+                    {/* Birim ARTIK kalıcı bir etiket, placeholder DEĞİL.
+                        Placeholder değer yazılır yazılmaz kayboluyor, yani birim tam da
+                        kullanıcının sayıyı girdiği anda görünmez oluyordu. Üstelik alan
+                        sabit 80px olduğu için uzun birimler ("kilogram", "santimetre")
+                        placeholder'da da kırpılıyordu. max-w + numberOfLines: aşırı uzun
+                        bir birim satırı bozmak yerine kendisi kısalıyor. */}
+                    <Text
+                      className="text-textFaint text-sm max-w-[72px]"
+                      numberOfLines={1}
+                    >
+                      {displayUnit(t.unit, unitPref)}
+                    </Text>
                     <Pressable
                       hitSlop={8}
                       accessibilityRole="button"

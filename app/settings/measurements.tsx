@@ -130,8 +130,15 @@ export default function MeasurementSettingsScreen() {
                   i < defaults.length - 1 ? "border-b border-border" : ""
                 }`}
               >
-                <Text className="text-text text-base capitalize">{t.name}</Text>
-                <Text className="text-textMuted text-sm">{t.unit}</Text>
+                {/* RN'de Text varsayılan olarak KÜÇÜLMÜYOR (flexShrink: 0), yani
+                    uzun bir ad + uzun bir birim satırı taşırıyordu. Ad esniyor,
+                    birim kendi payında kırpılıyor. */}
+                <Text className="text-text text-base capitalize flex-1" numberOfLines={1}>
+                  {t.name}
+                </Text>
+                <Text className="text-textMuted text-sm ml-3 max-w-[96px]" numberOfLines={1}>
+                  {t.unit}
+                </Text>
               </View>
             ))}
           </View>
@@ -157,17 +164,21 @@ export default function MeasurementSettingsScreen() {
                     accessibilityLabel={`${t.name}, ${t.unit}, ${
                       t.target_direction === "decrease_is_good" ? "azalması iyi" : "artması iyi"
                     }`}
+                    className="flex-1 mr-3"
                   >
-                    <Text className="text-text text-base capitalize">{t.name}</Text>
+                    <Text className="text-text text-base capitalize" numberOfLines={1}>
+                      {t.name}
+                    </Text>
                     <Text className="text-textFaint text-sm mt-0.5">
                       {t.target_direction === "decrease_is_good" ? "azalması iyi" : "artması iyi"}
                     </Text>
                   </View>
-                  <View className="flex-row items-center gap-3">
+                  <View className="flex-row items-center gap-3 shrink-0">
                     <Text
                       accessibilityElementsHidden
                       importantForAccessibility="no"
-                      className="text-textMuted text-sm"
+                      className="text-textMuted text-sm max-w-[96px]"
+                      numberOfLines={1}
                     >
                       {t.unit}
                     </Text>

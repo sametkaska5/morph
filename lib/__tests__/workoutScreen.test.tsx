@@ -57,9 +57,17 @@ const DAY: WorkoutDayData = {
   measurement_values: [{ measurement_type_id: "kilo", value: 80 }],
 };
 
-/** Bir ölçüm alanının o anki değeri (placeholder üzerinden bulunur). */
+/**
+ * Ölçüm alanını ETİKETİNDEN bulur ("kilo, kg" gibi). Eskiden placeholder'dan
+ * bulunuyordu (`— kg`) ama birim placeholder'dan çıkarıldı: placeholder değer
+ * yazılır yazılmaz kayboluyor, yani birim tam da kullanıcının sayıyı girdiği anda
+ * görünmez oluyordu. Etiket hem kalıcı hem erişilebilirlik için doğru yer.
+ */
+const measureField = (unit: string) => screen.getByLabelText(new RegExp(`, ${unit}$`));
+
+/** Bir ölçüm alanının o anki değeri. */
 function measureValue(unitLabel: string) {
-  return screen.getByPlaceholderText(`— ${unitLabel}`).props.value;
+  return measureField(unitLabel).props.value;
 }
 
 beforeEach(() => {
@@ -103,7 +111,7 @@ describe("fotoğrafsız gün — form doldurma", () => {
   it("kullanıcının yazdığını sonraki render'lar EZMEZ", async () => {
     const { rerender } = await render(<WorkoutDayScreen />);
 
-    await fireEvent.changeText(screen.getByPlaceholderText("— kg"), "82.5");
+    await fireEvent.changeText(measureField("kg"), "82.5");
     expect(measureValue("kg")).toBe("82.5");
 
     await rerender(<WorkoutDayScreen />);

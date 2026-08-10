@@ -66,7 +66,14 @@ const ENTRY = {
   ],
 };
 
-const measureValue = (unit: string) => screen.getByPlaceholderText(`— ${unit}`).props.value;
+/**
+ * Ölçüm alanını ETİKETİNDEN bulur ("kilo, kg" gibi). Eskiden placeholder'dan
+ * bulunuyordu (`— kg`) ama birim placeholder'dan çıkarıldı: placeholder değer
+ * yazılır yazılmaz kayboluyor, yani birim tam da kullanıcının sayıyı girdiği anda
+ * görünmez oluyordu. Etiket hem kalıcı hem erişilebilirlik için doğru yer.
+ */
+const measureField = (unit: string) => screen.getByLabelText(new RegExp(`, ${unit}$`));
+const measureValue = (unit: string) => measureField(unit).props.value;
 const noteValue = () => screen.getByLabelText("Not").props.value;
 
 beforeEach(() => {
@@ -128,7 +135,7 @@ describe("düzenleme ekranı — form doldurma", () => {
     await render(<EditEntry />);
 
     expect(screen.getByLabelText("Not").props.editable).toBe(false);
-    expect(screen.getByPlaceholderText("— kg").props.editable).toBe(false);
+    expect(measureField("kg").props.editable).toBe(false);
     expect(screen.getByLabelText("Kaydet").props.accessibilityState.disabled).toBe(true);
   });
 
@@ -151,7 +158,7 @@ describe("düzenleme ekranı — form doldurma", () => {
     const { rerender } = await render(<EditEntry />);
 
     await fireEvent.changeText(screen.getByLabelText("Not"), "yazmaya devam ediyorum");
-    await fireEvent.changeText(screen.getByPlaceholderText("— kg"), "78");
+    await fireEvent.changeText(measureField("kg"), "78");
 
     // Yapısal olarak aynı ama KİMLİĞİ farklı veri — bir refetch tam bunu üretir.
     mockUseEditableEntry.mockReturnValue({
@@ -169,7 +176,7 @@ describe("düzenleme ekranı — form doldurma", () => {
     const { rerender } = await render(<EditEntry />);
 
     await fireEvent.changeText(screen.getByLabelText("Not"), "değiştirdim");
-    await fireEvent.changeText(screen.getByPlaceholderText("— kg"), "78");
+    await fireEvent.changeText(measureField("kg"), "78");
 
     await rerender(<EditEntry />);
     await rerender(<EditEntry />);
@@ -219,7 +226,7 @@ describe("düzenleme ekranı — doğrulama ve hata", () => {
   it("geçersiz ölçümde uyarı gösterir ve kaydetmeyi engeller", async () => {
     await render(<EditEntry />);
 
-    await fireEvent.changeText(screen.getByPlaceholderText("— kg"), "abc");
+    await fireEvent.changeText(measureField("kg"), "abc");
     expect(screen.getByText("Sayı gir")).toBeTruthy();
 
     await fireEvent.press(screen.getByText("Kaydet"));
@@ -229,7 +236,7 @@ describe("düzenleme ekranı — doğrulama ve hata", () => {
   it("makul olmayan yüksek değeri engeller", async () => {
     await render(<EditEntry />);
 
-    await fireEvent.changeText(screen.getByPlaceholderText("— kg"), "5000");
+    await fireEvent.changeText(measureField("kg"), "5000");
     expect(screen.getByText(/Çok yüksek/)).toBeTruthy();
 
     await fireEvent.press(screen.getByText("Kaydet"));
@@ -239,7 +246,7 @@ describe("düzenleme ekranı — doğrulama ve hata", () => {
   it("geçerli değerlerde kaydeder", async () => {
     await render(<EditEntry />);
 
-    await fireEvent.changeText(screen.getByPlaceholderText("— kg"), "78,5");
+    await fireEvent.changeText(measureField("kg"), "78,5");
     await fireEvent.press(screen.getByText("Kaydet"));
 
     expect(mockMutate).toHaveBeenCalledTimes(1);

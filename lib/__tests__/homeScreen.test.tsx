@@ -14,8 +14,12 @@ const mockUseTimelineEntries = jest.fn();
 const mockPush = jest.fn();
 const mockOpenCapturePicker = jest.fn();
 const mockReduceMotion = jest.fn();
+const mockPrefetchDetail = jest.fn();
 
-jest.mock("../entries", () => ({ useTimelineEntries: () => mockUseTimelineEntries() }));
+jest.mock("../entries", () => ({
+  useTimelineEntries: () => mockUseTimelineEntries(),
+  usePrefetchEntryDetail: () => mockPrefetchDetail,
+}));
 jest.mock("expo-router", () => ({ router: { push: (p: string) => mockPush(p) } }));
 jest.mock("expo-image", () => ({ Image: "Image" }));
 jest.mock("../capture", () => ({ openCapturePicker: () => mockOpenCapturePicker() }));
@@ -147,6 +151,31 @@ describe("ana ekran", () => {
     await fireEvent.press(screen.getByLabelText(/15 Temmuz 2026 tarihli anı/));
 
     expect(mockPush).toHaveBeenCalledWith("/entry/e1");
+  });
+
+  /**
+   * Parmak değdiği anda detay verisi çekilmeye başlıyor.
+   *
+   * Parmağın kalkması ve geçiş animasyonu kadar önden başlamış oluyor; detay
+   * ekranı çoğu zaman veriyi hazır buluyor. Bu çağrı düşerse ekran yine açılır,
+   * sadece bir ağ turu kadar geç dolar — yani hata sessizdir.
+   */
+  it("kareye parmak değdiği anda detay verisini önden çeker", async () => {
+    await render(<AnaEkran />);
+
+    await fireEvent(screen.getByLabelText(/15 Temmuz 2026 tarihli anı/), "pressIn");
+
+    expect(mockPrefetchDetail).toHaveBeenCalledWith("e1");
+  });
+
+  it("senkronize olmamış kayıtta önden çekmeye kalkışmaz", async () => {
+    // "pending-..." gerçek bir uuid değil; sorgu hata verirdi.
+    mockList({ data: [{ ...ENTRY, id: "pending-2026-07-15", pending: true }] });
+    await render(<AnaEkran />);
+
+    await fireEvent(screen.getByLabelText(/senkronize edilmeyi bekliyor/), "pressIn");
+
+    expect(mockPrefetchDetail).not.toHaveBeenCalled();
   });
 
   it("henüz senkronize olmamış kayda dokunmayı ENGELLER", async () => {

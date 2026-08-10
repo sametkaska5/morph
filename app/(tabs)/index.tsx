@@ -14,7 +14,7 @@ import Feather from "@expo/vector-icons/Feather";
 import { photoCacheKey } from "@/lib/storage";
 import { formatDateKey } from "@/lib/date";
 import { openCapturePicker } from "@/lib/capture";
-import { useTimelineEntries, type EntryRow } from "@/lib/entries";
+import { useTimelineEntries, usePrefetchEntryDetail, type EntryRow } from "@/lib/entries";
 import { useReduceMotion } from "@/lib/useReduceMotion";
 import { PhotoStack } from "@/components/PhotoStack";
 import { ErrorState } from "@/components/ErrorState";
@@ -51,6 +51,7 @@ const PosterThumb = memo(function PosterThumb({
   staggerIndex,
   reduceMotion,
   onPeek,
+  onPrefetch,
   thumbW,
   thumbH,
 }: {
@@ -59,6 +60,7 @@ const PosterThumb = memo(function PosterThumb({
   staggerIndex: number;
   reduceMotion: boolean;
   onPeek: (entryId: string) => void;
+  onPrefetch: (entryId: string) => void;
   thumbW: number;
   thumbH: number;
 }) {
@@ -79,6 +81,10 @@ const PosterThumb = memo(function PosterThumb({
         setPressed(true);
         // Plak sandığı jesti: parmak değdiği anda arkadakiler açılıyor.
         onPeek(entry.id);
+        // Aynı an, detay verisini de başlatıyoruz: parmağın kalkması ve geçiş
+        // animasyonu kadar önden başlamış oluyor. Senkronize olmamış kaydın id'si
+        // gerçek bir uuid olmadığı için onda atlıyoruz (dokunma da kapalı).
+        if (!entry.pending) onPrefetch(entry.id);
       }}
       onPressOut={() => setPressed(false)}
       accessibilityRole="button"
@@ -177,6 +183,7 @@ export default function AnaEkran() {
   const screen = useScreenInsets();
   const { thumbW, thumbH } = useThumbSize();
   const { data: entries, isLoading, isRefetching, error, refetch } = useTimelineEntries();
+  const prefetchDetail = usePrefetchEntryDetail();
   const isEmpty = entries?.length === 0;
 
   // Sabit renderItem: her render'da yeni closure üretmek FlatList'in satır
@@ -233,11 +240,12 @@ export default function AnaEkran() {
         staggerIndex={index % COLUMNS}
         reduceMotion={reduceMotion}
         onPeek={bumpPeek}
+        onPrefetch={prefetchDetail}
         thumbW={thumbW}
         thumbH={thumbH}
       />
     ),
-    [peekTokens, reduceMotion, bumpPeek, thumbW, thumbH]
+    [peekTokens, reduceMotion, bumpPeek, prefetchDetail, thumbW, thumbH]
   );
 
   const todayLabel = new Date().toLocaleDateString("tr-TR", {

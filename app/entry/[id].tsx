@@ -4,13 +4,12 @@ import {
   Pressable,
   ActivityIndicator,
   useWindowDimensions,
-  Modal,
   FlatList,
 } from "react-native";
 import { Text } from "@/components/Typography";
 import { Image } from "expo-image";
 import { useLocalSearchParams, router } from "expo-router";
-import { memo, useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import Feather from "@expo/vector-icons/Feather";
 import { photoCacheKey } from "@/lib/storage";
 import { formatDateKey } from "@/lib/date";
@@ -23,34 +22,6 @@ import { ErrorState } from "@/components/ErrorState";
 import { EntryPhotoStrip, useActivePhoto } from "@/components/EntryPhotoStrip";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useScreenInsets } from "@/lib/useScreenInsets";
-
-function ActionMenuOption({
-  icon,
-  label,
-  danger,
-  onPress,
-}: {
-  icon: keyof typeof Feather.glyphMap;
-  label: string;
-  danger?: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
-      className={`flex-row items-center gap-3 px-4 py-4 rounded-button border ${
-        danger ? "bg-danger/10 border-danger/30" : "bg-surface border-border"
-      }`}
-    >
-      <View className={`w-9 h-9 rounded-full items-center justify-center ${danger ? "bg-danger/15" : "bg-accentSoft"}`}>
-        <Feather name={icon} size={17} color={danger ? "#D9705A" : "#8CE05A"} />
-      </View>
-      <Text className={`text-base font-semibold ${danger ? "text-danger" : "text-text"}`}>{label}</Text>
-    </Pressable>
-  );
-}
 
 /**
  * Sayfa genişliği PENCEREDEN okunuyor ve render sırasında okunmak ZORUNDA.
@@ -88,9 +59,12 @@ function workoutSetLabel(s: { reps: number | null; weight: number | null }): str
 const EntryPage = memo(function EntryPage({
   entryId,
   screenWidth,
+  onRequestDelete,
 }: {
   entryId: string;
   screenWidth: number;
+  /** Silme onayını ekran seviyesinde açar — mutation ve kutu orada yaşıyor. */
+  onRequestDelete: (entryId: string) => void;
 }) {
   const screen = useScreenInsets();
   const { user } = useAuth();
@@ -293,6 +267,29 @@ const EntryPage = memo(function EntryPage({
             <Text className="text-text text-base leading-6">{data.note}</Text>
           </Pressable>
         ) : null}
+
+        {/* SİLME — sayfanın en dibinde, yıkıcı işlem rengiyle.
+            Eskiden sağ üstteki üç nokta menüsündeydi. O menüde silmenin yanında
+            "Düzenle" de vardı; düzenleme artık karta dokunarak yapıldığı için menü
+            tek maddeye düşüyordu ve üstteki chrome'u boşuna dolduruyordu. Silme
+            profildeki "Hesabı sil" ile aynı kalıba taşındı: liste dibinde, kırmızı,
+            chevron'suz — yani yanlışlıkla basılacak bir yerde değil.
+            entryId'yi doğrudan gönderiyoruz: silme, dokunulan SAYFANIN kaydına
+            uygulanıyor, ekran seviyesindeki aktif indekse bağlı değil. */}
+        <Pressable
+          onPress={() => onRequestDelete(entryId)}
+          accessibilityRole="button"
+          accessibilityLabel="Bu anıyı sil"
+          style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+          className="mt-6 flex-row items-center justify-center gap-2 py-4 rounded-button bg-danger"
+        >
+          {/* Dolu kırmızı zemin: ConfirmDialog'un onay düğmesiyle aynı kalıp
+              (bg-danger + koyu metin). İkon ve yazı zeminle kontrast için
+              bg rengine (#0B0D0A) çekiliyor — kırmızı üstünde kırmızı metin
+              okunmuyor. */}
+          <Feather name="trash-2" size={16} color="#0B0D0A" />
+          <Text className="text-bg text-base font-semibold">Bu anıyı sil</Text>
+        </Pressable>
       </View>
     </ScrollView>
   );
@@ -312,8 +309,14 @@ export default function EntryDetail() {
   }, [params.id]);
 
   const { data: orderIds, isLoading: orderLoading } = useEntryOrder();
-  const [showActionMenu, setShowActionMenu] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  /**
+   * Silme onayı bekleyen kaydın id'si (null = kutu kapalı).
+   *
+   * Eskiden yalnızca bir boolean vardı ve silme `activeId`'ye uygulanıyordu, yani
+   * ekran seviyesindeki indeks senkronuna bağlıydı. Artık dokunulan sayfa kendi
+   * id'sini gönderiyor — yanlış kaydı silme ihtimali yapısal olarak kapanıyor.
+   */
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   // Arama ya da yıllık takvimden açılan ESKİ bir kayıt son 60'ın dışında
   // kalabilir. O durumda tek sayfalık listeye düşüyoruz: yana kaydırma olmaz
@@ -327,10 +330,14 @@ export default function EntryDetail() {
 
   // DİKKAT: başlangıç değeri 0 DEĞİL initialIndex olmalı. Sıra verisi ilk
   // render'da hazırsa (cache'ten geldiğinde) aşağıdaki karşılaştırma hiç
-  // tetiklenmez; activeIndex 0'da kalır, sayfalayıcı doğru kayda kayar ama
-  // activeId listenin İLK kaydını gösterir — yani Düzenle/Sil yanlış kayda
-  // uygulanır. (Bu hata bir kez yaşandı: useEffect'ten render sırasında
-  // senkronizasyona geçilirken mount anındaki eşitleme kaybolmuştu.)
+  // tetiklenmez ve activeIndex 0'da kalır: sayfalayıcı doğru kayda kayar ama
+  // üstteki "3/60" sayacı yanlış konumu gösterir. (Bu hata bir kez yaşandı:
+  // useEffect'ten render sırasında senkronizasyona geçilirken mount anındaki
+  // eşitleme kaybolmuştu.)
+  //
+  // Düzenleme ve silme artık bu indekse HİÇ bağlı değil — ikisi de sayfanın
+  // kendi entryId'sinden gidiyor, yani indeks kaysa bile yanlış kayda işlem
+  // yapılamıyor. Eskiden ikisi de `ids[activeIndex]` üzerinden çalışıyordu.
   const [activeIndex, setActiveIndex] = useState(initialIndex);
 
   // Sıra verisi SONRADAN gelince (initialIndex değişince) aktif sayfayı eşitle.
@@ -343,11 +350,10 @@ export default function EntryDetail() {
     setActiveIndex(initialIndex);
   }
 
-  // Düzenle/sil her zaman EKRANDA GÖRÜNEN kayda uygulanmalı — kaydırdıktan
-  // sonra hâlâ URL'deki ilk id'ye işlem yapmak sessizce yanlış kaydı silerdi.
-  const activeId = ids[activeIndex] ?? id;
-
   const deleteMutation = useDeleteEntry();
+
+  // Sabit referans: memo'lu EntryPage'e prop olarak iniyor.
+  const requestDelete = useCallback((entryId: string) => setPendingDeleteId(entryId), []);
 
   /* ---------------- LOADING ---------------- */
 
@@ -387,7 +393,9 @@ export default function EntryDetail() {
         onMomentumScrollEnd={(e) =>
           setActiveIndex(Math.round(e.nativeEvent.contentOffset.x / screenWidth))
         }
-        renderItem={({ item }) => <EntryPage entryId={item} screenWidth={screenWidth} />}
+        renderItem={({ item }) => (
+          <EntryPage entryId={item} screenWidth={screenWidth} onRequestDelete={requestDelete} />
+        )}
       />
 
       {/* Üst kontroller sayfalayıcının DIŞINDA: kaydırırken yerinde kalıyorlar.
@@ -406,19 +414,6 @@ export default function EntryDetail() {
           className="w-11 h-11 bg-black/40 rounded-full items-center justify-center"
         >
           <Feather name="chevron-left" size={22} color="#fff" />
-        </Pressable>
-      </View>
-
-      <View style={{ position: "absolute", top: screen.top, right: 16, zIndex: 10 }}>
-        <Pressable
-          onPress={() => setShowActionMenu(true)}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityRole="button"
-          accessibilityLabel="Anı için işlemler"
-          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
-          className="w-11 h-11 bg-black/40 rounded-full items-center justify-center"
-        >
-          <Feather name="more-vertical" size={20} color="#fff" />
         </Pressable>
       </View>
 
@@ -445,77 +440,26 @@ export default function EntryDetail() {
       )}
     </View>
 
-    <Modal
-      visible={showActionMenu}
-      transparent
-      animationType="fade"
-      onRequestClose={() => setShowActionMenu(false)}
-    >
-      <Pressable
-        onPress={() => setShowActionMenu(false)}
-        accessibilityRole="button"
-        accessibilityLabel="Kapat"
-        className="flex-1 bg-black/60 items-center justify-center px-8"
-      >
-        {/* Dokunmayı yutan sarmalayıcı — eylem değil, düğme olarak sunulmamalı. */}
-        <Pressable
-          onPress={() => {}}
-          accessible={false}
-          accessibilityViewIsModal
-          className="w-full bg-bg border border-border rounded-card p-5"
-        >
-          <Text className="text-text text-xl font-bold mb-1 text-center">İşlemler</Text>
-          <Text className="text-textMuted text-sm mb-5 text-center">Bu anı için ne yapmak istiyorsun?</Text>
-          <View className="gap-3">
-            <ActionMenuOption
-              icon="edit-2"
-              label="Düzenle"
-              onPress={() => {
-                setShowActionMenu(false);
-                router.push(`/entry/edit/${activeId}`);
-              }}
-            />
-            <ActionMenuOption
-              icon="trash-2"
-              label="Sil"
-              danger
-              onPress={() => {
-                setShowActionMenu(false);
-                setShowDeleteConfirm(true);
-              }}
-            />
-          </View>
-          <Pressable
-            onPress={() => setShowActionMenu(false)}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            accessibilityRole="button"
-            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-            className="items-center mt-4 py-2"
-          >
-            <Text className="text-textMuted text-sm">Vazgeç</Text>
-          </Pressable>
-        </Pressable>
-      </Pressable>
-    </Modal>
-
     <ConfirmDialog
-      visible={showDeleteConfirm}
+      visible={pendingDeleteId !== null}
       icon="trash-2"
       danger
       title="Bu anıyı sil?"
       message="Bu işlem geri alınamaz, fotoğraf ve ölçümler kalıcı olarak silinir."
       confirmLabel="Sil"
       onConfirm={() => {
-        setShowDeleteConfirm(false);
+        const target = pendingDeleteId;
+        setPendingDeleteId(null);
+        if (!target) return;
         // Navigasyon ekranın işi — invalidation'lar hook'un içinde.
         // onError şart: hata olunca spinner kayboluyor, kayıt yerinde duruyor ve
         // kullanıcıya HİÇBİR şey söylenmiyordu — silme başarılı sanılıyordu.
-        deleteMutation.mutate(activeId, {
+        deleteMutation.mutate(target, {
           onSuccess: () => router.back(),
           onError: (err) => alertError("Anı silinemedi", err, "entry.delete"),
         });
       }}
-      onClose={() => setShowDeleteConfirm(false)}
+      onClose={() => setPendingDeleteId(null)}
     />
     </>
   );

@@ -392,33 +392,45 @@ describe("kayıt detayı — sayfalayıcı", () => {
   });
 });
 
+/**
+ * Sağ üstteki üç nokta menüsü KALDIRILDI.
+ *
+ * O menüde iki madde vardı: "Düzenle" ve "Sil". Düzenleme artık ölçüm/not/program
+ * kartlarına dokunarak yapılıyor, yani menü tek maddeye düşüyor ve üstteki
+ * chrome'u boşuna dolduruyordu. Silme, profildeki "Hesabı sil" ile aynı kalıba
+ * taşındı: sayfanın dibinde, kırmızı, chevron'suz.
+ *
+ * Menü kaldırılırken silmenin de gitmesi kolay bir hata olurdu — silme yalnızca
+ * o menüden tetikleniyordu ve başka hiçbir yolu yoktu, yani anı silmek imkânsız
+ * hale gelirdi. Aşağıdaki testler o yolun ayakta kaldığını koruyor.
+ */
 describe("kayıt detayı — işlemler", () => {
-  it("düzenleme, EKRANDA GÖRÜNEN kaydı açar", async () => {
+  it("üç nokta menüsü artık YOK", async () => {
     await render(<EntryDetail />);
 
-    await fireEvent.press(screen.getByLabelText("Anı için işlemler"));
-    await fireEvent.press(screen.getByText("Düzenle"));
-
-    expect(mockPush).toHaveBeenCalledWith("/entry/edit/e2");
+    expect(screen.queryByLabelText("Anı için işlemler")).toBeNull();
   });
 
-  it("silme, onay istemeden çalışmaz", async () => {
+  it("silme yolu duruyor ve onay istemeden çalışmaz", async () => {
     await render(<EntryDetail />);
 
-    await fireEvent.press(screen.getByLabelText("Anı için işlemler"));
-    await fireEvent.press(screen.getByText("Sil"));
+    await fireEvent.press(screen.getByLabelText("Bu anıyı sil"));
 
     // Onay ekranı açıldı ama henüz silme yok.
     expect(screen.getByText("Bu anıyı sil?")).toBeTruthy();
     expect(mockDeleteMutate).not.toHaveBeenCalled();
   });
 
-  it("onay verilince görünen kaydı siler ve geri döner", async () => {
+  /**
+   * Silme, dokunulan SAYFANIN kaydına uygulanıyor — ekran seviyesindeki aktif
+   * indekse bağlı değil. Eskiden `ids[activeIndex]` kullanılıyordu; indeks
+   * senkronu kayarsa sessizce yanlış kayıt silinebiliyordu.
+   */
+  it("onay verilince o kaydı siler ve geri döner", async () => {
     await render(<EntryDetail />);
 
-    await fireEvent.press(screen.getByLabelText("Anı için işlemler"));
+    await fireEvent.press(screen.getByLabelText("Bu anıyı sil"));
     await fireEvent.press(screen.getByText("Sil"));
-    await fireEvent.press(screen.getByText("Sil", { exact: true }));
 
     expect(mockDeleteMutate).toHaveBeenCalledWith("e2", expect.any(Object));
 
@@ -431,8 +443,7 @@ describe("kayıt detayı — işlemler", () => {
   it("vazgeçilince silmez", async () => {
     await render(<EntryDetail />);
 
-    await fireEvent.press(screen.getByLabelText("Anı için işlemler"));
-    await fireEvent.press(screen.getByText("Sil"));
+    await fireEvent.press(screen.getByLabelText("Bu anıyı sil"));
     await fireEvent.press(screen.getByText("Vazgeç"));
 
     expect(mockDeleteMutate).not.toHaveBeenCalled();

@@ -11,7 +11,7 @@ import { formatDateKey } from "@/lib/date";
 import { useAuth } from "@/lib/useAuth";
 import { useUnitPreference, displayUnit, toDisplayValue, type UnitPref } from "@/lib/units";
 import { openCapturePicker } from "@/lib/capture";
-import { useCapsuleEntries, type CapsuleEntry } from "@/lib/entries";
+import { useCapsuleEntries, usePrefetchEditableEntry, type CapsuleEntry } from "@/lib/entries";
 import { ErrorState } from "@/components/ErrorState";
 import { useScreenInsets } from "@/lib/useScreenInsets";
 
@@ -42,9 +42,15 @@ const CapsulePage = memo(function CapsulePage({
   const screen = useScreenInsets();
   const [flipped, setFlipped] = useState(false);
   const flip = useSharedValue(0);
+  const prefetchEdit = usePrefetchEditableEntry();
 
   function toggleFlip() {
     const next = !flipped;
+    // Düzenle düğmesi yalnızca arka yüzde. Kartı çevirmek, o düğmeye basılma
+    // ihtimalinin başladığı an — düzenleme verisini şimdiden çekiyoruz ki
+    // çevirme animasyonu (450 ms) ve kullanıcının düğmeyi bulup dokunması
+    // sırasında sorgu tamamlansın, ekran açıldığında form ilk karede dolu gelsin.
+    if (next) prefetchEdit(entry.id);
     setFlipped(next);
     flip.value = withTiming(next ? 1 : 0, { duration: 450 });
   }

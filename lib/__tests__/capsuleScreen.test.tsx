@@ -11,8 +11,12 @@ import type { CapsuleEntry } from "../entries";
 
 const mockUseCapsuleEntries = jest.fn();
 const mockOpenCapturePicker = jest.fn();
+const mockPrefetchEdit = jest.fn();
 
-jest.mock("../entries", () => ({ useCapsuleEntries: () => mockUseCapsuleEntries() }));
+jest.mock("../entries", () => ({
+  useCapsuleEntries: () => mockUseCapsuleEntries(),
+  usePrefetchEditableEntry: () => mockPrefetchEdit,
+}));
 jest.mock("../useAuth", () => ({ useAuth: () => ({ user: { id: "u1" } }) }));
 jest.mock("../units", () => ({
   ...jest.requireActual("../units"),
@@ -80,6 +84,34 @@ describe("anı akışı", () => {
     expect(screen.getByText("Henüz bir kaydın yok")).toBeTruthy();
     await fireEvent.press(screen.getByText("İlk anını ekle"));
     expect(mockOpenCapturePicker).toHaveBeenCalled();
+  });
+
+  /**
+   * Kart çevrilince düzenleme verisi ÖNDEN çekiliyor.
+   *
+   * Düzenle düğmesi yalnızca arka yüzde; çevirme animasyonu 450 ms sürüyor ve
+   * kullanıcının düğmeyi bulup dokunması da zaman alıyor. Sorgu o boşlukta
+   * tamamlanınca düzenleme ekranı ilk karede dolu açılıyor — bu çağrı düşerse
+   * ekran yine açılır ama "Kaydet" ve ölçüm alanları bir ağ turu kadar bekler,
+   * yani hata sessizdir. Test onu sessiz olmaktan çıkarıyor.
+   */
+  it("kart çevrilince düzenleme verisini önden çeker", async () => {
+    await render(<ZamanKapsulu />);
+
+    expect(mockPrefetchEdit).not.toHaveBeenCalled();
+
+    await fireEvent.press(screen.getByLabelText(/tarihli anı/));
+    expect(mockPrefetchEdit).toHaveBeenCalledWith("e1");
+  });
+
+  it("kart geri çevrilince tekrar çekmez", async () => {
+    await render(<ZamanKapsulu />);
+
+    const card = screen.getByLabelText(/tarihli anı/);
+    await fireEvent.press(card); // ön → arka: çeker
+    await fireEvent.press(card); // arka → ön: çekmemeli
+
+    expect(mockPrefetchEdit).toHaveBeenCalledTimes(1);
   });
 
   it("birden fazla sayfada sayacı doğru gösterir", async () => {

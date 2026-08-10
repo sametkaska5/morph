@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import {
   useQuery,
   useInfiniteQuery,
@@ -408,6 +409,63 @@ function findEntryInCaches(queryClient: QueryClient, entryId: string): EntrySeed
   return found ? seed : null;
 }
 
+async function fetchEditableEntry(queryClient: QueryClient, entryId: string) {
+  const { data, error } = await supabase
+    .from("entries")
+    // order_index de okunuyor: düzenleme ekranında fotoğraf DEĞİŞTİRİLDİĞİNDE
+    // yeni satır, yerini aldığı fotoğrafın sırasını devralıyor (bkz.
+    // app/entry/edit/[id].tsx). Sabit 0 yazmak, günün başka fotoğrafları
+    // varken şeridin sırasını bozuyordu.
+    .select(
+      "id, note, cover_photo_id, photos!entry_id(id, storage_path, thumb_path, order_index), measurement_values(id, value, measurement_type_id, measurement_types(name, unit))"
+    )
+    .eq("id", entryId)
+    .single();
+
+  if (error) throw error;
+
+  const coverRow = coverPhotoRow(data);
+  const photoPath = coverRow?.storage_path ?? null;
+  const thumbPath = coverRow?.thumb_path ?? null;
+
+  /**
+   * İMZALI LİNKİ YENİDEN ÜRETMİYORUZ — ekran onu beklemesin diye.
+   *
+   * Bu sorgu iki ağ turu sürüyordu: önce kayıt, sonra imzalama (imzalama kaydı
+   * beklemek ZORUNDA, çünkü hangi dosyayı imzalayacağını kayıttan öğreniyor).
+   * Düzenleme ekranında "Kaydet" ve ölçüm alanları sorgunun TAMAMINI bekliyor
+   * (bkz. formReady), yani kullanıcı, ekranda ZATEN GÖRÜNEN bir fotoğrafın
+   * linkinin yeniden üretilmesini bekliyordu.
+   *
+   * Ekran hemen her zaman anı akışından/detaydan açılıyor ve o ekranlar aynı
+   * fotoğrafın imzalı linkini çoktan almış oluyor. Yol aynıysa o linki olduğu
+   * gibi kullanıyoruz: bir tur ağ eksiliyor.
+   *
+   * Küçük kopya (thumb) yalnızca "tam boy henüz diskte yokken boş kare
+   * görünmesin" diye var. Tam boy linki kardeş cache'ten geldiyse o fotoğraf
+   * zaten bir ekranda gösterilmiş, yani diskte — placeholder'a gerek kalmıyor.
+   * Kardeş cache'te link YOKSA (derin bağlantı, soğuk açılış) eski davranış
+   * aynen sürüyor: ikisi de paralel imzalanıyor.
+   */
+  const cached = findEntryInCaches(queryClient, entryId);
+  const reusedPhotoUrl = photoPath && cached?.photoPath === photoPath ? cached.photoUrl : null;
+
+  let photoUrl: string | null;
+  let thumbUrl: string | null;
+
+  if (reusedPhotoUrl) {
+    photoUrl = reusedPhotoUrl;
+    thumbUrl = thumbPath && cached?.thumbPath === thumbPath ? cached.thumbUrl : null;
+  } else {
+    [photoUrl, thumbUrl] = await Promise.all([
+      photoPath ? getPhotoUrl(photoPath, "full").catch(() => null) : Promise.resolve(null),
+      thumbPath ? getPhotoUrl(thumbPath).catch(() => null) : Promise.resolve(null),
+    ]);
+  }
+
+  return { ...data, photoUrl, photoPath, thumbUrl, thumbPath };
+}
+
 export function useEditableEntry(entryId: string) {
   const queryClient = useQueryClient();
   return useQuery({
@@ -420,9 +478,9 @@ export function useEditableEntry(entryId: string) {
     placeholderData: () => {
       const seed = findEntryInCaches(queryClient, entryId);
       if (!seed) return undefined;
-      // Şekil, aşağıdaki queryFn'in döndürdüğüyle birebir aynı olmalı — eskiden
-      // `as any` ile susturuluyordu, dolayısıyla sorgu şekli değişse placeholder
-      // sessizce eksik kalırdı. Artık TypeScript ikisini senkron tutuyor.
+      // Şekil, queryFn'in döndürdüğüyle birebir aynı olmalı — eskiden `as any`
+      // ile susturuluyordu, dolayısıyla sorgu şekli değişse placeholder sessizce
+      // eksik kalırdı. Artık TypeScript ikisini senkron tutuyor.
       return {
         id: entryId,
         note: seed.note,
@@ -435,38 +493,34 @@ export function useEditableEntry(entryId: string) {
         thumbPath: seed.thumbPath,
       };
     },
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("entries")
-        // order_index de okunuyor: düzenleme ekranında fotoğraf DEĞİŞTİRİLDİĞİNDE
-        // yeni satır, yerini aldığı fotoğrafın sırasını devralıyor (bkz.
-        // app/entry/edit/[id].tsx). Sabit 0 yazmak, günün başka fotoğrafları
-        // varken şeridin sırasını bozuyordu.
-        .select(
-          "id, note, cover_photo_id, photos!entry_id(id, storage_path, thumb_path, order_index), measurement_values(id, value, measurement_type_id, measurement_types(name, unit))"
-        )
-        .eq("id", entryId)
-        .single();
-
-      if (error) throw error;
-
-      // İmzalı linkleri BURADA üretiyoruz. Eskiden bu iş render sonrası bir
-      // useEffect'te yapılıyordu: kayıt sorgusu bitiyor → efekt çalışıyor →
-      // imzalama isteği gidiyor → ancak ondan sonra fotoğraf inmeye başlıyordu.
-      // Tam boy VE küçük kopyayı paralel imzalıyoruz; küçük kopya, tam boy diskte
-      // yoksa anlık placeholder olarak gösterilip "boş kare" beklemesini önlüyor.
-      const coverRow = coverPhotoRow(data);
-      const photoPath = coverRow?.storage_path ?? null;
-      const thumbPath = coverRow?.thumb_path ?? null;
-
-      const [photoUrl, thumbUrl] = await Promise.all([
-        photoPath ? getPhotoUrl(photoPath, "full").catch(() => null) : Promise.resolve(null),
-        thumbPath ? getPhotoUrl(thumbPath).catch(() => null) : Promise.resolve(null),
-      ]);
-
-      return { ...data, photoUrl, photoPath, thumbUrl, thumbPath };
-    },
+    queryFn: () => fetchEditableEntry(queryClient, entryId),
   });
+}
+
+/**
+ * Düzenleme verisini KULLANICI DÜĞMEYE BASMADAN ÖNCE çeker.
+ *
+ * Anı akışında düzenle düğmesi yalnızca kart ÇEVRİLDİĞİNDE görünüyor. Kartı
+ * çevirmek ile düğmeye basmak arasında 450 ms'lik çevirme animasyonu ve
+ * kullanıcının düğmeyi arayıp dokunması var — sorgu o boşlukta tamamlanıyor,
+ * ekran açıldığında veri cache'te hazır oluyor ve form ilk karede dolu geliyor.
+ *
+ * Çevirme, "bu anıya bakıyorum" sinyali; her kaydırılan sayfa için değil
+ * yalnızca çevrilen kart için çekiyoruz, yoksa akışta gezinmek onlarca
+ * gereksiz sorgu üretirdi.
+ */
+export function usePrefetchEditableEntry() {
+  const queryClient = useQueryClient();
+  return useCallback(
+    (entryId: string) => {
+      queryClient.prefetchQuery({
+        queryKey: queryKeys.entry.edit(entryId),
+        queryFn: () => fetchEditableEntry(queryClient, entryId),
+        staleTime: LIST_STALE_TIME,
+      });
+    },
+    [queryClient]
+  );
 }
 
 /* ─────────────────────────── Girdi silme ─────────────────────────── */

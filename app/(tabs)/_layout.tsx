@@ -5,6 +5,8 @@ import { Text } from "@/components/Typography";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Feather from "@expo/vector-icons/Feather";
 import { useAuth } from "@/lib/useAuth";
+import { useMeasurementTypes } from "@/lib/measurementTypes";
+import { usePrefetchStatsScreen } from "@/lib/stats";
 import { useIsOnline } from "@/lib/useIsOnline";
 import { useAppUpdate } from "@/lib/appUpdates";
 import { openCapturePicker } from "@/lib/capture";
@@ -71,6 +73,24 @@ function OfflineBanner() {
   );
 }
 
+/**
+ * Hiçbir şey çizmiyor: yalnızca istatistikler ekranının verisini arka planda
+ * hazırlıyor (grafik serisi + hafta şeridi). Gerekçesi usePrefetchStatsScreen'de.
+ *
+ * AYRI BİR BİLEŞEN olması bilinçli: ölçüm tipleri sorgusuna abone oluyor ve veri
+ * geldiğinde yeniden render oluyor. Bu abonelik TabsLayout'un içinde olsaydı
+ * sekme yerleşiminin tamamı o anda yeniden render olurdu — görünmez bir yan
+ * etki için gereksiz bir maliyet.
+ */
+function StatsPrefetcher() {
+  const { user } = useAuth();
+  const { data: types } = useMeasurementTypes(user?.id);
+  // Ekran açılışta listedeki İLK tipi gösteriyor (bkz. istatistikler.tsx:
+  // `activeTypeId ?? types?.[0]?.id`), o yüzden ön yükleme de onu hedefliyor.
+  usePrefetchStatsScreen(user?.id, types?.[0]?.id);
+  return null;
+}
+
 export default function TabsLayout() {
   const { session, loading } = useAuth();
   const isOnline = useIsOnline();
@@ -93,6 +113,7 @@ export default function TabsLayout() {
 
   return (
     <View style={{ flex: 1 }}>
+      <StatsPrefetcher />
       {!isOnline ? <OfflineBanner /> : null}
       {/* Güvenli alanı yalnızca EN ÜSTTEKİ şerit ekliyor — ikisi birden
           eklerse çentiğin altında çift boşluk oluşuyor. */}

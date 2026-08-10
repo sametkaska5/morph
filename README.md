@@ -36,6 +36,30 @@ npm run gen:types
 
 (Proje link'li değilse dosyayı elle güncelle; format `supabase gen types` çıktısıyla birebir aynı.)
 
+### RLS testleri
+
+Politikalar `supabase/tests/` altında pgTAP ile test ediliyor. Jest testleri Supabase istemcisini taklit ettiği için (bkz. `lib/__tests__/helpers/supabaseMock.ts`) politikalara hiç dokunmuyor — bunlar gerçek Postgres'e karşı, iki gerçek kullanıcıyla koşuyor. Yerel veritabanı konteynerde ayağa kalktığı için **Docker Desktop kurulu ve çalışıyor olmalı**.
+
+İlk kurulum (bir kereye mahsus, `config.toml` üretir — `migrations/` klasörüne dokunmaz):
+
+```bash
+npx supabase init
+```
+
+Sonra her test turundan önce yerel yığını başlat:
+
+```bash
+npx supabase start
+```
+
+```bash
+npm run test:rls
+```
+
+`supabase test db` her dosyayı ayrı bir işlem (transaction) içinde çalıştırıp sonunda geri alır; yerel veritabanına kalıcı veri yazılmaz. Şemayı değiştirdikten sonra `npx supabase db reset` ile migration'ları yerel veritabanına yeniden uygula.
+
+Yeni bir tablo eklediğinde `00_rls_kapsam.sql` bilerek kırılır: o tablonun RLS testleri de yazılsın diye uyarı görevi görüyor.
+
 Çalıştır:
 
 ```bash
@@ -138,7 +162,8 @@ lib/
   memoryMilestones.ts  hangi "X ay önce" bildirimlerinin kurulacağı (işletim sistemi sınırı)
   date.ts              tarih yardımcıları
 
-supabase/migrations/   0001–0010 şema + RLS + storage politikaları, antrenman tabloları
+supabase/migrations/   0001–0013 şema + RLS + storage politikaları, antrenman tabloları
+supabase/tests/        politikaların pgTAP testleri (npm run test:rls)
 ```
 
 ## Mimari notları

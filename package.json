@@ -9,6 +9,7 @@
     "web": "expo start --web",
     "test": "jest",
     "test:watch": "jest --watch",
+    "test:rls": "npx supabase test db",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write \"{app,components,lib}/**/*.{ts,tsx}\"",

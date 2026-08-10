@@ -257,13 +257,27 @@ Bu yüzden yayını **elle iki komutla yapma** — `npm run deploy:preview` ikis
 npm run update:sourcemaps
 ```
 
-`eas update`, yayınlarken projeyi `dist/` klasörüne çıkarıyor ve orada bırakıyor; betik de tam o klasörü okuyor, yani paket ile haritalar aynı derlemeden geliyor. Token gerekiyor:
+`eas update`, yayınlarken projeyi `dist/` klasörüne çıkarıyor ve orada bırakıyor; betik de tam o klasörü okuyor, yani paket ile haritalar aynı derlemeden geliyor.
+
+#### Token'ı bir kez ver, bir daha uğraşma
+
+Yükleyici token'ı **yalnızca iki yerde** arıyor (kaynağında `getEnvVar` = `process.env[...]` ve `loadDotenv`): ortam değişkeni ve proje kökündeki `.env.sentry-build-plugin` dosyası. Kalıcı çözüm ikincisi — bir kez oluştur:
+
+```
+SENTRY_AUTH_TOKEN=sntrys_ile_baslayan_token
+```
+
+Dosya `.gitignore`'da. Dikkat: oradaki `.env` kalıbı bu adı **kapsamıyor** (gitignore'da `.env` yalnızca tam adı `.env` olan dosyayı tutar), o yüzden ayrı bir satır olarak eklendi — yoksa `git add -A` token'ı public repoya sokuyor.
+
+Alternatif, tek seferlik (yalnızca o terminalde yaşar, her yeni pencerede tekrar gerekir):
 
 ```bash
 $env:SENTRY_AUTH_TOKEN = "sntrys_ile_baslayan_token"
 ```
 
-> `$env:...` yalnızca O terminalin içinde yaşıyor — kalıcı hiçbir yere yazılmıyor, yani her yeni pencerede baştan verilmesi gerekiyor. Kalıcı istersen `[Environment]::SetEnvironmentVariable('SENTRY_AUTH_TOKEN', '...', 'User')`, ama bu token'ı kayıt defterine düz metin yazar ve o makinedeki her süreç okuyabilir. `.env`'e KOYMA: o dosyadaki `EXPO_PUBLIC_*` değişkenleri uygulama paketine gömülüyor.
+> `~/.sentryclirc` ve diğer sentry-cli yapılandırma dosyaları burada İŞE YARAMIYOR: yükleyici betiği sentry-cli'yi hiç çağırmadan kendisi kontrol edip `SENTRY_AUTH_TOKEN environment variable must be set` diyerek çıkıyor.
+>
+> Token'ı `.env`'e de KOYMA: o dosyadaki `EXPO_PUBLIC_*` değişkenleri uygulama paketine gömülüyor.
 
 > Eklentinin `app.json`'daki adı **`@sentry/react-native/expo`** olmak zorunda. `@sentry/react-native` ile birebir aynı eklenti (`app.plugin.js` doğrudan `./expo`'yu döndürüyor) ama yükleme betiği eklentiyi ADINA göre arıyor; başka bir adla org/proje ayarlarını bulamayıp ortam değişkenlerine düşüyor.
 

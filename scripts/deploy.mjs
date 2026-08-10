@@ -1,5 +1,6 @@
 // @ts-check
 import { spawnSync } from "node:child_process";
+import { existsSync, readFileSync } from "node:fs";
 
 /**
  * Kablosuz güncellemeyi yayınlar VE hemen ardından kaynak haritalarını yükler.
@@ -38,24 +39,58 @@ if (!channel) {
 const isWindows = process.platform === "win32";
 
 /**
+ * Yükleyicinin token'ı okuduğu dosya. Adı bizim seçimimiz DEĞİL:
+ * @sentry/react-native/scripts/expo-upload-sourcemaps.js proje kökünde tam bu adı
+ * arıyor ve varsa içeriğini process.env'e yazıyor.
+ *
+ * .gitignore'a ayrıca eklendi — oradaki `.env` kalıbı bunu KAPSAMIYOR.
+ */
+const SENTRY_DOTENV = ".env.sentry-build-plugin";
+
+/**
+ * Token bulunabiliyor mu?
+ *
+ * Yükleyici yalnızca İKİ kaynağa bakıyor: `process.env` ve yukarıdaki dosya
+ * (kaynağında getEnvVar = process.env[...] ve loadDotenv). `~/.sentryclirc` gibi
+ * sentry-cli yapılandırma dosyaları İŞE YARAMIYOR — betik sentry-cli'yi hiç
+ * çağırmadan kendisi kontrol edip çıkıyor.
+ *
+ * Burada da aynı iki kaynağa bakmak zorundayız: yalnızca process.env'e
+ * bakılsaydı, token dosyada dururken yayın haksız yere bloklanırdı.
+ */
+function hasSentryToken() {
+  if (process.env.SENTRY_AUTH_TOKEN) return true;
+  if (!existsSync(SENTRY_DOTENV)) return false;
+  try {
+    // Yorum satırı (#) ve boş değer sayılmıyor.
+    return /^[ \t]*SENTRY_AUTH_TOKEN[ \t]*=[ \t]*\S/m.test(readFileSync(SENTRY_DOTENV, "utf8"));
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Kaynak haritaları OLMADAN yayınlamak, Sentry'yi sessizce işe yaramaz hale
  * getiriyor: yığın izleri `index.android.bundle:1:284917` gibi çözümlenmemiş
  * geliyor. Token'ı en başta kontrol ediyoruz ki eksikse güncelleme hiç
  * yayınlanmasın — yayınlandıktan sonra fark etmek geri alınamıyor.
- *
- * `$env:SENTRY_AUTH_TOKEN` yalnızca o terminalin içinde yaşıyor, yani her yeni
- * pencerede baştan verilmesi gerekiyor.
  */
-if (!process.env.SENTRY_AUTH_TOKEN) {
+if (!hasSentryToken()) {
   console.error(
     [
-      "SENTRY_AUTH_TOKEN tanımlı değil — güncelleme YAYINLANMADI.",
+      "SENTRY_AUTH_TOKEN bulunamadı — güncelleme YAYINLANMADI.",
       "",
       "Kaynak haritaları yüklenmezse Sentry'deki yığın izleri okunamaz hale gelir,",
       "ve bunu ancak bir hata düştüğünde fark edersin. O yüzden burada duruyoruz.",
       "",
-      "Aynı terminalde şunu ver, sonra komutu tekrarla:",
-      '  $env:SENTRY_AUTH_TOKEN = "sntrys_ile_baslayan_token"',
+      "İki yol var:",
+      "",
+      `  1) KALICI (önerilen) — proje kökünde ${SENTRY_DOTENV} dosyası oluştur:`,
+      "       SENTRY_AUTH_TOKEN=sntrys_ile_baslayan_token",
+      "     Dosya .gitignore'da. Bir kez yazıyorsun, sonra hiç uğraşmıyorsun.",
+      "",
+      "  2) TEK SEFERLİK — yalnızca bu terminal için:",
+      '       $env:SENTRY_AUTH_TOKEN = "sntrys_ile_baslayan_token"',
     ].join("\n"),
   );
   process.exit(1);

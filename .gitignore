@@ -1,6 +1,13 @@
 node_modules/
 .env
 
+# Sentry kaynak haritası yükleyicisinin okuduğu token dosyası
+# (@sentry/react-native/scripts/expo-upload-sourcemaps.js, projeye kökünden bakıyor).
+# Üstteki `.env` kalıbı bunu KAPSAMIYOR — gitignore'da `.env` yalnızca tam adı
+# `.env` olan dosyayı tutuyor. Ayrıca yazılmazsa `git add -A` token'ı public
+# repoya sokuyor.
+.env.sentry-build-plugin
+
 # Expo'nun yerel çalışma klasörü: makineye özel (devices.json, sunucu ayarları,
 # CLI logları) ve ESLint önbelleği burada tutuluyor — takip edilirse her lint
 # çalıştırmasında sahte diff üretiyor. Expo'nun kendi şablonu da bu klasörün

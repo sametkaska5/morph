@@ -45,3 +45,37 @@ jobs:
       - name: Testler
         if: ${{ !cancelled() }}
         run: npm test -- --ci
+
+  # Ayrı bir iş: quality ile paralel koşsun. Jest testleri saniyeler sürerken
+  # bu iş konteyner indirip veritabanı ayağa kaldırıyor, ikisini aynı işe
+  # koymak hızlı geri bildirimi yavaşın arkasında bekletirdi.
+  rls:
+    name: RLS politikaları
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          # Sürüm sabit, "latest" değil: CLI hangi Postgres imajını çekeceğine
+          # kendi sürümüne göre karar veriyor. latest dersek bir gün habersiz
+          # değişen bir veritabanına karşı test etmiş oluruz — testin anlamı
+          # tam olarak "canlıdakiyle aynı veritabanı" varsayımına dayanıyor.
+          version: 2.113.0
+
+      # Testler yalnızca veritabanına dokunuyor. auth ve storage ŞEMALARI
+      # Postgres imajının içinden geliyor, o servislerin konteynerlerine gerek
+      # yok — kalan 12 servisi dışlamak indirme ve bekleme süresini kısaltıyor.
+      # Bu liste yerelde birebir doğrulandı (101/101 geçti).
+      - name: Veritabanını başlat
+        run: >
+          supabase start
+          -x gotrue,realtime,storage-api,imgproxy,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+
+      # supabase start, migration'ları BOŞ bir veritabanına sıfırdan uyguluyor.
+      # Yani bu adım aynı zamanda "migration'lar temiz kurulumda çalışıyor mu"
+      # kontrolü — 0014'te düzelttiğimiz eksik yetkiler tam olarak bu yolla
+      # ortaya çıkmıştı ve yalnızca burada yakalanabilirdi.
+      - name: RLS testleri
+        run: supabase test db

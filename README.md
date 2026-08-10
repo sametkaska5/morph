@@ -34,7 +34,7 @@ Migration'lar `supabase/migrations/` altında sırayla uygulanır: `0001_init.sq
 npm run gen:types
 ```
 
-(Proje link'li değilse dosyayı elle güncelle; format `supabase gen types` çıktısıyla birebir aynı.)
+Bu dosya **üretiliyor, elle düzenlenmiyor**. `npm run gen:types` link'li uzak projeden okur; Docker açıkken `node scripts/gen-types.mjs --local` yerel veritabanından da üretebilir — ikisinin çıktısı birebir aynı olmalı, değilse canlı şema ile `supabase/migrations/` birbirinden ayrılmış demektir. Yenilemeyi unutursan CI yakalar (aşağıdaki `rls` işi dosyayı yeniden üretip commit'lenmiş hâliyle karşılaştırıyor).
 
 ### RLS testleri
 

@@ -78,4 +78,20 @@ jobs:
       # kontrolü — 0014'te düzelttiğimiz eksik yetkiler tam olarak bu yolla
       # ortaya çıkmıştı ve yalnızca burada yakalanabilirdi.
       - name: RLS testleri
+        if: ${{ !cancelled() }}
         run: supabase test db
+
+      # lib/database.types.ts şemayla aynı hizada mı? Dosyayı ayağa kalkmış
+      # veritabanından yeniden üretip commit'lenmiş hâliyle karşılaştırıyoruz.
+      # Fark çıkarsa biri şemayı değiştirip `npm run gen:types` çalıştırmayı
+      # unutmuş demektir. Bunu yakalamak önemli çünkü bayat bir tip dosyası
+      # derleme hatalarını YANLIŞ YERDEN çıkarır: hata migration'ı yazan
+      # satırda değil, o tabloyu kullanan ekranda görünür.
+      #
+      # setup-node yok: script yalnızca node'un yerleşik modüllerini kullanıyor,
+      # runner'ın hazır node'u yetiyor ve bu işe npm ci eklemek gereksiz.
+      - name: Tipler guncel mi
+        if: ${{ !cancelled() }}
+        run: |
+          node scripts/gen-types.mjs --local
+          git diff --exit-code lib/database.types.ts

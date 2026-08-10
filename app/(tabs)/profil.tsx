@@ -122,7 +122,12 @@ export default function Profil() {
   });
 
   async function handleSignOut() {
-    await supabase.auth.signOut();
+    // signOut, AĞ hatasında oturumu YERELDE de temizlemiyor: supabase-js yalnızca
+    // 401/403/404'ü yutup devam ediyor, diğer hatalarda `_removeSession()`a hiç
+    // gelmeden erken dönüyor. Yani kullanıcı "Çıkış yap"a basıyor, oturum yerinde
+    // kalıyor ve hiçbir şey söylenmiyordu — uygulama donmuş gibi görünüyor.
+    const { error } = await supabase.auth.signOut();
+    if (error) alertError("Çıkış yapılamadı", error, "profile.signOut");
   }
 
   function handleSelectUnit(pref: "metric" | "imperial") {

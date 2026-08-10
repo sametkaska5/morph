@@ -41,13 +41,31 @@ export function useAddMeasurementType(userId: string | undefined) {
   return useMutation({
     mutationFn: async (input: { name: string; unit: string; target_direction: TargetDirection }) => {
       if (!userId) throw new Error("Giriş yapılmamış");
+
+      // Sıra numarası ARTAN olmalı. Eskiden her özel tipe sabit 100 yazılıyordu:
+      // ikinci özel ölçümden sonra hepsi eşit oluyor ve sorgu `order("sort_order")`
+      // ile eşitleri sıralamadığı için liste her yeniden çekmede farklı dizilebiliyordu
+      // (istatistiklerdeki ölçüm sekmelerinin sırası da buna bağlı).
+      // Taban 100: sistem varsayılanları 1-4 aralığında (0001/0007 migration),
+      // özel tipler her zaman onların ARDINDA kalsın.
+      const { data: existing, error: readError } = await supabase
+        .from("measurement_types")
+        .select("sort_order")
+        .eq("user_id", userId);
+      if (readError) throw readError;
+
+      const nextSortOrder = Math.max(
+        100,
+        ...(existing ?? []).map((t) => t.sort_order + 1)
+      );
+
       const { error } = await supabase.from("measurement_types").insert({
         user_id: userId,
         name: input.name,
         unit: input.unit,
         target_direction: input.target_direction,
         is_default: false,
-        sort_order: 100,
+        sort_order: nextSortOrder,
       });
       if (error) throw error;
     },

@@ -9,6 +9,7 @@ import Feather from "@expo/vector-icons/Feather";
 import { useAuth } from "@/lib/useAuth";
 import { useProfile, useUpdateProfile } from "@/lib/profile";
 import { uploadAvatar } from "@/lib/storage";
+import { warnPermissionDenied } from "@/lib/capture";
 import { supabase } from "@/lib/supabase";
 import { alertError } from "@/lib/alerts";
 import { ErrorState } from "@/components/ErrorState";
@@ -50,7 +51,12 @@ export default function EditProfileScreen() {
   async function pickAvatar() {
     if (!user) return;
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") return;
+    if (status !== "granted") {
+      // Eskiden sessizce dönülüyordu: kullanıcı fotoğrafa dokunuyor, hiçbir şey
+      // olmuyordu. Çekim akışı bu durumu zaten açıklıyor, aynı mesajı kullanıyoruz.
+      warnPermissionDenied("galeri");
+      return;
+    }
 
     const result = await ImagePicker.launchImageLibraryAsync({
       allowsEditing: true,

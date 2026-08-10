@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "./supabase";
+import { listFolder } from "./storage";
 import { captureError } from "./monitoring";
 
 /**
@@ -112,18 +113,14 @@ async function collectReferencedPaths(userId: string): Promise<Set<string>> {
 async function collectCandidateFiles(userId: string): Promise<CandidateFile[]> {
   const candidates: CandidateFile[] = [];
 
-  const { data: folders, error: listErr } = await supabase.storage
-    .from("photos")
-    .list(userId, { limit: 1000 });
-  if (listErr) throw listErr;
-
-  for (const folder of folders ?? []) {
-    const { data: files, error } = await supabase.storage
-      .from("photos")
-      .list(`${userId}/${folder.name}`, { limit: 1000 });
-    if (error) throw error;
-
-    for (const file of files ?? []) {
+  // listFolder son sayfaya kadar okuyor (bkz. lib/storage.ts). Eskiden burada
+  // tek bir `list(..., { limit: 1000 })` çağrısı vardı: 1000'den fazla klasörü
+  // ya da dosyası olan kullanıcıda geri kalan dosyalar hiç TARANMIYORDU, yani
+  // yetimleri hiçbir turda toplanmıyordu. Yanlış silmeye yol açmadığı için
+  // (eksik aday listesi güvenli) sessizdi ama süpürme o kullanıcılarda fiilen
+  // çalışmıyordu. Aynı sayfalama hesap silmede de gerekiyordu; tek yerden.
+  for (const folder of await listFolder(userId)) {
+    for (const file of await listFolder(`${userId}/${folder.name}`)) {
       candidates.push({
         path: `${userId}/${folder.name}/${file.name}`,
         createdAt: file.created_at ? new Date(file.created_at).getTime() : null,

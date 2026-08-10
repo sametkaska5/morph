@@ -36,9 +36,13 @@ jest.mock("@tanstack/react-query", () => ({
 }));
 
 import Profil from "@/app/(tabs)/profil";
+import { alertError } from "../alerts";
 
 beforeEach(() => {
   jest.clearAllMocks();
+  // Gerçek supabase-js `{ error }` döndürüyor — mock da öyle olmalı, yoksa
+  // ekranın hata kontrolü test edilemez hâle geliyor.
+  mockSignOut.mockResolvedValue({ error: null });
   mockDeletePending = false;
   mockUseAuth.mockReturnValue({ user: { id: "u1", email: "ben@ornek.com" } });
   mockUseProfileStats.mockReturnValue({
@@ -125,5 +129,25 @@ describe("profil — genel", () => {
     await fireEvent.press(screen.getByText("Çıkış yap"));
 
     expect(mockSignOut).toHaveBeenCalled();
+    expect(alertError).not.toHaveBeenCalled();
+  });
+
+  /**
+   * signOut AĞ hatasında oturumu yerelde de temizlemiyor: supabase-js yalnızca
+   * 401/403/404'ü yutup devam ediyor, diğer hatalarda `_removeSession()`a hiç
+   * gelmeden erken dönüyor. Yani kullanıcı çıkış yaptığını sanıyor ama oturum
+   * yerinde kalıyor — sessiz kalmak burada en kötü seçenek.
+   */
+  it("çıkış başarısız olursa kullanıcıya bildirir", async () => {
+    mockSignOut.mockResolvedValue({ error: { message: "Network request failed" } });
+
+    await render(<Profil />);
+    await fireEvent.press(screen.getByText("Çıkış yap"));
+
+    expect(alertError).toHaveBeenCalledWith(
+      "Çıkış yapılamadı",
+      { message: "Network request failed" },
+      "profile.signOut"
+    );
   });
 });

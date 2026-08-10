@@ -38,10 +38,16 @@ export async function resizeAndCompress(uri: string) {
   return { uri: full.uri, base64: full.base64!, thumbBase64: thumb.base64! };
 }
 
-// İzin reddedildiğinde eskiden sessizce undefined dönülüyordu: kullanıcı + butonuna
-// basıyor, hiçbir şey olmuyor ve nedenini anlayamıyordu. Artık ne yapması gerektiğini
-// söyleyen bir uyarı gösteriyoruz.
-function warnPermissionDenied(kind: "kamera" | "galeri") {
+/**
+ * İzin reddedildiğinde eskiden sessizce undefined dönülüyordu: kullanıcı + butonuna
+ * basıyor, hiçbir şey olmuyor ve nedenini anlayamıyordu. Artık ne yapması gerektiğini
+ * söyleyen bir uyarı gösteriyoruz.
+ *
+ * Export: profil fotoğrafı seçimi (app/profile/edit.tsx) de aynı sessizlikten
+ * muzdaripti ve aynı mesajı göstermeli — iki farklı metin, aynı durumu anlatan
+ * iki farklı açıklama demek olurdu.
+ */
+export function warnPermissionDenied(kind: "kamera" | "galeri") {
   showAlert(
     "İzin gerekli",
     kind === "kamera"

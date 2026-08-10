@@ -3,9 +3,23 @@ import { decode } from "base64-arraybuffer";
 
 const SIGNED_URL_EXPIRY = 60 * 60 * 6; // 6 saat — sık sık yenilemeye gerek kalmasın
 
+/**
+ * Çakışmayan dosya adı üretir.
+ *
+ * Ad eskiden yalnızca `Date.now()` idi. Aynı milisaniyede iki yükleme olduğunda
+ * (galeriden çoklu seçim, ya da tam boy + küçük kopya) yol birebir aynı çıkıyor
+ * ve `upload` varsayılan olarak üzerine yazmadığı için ikincisi hata veriyordu —
+ * kullanıcı için "fotoğraf eklenemedi", sebebi görünmez. Zaman damgasını
+ * okunabilirlik için tutuyoruz (dosya adına bakıp ne zaman yüklendiğini görmek
+ * işe yarıyor), sonuna rastgele bir sonek ekliyoruz.
+ */
+function uniqueFileName(prefix = "") {
+  const suffix = Math.random().toString(36).slice(2, 8);
+  return `${prefix}${Date.now()}-${suffix}.jpg`;
+}
+
 export async function uploadPhoto(userId: string, entryId: string, base64: string) {
-  const fileName = `${Date.now()}.jpg`;
-  const path = `${userId}/${entryId}/${fileName}`;
+  const path = `${userId}/${entryId}/${uniqueFileName()}`;
 
   const { error } = await supabase.storage.from("photos").upload(path, decode(base64), {
     contentType: "image/jpeg",
@@ -22,7 +36,7 @@ export async function uploadPhoto(userId: string, entryId: string, base64: strin
  * ekstra bir değişiklik olmadan thumbnail'leri de kapsıyor.
  */
 export async function uploadThumb(userId: string, entryId: string, base64: string) {
-  const path = `${userId}/${entryId}/thumb-${Date.now()}.jpg`;
+  const path = `${userId}/${entryId}/${uniqueFileName("thumb-")}`;
 
   const { error } = await supabase.storage.from("photos").upload(path, decode(base64), {
     contentType: "image/jpeg",
@@ -38,8 +52,7 @@ export async function uploadThumb(userId: string, entryId: string, base64: strin
  * paylaşıyor, sadece yol öneki farklı; ayrı bir politika/bucket gerekmiyor.
  */
 export async function uploadAvatar(userId: string, base64: string) {
-  const fileName = `avatar-${Date.now()}.jpg`;
-  const path = `${userId}/avatar/${fileName}`;
+  const path = `${userId}/avatar/${uniqueFileName("avatar-")}`;
 
   const { error } = await supabase.storage.from("photos").upload(path, decode(base64), {
     contentType: "image/jpeg",
@@ -58,8 +71,18 @@ export async function uploadAvatar(userId: string, base64: string) {
  */
 const LIST_PAGE = 1000;
 
-async function listAll(prefix: string) {
-  const all: { name: string }[] = [];
+/** list() satırlarından OKUDUĞUMUZ alanlar (gerçek satırda fazlası var). */
+export type StorageEntry = { name: string; created_at?: string | null };
+
+/**
+ * "photos" bucket'ında bir klasörün TÜM girdilerini döner — son sayfaya kadar.
+ *
+ * Hem hesap silme (deleteAllUserPhotos) hem yetim süpürmesi (lib/orphanSweep.ts)
+ * buna ihtiyaç duyuyor ve ikisi de sessizce eksik listeyle çalışıyordu; tek
+ * uygulama olsun diye burada.
+ */
+export async function listFolder(prefix: string): Promise<StorageEntry[]> {
+  const all: StorageEntry[] = [];
   for (let offset = 0; ; offset += LIST_PAGE) {
     const { data, error } = await supabase.storage
       .from("photos")
@@ -78,11 +101,11 @@ async function listAll(prefix: string) {
  * içindeki dosyaları listeleyip tam yollarını topluyoruz.
  */
 export async function deleteAllUserPhotos(userId: string) {
-  const folders = await listAll(userId);
+  const folders = await listFolder(userId);
 
   const filePaths: string[] = [];
   for (const folder of folders) {
-    for (const file of await listAll(`${userId}/${folder.name}`)) {
+    for (const file of await listFolder(`${userId}/${folder.name}`)) {
       filePaths.push(`${userId}/${folder.name}/${file.name}`);
     }
   }

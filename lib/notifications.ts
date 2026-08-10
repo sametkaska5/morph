@@ -4,6 +4,7 @@ import Constants, { ExecutionEnvironment } from "expo-constants";
 import { supabase } from "./supabase";
 import { captureError } from "./monitoring";
 import { pickMemoryMilestones } from "./memoryMilestones";
+import { parseReminderTime } from "./date";
 
 // Expo Go, Android'de SDK 53'ten beri expo-notifications'ın native modülünü içermiyor;
 // paket import edilir edilmez (top-level side effect) senkron throw ediyor. Statik
@@ -34,6 +35,22 @@ if (Notifications) {
 export async function requestNotificationPermission() {
   if (!Notifications) return false;
   const { status } = await Notifications.requestPermissionsAsync();
+  return status === "granted";
+}
+
+/**
+ * İzin SORAR ama İSTEMEZ — işletim sistemi diyaloğunu açmaz.
+ *
+ * Ayrım önemli: requestPermissionsAsync izin verilmemişse sistem diyaloğunu
+ * AÇIYOR. Bakım/arka plan yollarından çağrıldığında bu, kullanıcıya hiç
+ * beklemediği bir yerde izin sorusu çıkarıyor — seri uyarısı İstatistikler
+ * ekranının bir effect'inden zamanlandığı için, sekmeye dokunmak izin diyaloğunu
+ * tetikliyordu. İzin isteme yalnızca kullanıcının bir anahtarı açtığı yerde
+ * (Bildirimler ayarları) olmalı; zamanlama tarafı sadece mevcut durumu okur.
+ */
+export async function hasNotificationPermission() {
+  if (!Notifications) return false;
+  const { status } = await Notifications.getPermissionsAsync();
   return status === "granted";
 }
 
@@ -241,7 +258,9 @@ export async function scheduleStreakRiskNotification(currentStreak: number, hasL
 
   if (hasLoggedToday || currentStreak <= 0) return;
 
-  const granted = await requestNotificationPermission();
+  // SORAR, istemez (bkz. hasNotificationPermission): burası bir effect'ten
+  // çağrılıyor, kullanıcının dokunuşuyla değil.
+  const granted = await hasNotificationPermission();
   if (!granted) return;
 
   const triggerDate = new Date();
@@ -270,8 +289,17 @@ export async function cancelStreakRiskNotification() {
 /** Günlük "bugün kaydetmeyi unutma" hatırlatması */
 export async function scheduleDailyReminder(reminderTime: string) {
   if (!Notifications) return;
+
+  const parsed = parseReminderTime(reminderTime);
+  if (!parsed) {
+    captureError(new Error(`Geçersiz hatırlatma saati: ${JSON.stringify(reminderTime)}`), {
+      where: "notifications.scheduleDailyReminder",
+    });
+    return;
+  }
+  const { hour, minute } = parsed;
+
   await ensureNotificationChannel();
-  const [hour, minute] = reminderTime.split(":").map(Number);
 
   await Notifications.cancelScheduledNotificationAsync(DAILY_REMINDER_ID).catch(() => {});
   await Notifications.scheduleNotificationAsync({

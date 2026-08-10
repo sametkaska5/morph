@@ -87,3 +87,21 @@ const WEEKDAY_LETTERS: Record<number, string> = {
 export function weekdayLetter(d: Date) {
   return WEEKDAY_LETTERS[d.getDay()];
 }
+
+/**
+ * "HH:MM" / "HH:MM:SS" → { hour, minute }. Geçersizse null.
+ *
+ * Eskiden `split(":").map(Number)` sonucu doğrulanmadan kullanılıyordu: bozuk bir
+ * değer `hour: NaN` üretip zamanlamayı sessizce anlamsız hale getiriyordu (ya da
+ * işletim sistemi çağrısını patlatıyordu). Değer bizim DB'mizden geliyor ve bizim
+ * kodumuz yazıyor, yani bozuk olması bir veri sorunu — o yüzden uydurmuyoruz,
+ * çağıran taraf null görüp zamanlamayı atlıyor ve durumu Sentry'ye bildiriyor.
+ */
+export function parseReminderTime(raw: string): { hour: number; minute: number } | null {
+  const match = /^(\d{1,2}):(\d{2})(?::\d{2})?$/.exec(raw?.trim() ?? "");
+  if (!match) return null;
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (hour > 23 || minute > 59) return null;
+  return { hour, minute };
+}

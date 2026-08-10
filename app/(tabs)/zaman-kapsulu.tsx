@@ -1,5 +1,5 @@
 import { memo, useState } from "react";
-import { View, FlatList, Dimensions, Pressable, ActivityIndicator } from "react-native";
+import { View, FlatList, Pressable, ActivityIndicator, useWindowDimensions } from "react-native";
 import { Text } from "@/components/Typography";
 import { Image } from "expo-image";
 import { router } from "expo-router";
@@ -15,7 +15,6 @@ import { useCapsuleEntries, type CapsuleEntry } from "@/lib/entries";
 import { ErrorState } from "@/components/ErrorState";
 import { useScreenInsets } from "@/lib/useScreenInsets";
 
-const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 // (tabs)/_layout.tsx'teki TAB_CONTENT_HEIGHT ile eşleşmeli — FlatList'in gerçek
 // görünür alanı SCREEN_HEIGHT değil, tab bar'ın kapladığı kadar eksiği; sayfa
 // yüksekliği (pageHeight) bunu hesaba katmazsa pagingEnabled snap noktaları
@@ -255,7 +254,11 @@ export default function ZamanKapsulu() {
   // sapınca alttaki fotoğraf üsttekinin altından görünür oluyordu. Bunun yerine
   // FlatList'in sarmalayıcısının gerçek render yüksekliğini ölçüyoruz.
   const [measuredHeight, setMeasuredHeight] = useState(0);
-  const pageHeight = measuredHeight || SCREEN_HEIGHT - TAB_BAR_HEIGHT - insets.bottom;
+  // Yedek yükseklik pencereden okunuyor (modül kapsamındaki Dimensions yerine):
+  // o değer JS yüklenirken donuyor ve Android çoklu pencere kipinde yanlış
+  // kalıyordu. Asıl yükseklik zaten ölçümden geliyor, bu yalnızca ilk kare.
+  const { height: windowHeight } = useWindowDimensions();
+  const pageHeight = measuredHeight || windowHeight - TAB_BAR_HEIGHT - insets.bottom;
   const { data: unitPref = "metric" } = useUnitPreference(user?.id);
   const { data, isLoading, error, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useCapsuleEntries();

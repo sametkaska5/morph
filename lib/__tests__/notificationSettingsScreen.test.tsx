@@ -9,9 +9,13 @@ import type { NotificationSettings } from "../notificationSettings";
  * kullanıcı sessizce yanlış duruma düşer — anahtar açık görünürken bildirim
  * gelmez, ya da kapalıyken gelmeye devam eder. Testler bu eşleşmeyi koruyor.
  *
- * İkinci incelik: izin akışı yalnızca AÇARKEN çalışır ve seri uyarısı bundan
- * bilerek muaf (cihaz izni gerektiren bir zamanlama kurmuyor, sadece iptal
- * edebiliyor). Bu asimetri kolayca "düzeltilerek" bozulabilecek türden.
+ * İkinci incelik: izin akışı yalnızca AÇARKEN çalışır — kapatmak izin
+ * gerektirmez ve istememeli. Üç anahtar bu konuda artık aynı davranıyor.
+ *
+ * Seri uyarısı bir dönem bundan muaftı (gerekçesi aşağıdaki testte) ama o muafiyet
+ * izin sorusunu İstatistikler ekranının bir effect'ine kaydırıyordu: kullanıcı
+ * sekmeye dokununca beklemediği bir anda sistem diyaloğu açılıyordu. Zamanlama
+ * tarafı artık izni yalnızca OKUYOR, isteme işi tümüyle bu ekranda.
  */
 
 const mockUseAuth = jest.fn();
@@ -163,16 +167,37 @@ describe("bildirim ayarları — izin akışı", () => {
     expect(mockScheduleMemory).not.toHaveBeenCalled();
   });
 
-  it("seri uyarısı cihaz izni istemez — açmak yalnızca tercihi kaydeder", async () => {
-    // Bu anahtar zamanlama kurmuyor; bildirimi istatistik ekranı, seri riske
-    // girdiğinde kuruyor. Buraya izin akışı eklemek gereksiz bir engel olurdu.
+  /**
+   * Bu anahtar eskiden BİLEREK izin istemiyordu; gerekçe "zamanlamayı istatistik
+   * ekranı kuruyor, buraya izin akışı koymak gereksiz bir engel olurdu" idi.
+   *
+   * Sorun şuydu: izni fiilen isteyen tek yer scheduleStreakRiskNotification'dı ve o
+   * İstatistikler ekranının bir effect'inden çağrılıyor — yani sekmeye dokunmak,
+   * kullanıcının hiç beklemediği bir anda sistem izin diyaloğunu açıyordu.
+   * Zamanlama tarafı artık yalnızca mevcut izni OKUYOR, o yüzden izin bir kez
+   * burada sorulmak zorunda. Kullanıcı zaten o an bir bildirimi açıyor.
+   */
+  it("seri uyarısı açılırken cihaz izni ister", async () => {
     mockUseSettings.mockReturnValue({ data: settingsWith({ streak_enabled: false }), isLoading: false });
     await render(<NotificationSettingsScreen />);
 
     await fireEvent(screen.getByLabelText("Seri risk uyarısı"), "valueChange", true);
 
-    expect(mockMutate).toHaveBeenCalledWith({ streak_enabled: true });
-    expect(mockRequestPermission).not.toHaveBeenCalled();
+    await waitFor(() => expect(mockMutate).toHaveBeenCalledWith({ streak_enabled: true }));
+    expect(mockRequestPermission).toHaveBeenCalled();
+  });
+
+  it("izin verilmezse seri tercihini KAYDETMEZ", async () => {
+    // Diğer iki anahtarla aynı kural: izin yoksa anahtarı açık göstermek
+    // kullanıcının fark edemeyeceği sessiz bir uyumsuzluk olurdu.
+    mockRequestPermission.mockResolvedValue(false);
+    mockUseSettings.mockReturnValue({ data: settingsWith({ streak_enabled: false }), isLoading: false });
+    await render(<NotificationSettingsScreen />);
+
+    await fireEvent(screen.getByLabelText("Seri risk uyarısı"), "valueChange", true);
+
+    await waitFor(() => expect(mockShowAlert).toHaveBeenCalled());
+    expect(mockMutate).not.toHaveBeenCalled();
   });
 
   it("seri uyarısı kapatılınca zamanlanmış uyarı iptal edilir", async () => {

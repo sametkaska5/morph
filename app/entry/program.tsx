@@ -9,7 +9,7 @@ import { useAuth } from "@/lib/useAuth";
 import { toLocalDateKey, parseLocalDate } from "@/lib/date";
 import { useKeyboardFocus } from "@/lib/useKeyboardFocus";
 import { useProgramDay, saveProgram, type WorkoutItemDraft, type WorkoutSetDraft } from "@/lib/workout";
-import { queryKeys } from "@/lib/queryKeys";
+import { invalidateAfterDayWrite } from "@/lib/entries";
 import { alertError } from "@/lib/alerts";
 import { ErrorState } from "@/components/ErrorState";
 import { useScreenInsets } from "@/lib/useScreenInsets";
@@ -71,11 +71,10 @@ export default function ProgramScreen() {
   const saveMutation = useMutation({
     mutationFn: saveProgram,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.programDay.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.entries.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.entry.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.currentWeek.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.profile.all });
+      // Liste tek yerde (bkz. lib/entries.ts invalidateAfterDayWrite) — burada
+      // workoutDay atlanmıştı, yani program yazılan gün fotoğrafsız gün ekranında
+      // eski hâliyle görünüyordu.
+      invalidateAfterDayWrite(queryClient);
       router.back();
     },
     onError: (err) => alertError("Kayıt başarısız", err, "program.saveProgram"),

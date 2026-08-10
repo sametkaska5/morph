@@ -4,7 +4,7 @@ import { uploadPhoto, uploadThumb } from "./storage";
 import { parseMeasurementInput } from "./measurementInput";
 import { nextOrderIndex } from "./photos";
 import { captureError } from "./monitoring";
-import { queryKeys } from "./queryKeys";
+import { invalidateAfterDayWrite } from "./entries";
 
 export const SAVE_ENTRY_MUTATION_KEY = ["saveEntry"] as const;
 
@@ -129,12 +129,11 @@ export async function saveEntry(payload: SaveEntryPayload) {
 export function registerEntryMutationDefaults(queryClient: QueryClient) {
   queryClient.setMutationDefaults(SAVE_ENTRY_MUTATION_KEY, {
     mutationFn: saveEntry,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.entries.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.profile.all });
-      // Yeni kayıt ölçüm de içerebilir — istatistik grafiği güncel kalsın.
-      queryClient.invalidateQueries({ queryKey: queryKeys.measurementSeries.all });
-    },
+    // Tazelenecek sorguların listesi tek yerde (bkz. invalidateAfterDayWrite).
+    // Eskiden burada elle üç anahtar sayılıyordu ve currentWeek ile
+    // shareablePhotos atlanmıştı: yeni fotoğraf eklendikten sonra istatistiklerdeki
+    // hafta şeridi bayat kalıyor, paylaşım kartının listesinde o gün görünmüyordu.
+    onSuccess: () => invalidateAfterDayWrite(queryClient),
     onError: (err) => {
       // Bu, offline'da kuyruğa alınıp sonra resume edilen senkronları da kapsar —
       // kullanıcı ekranda olmayabilir, o yüzden sessiz kalması en tehlikeli yer.

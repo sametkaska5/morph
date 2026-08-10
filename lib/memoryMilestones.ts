@@ -1,3 +1,5 @@
+import { parseReminderTime } from "./date";
+
 /**
  * "X ay önce bugün" bildirimlerinin HANGİLERİNİN zamanlanacağını seçer.
  *
@@ -49,7 +51,12 @@ export function pickMemoryMilestones(
   now: Date,
   limit: number = MAX_MEMORY_NOTIFICATIONS
 ): MemoryMilestone[] {
-  const [hour, minute] = reminderTime.split(":").map(Number);
+  // Saat doğrulanmadan kullanılırsa setHours(NaN) "Invalid Date" üretiyor; o
+  // tarihle zamanlama denemesi işletim sistemi çağrısında patlıyor. Geçersizse
+  // hiç milestone üretmiyoruz (bkz. lib/notifications.ts parseReminderTime).
+  const parsed = parseReminderTime(reminderTime);
+  if (!parsed) return [];
+  const { hour, minute } = parsed;
   const all: MemoryMilestone[] = [];
 
   for (const entry of entries) {

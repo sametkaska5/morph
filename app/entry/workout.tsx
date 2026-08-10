@@ -13,7 +13,7 @@ import { useKeyboardFocus } from "@/lib/useKeyboardFocus";
 import { useUnitPreference, displayUnit, toDisplayValue, toMetricValue } from "@/lib/units";
 import { validateMeasurementInput, measurementErrorText } from "@/lib/measurementInput";
 import { useWorkoutDay, saveWorkoutDay, type WorkoutDayType } from "@/lib/workout";
-import { queryKeys } from "@/lib/queryKeys";
+import { invalidateAfterDayWrite } from "@/lib/entries";
 import { alertError } from "@/lib/alerts";
 import { ErrorState } from "@/components/ErrorState";
 import { useScreenInsets } from "@/lib/useScreenInsets";
@@ -90,11 +90,10 @@ export default function WorkoutDayScreen() {
   const saveMutation = useMutation({
     mutationFn: saveWorkoutDay,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.entries.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.profile.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.currentWeek.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.measurementSeries.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.workoutDay.all });
+      // Liste tek yerde (bkz. lib/entries.ts invalidateAfterDayWrite) — burada
+      // programDay atlanmıştı, yani bu ekrandan kaydedilen gün program ekranında
+      // eski hâliyle görünüyordu.
+      invalidateAfterDayWrite(queryClient);
       router.back();
     },
     onError: (err) => alertError("Kayıt başarısız", err, "workout.saveWorkoutDay"),

@@ -76,9 +76,13 @@ export function createSupabaseMock() {
   let signOutCount = 0;
   /**
    * Çağrı sırası: hangi işin hangisinden önce yapıldığını doğrulamak için.
-   * deleteAccount'ta bu hayati — fotoğraflar hesaptan ÖNCE silinmezse
-   * auth satırı gidince RLS depoya erişimi keser ve dosyalar erişilemez
-   * biçimde öksüz kalır.
+   * Tablo işlemleri (`entries.delete` gibi), depo işlemleri (`storage.remove`),
+   * rpc ve auth çağrıları AYNI çizelgede — göreli sıraları ancak böyle
+   * doğrulanabiliyor.
+   *
+   * deleteAccount'ta bu hayati: fotoğraflar hesaptan ÖNCE silinmezse auth satırı
+   * gidince RLS depoya erişimi keser ve dosyalar erişilemez biçimde öksüz kalır.
+   * deleteEntry'de de öyle: satırlar dosyalardan ÖNCE gitmeli.
    */
   const callOrder: string[] = [];
 
@@ -112,13 +116,31 @@ export function createSupabaseMock() {
       };
     }
 
+    /**
+     * Zincir çalıştığı ANDA zaman çizelgesine yazılıyor.
+     *
+     * Neden gerekli: bu testlerin asıl işi YIKICI işlemlerin SIRASINI korumak
+     * (örn. deleteEntry'de satırlar dosyalardan önce silinmeli — tersi olursa
+     * satır silme patladığında geride dosyasız bir kayıt kalıyor). callOrder
+     * eskiden yalnızca storage/rpc/auth çağrılarını tutuyordu, yani tablo
+     * işlemleriyle dosya işlemlerinin göreli sırası hiç ifade edilemiyordu ve
+     * yanlış sıra testten geçiyordu.
+     */
+    const WRITE_VERBS = ["insert", "update", "upsert", "delete", "select"];
+    function recordCall() {
+      const verb = chain.steps.find((s) => WRITE_VERBS.includes(s.method))?.method ?? "query";
+      callOrder.push(`${table}.${verb}`);
+    }
+
     // Sonlandırıcılar: gerçek bir Promise döndürürler.
     builder.single = () => {
       chain.steps.push({ method: "single", args: [] });
+      recordCall();
       return Promise.resolve(nextResult(table));
     };
     builder.maybeSingle = () => {
       chain.steps.push({ method: "maybeSingle", args: [] });
+      recordCall();
       return Promise.resolve(nextResult(table));
     };
 
@@ -127,7 +149,10 @@ export function createSupabaseMock() {
     builder.then = (
       onFulfilled?: (value: Result) => unknown,
       onRejected?: (reason: unknown) => unknown
-    ) => Promise.resolve(nextResult(table)).then(onFulfilled, onRejected);
+    ) => {
+      recordCall();
+      return Promise.resolve(nextResult(table)).then(onFulfilled, onRejected);
+    };
 
     return builder;
   }

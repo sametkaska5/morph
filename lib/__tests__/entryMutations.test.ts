@@ -264,14 +264,28 @@ describe("registerEntryMutationDefaults", () => {
     expect(setMutationDefaults.mock.calls[0][1].mutationFn).toBe(saveEntry);
   });
 
-  it("başarıda listeleri, profili ve ölçüm serisini tazeler", () => {
+  it("başarıda bir GÜN yazıldığında etkilenen TÜM sorguları tazeler", () => {
+    // Liste artık lib/entries.ts'teki invalidateAfterDayWrite'tan geliyor.
+    // Eskiden burada elle üç anahtar sayılıyordu ve currentWeek ile
+    // shareablePhotos atlanmıştı: yeni fotoğraf eklendikten sonra
+    // istatistiklerdeki hafta şeridi bayat kalıyor, paylaşım kartının fotoğraf
+    // listesinde o gün görünmüyordu.
     const setMutationDefaults = jest.fn();
     const invalidateQueries = jest.fn();
     registerEntryMutationDefaults({ setMutationDefaults, invalidateQueries } as never);
 
     setMutationDefaults.mock.calls[0][1].onSuccess();
 
-    const invalidated = invalidateQueries.mock.calls.map((c) => c[0].queryKey);
-    expect(invalidated).toEqual([["entries"], ["profile"], ["measurement_series"]]);
+    const invalidated = invalidateQueries.mock.calls.map((c) => c[0].queryKey[0]);
+    expect(invalidated).toEqual([
+      "entries",
+      "entry",
+      "currentWeek",
+      "workoutDay",
+      "programDay",
+      "profile",
+      "measurement_series",
+      "shareablePhotos",
+    ]);
   });
 });

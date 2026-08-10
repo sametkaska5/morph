@@ -1,5 +1,12 @@
 import { memo, useCallback, useMemo, useRef, useState } from "react";
-import { View, Pressable, FlatList, Dimensions, RefreshControl, ActivityIndicator } from "react-native";
+import {
+  View,
+  Pressable,
+  FlatList,
+  RefreshControl,
+  ActivityIndicator,
+  useWindowDimensions,
+} from "react-native";
 import { Text } from "@/components/Typography";
 import { Image } from "expo-image";
 import { router } from "expo-router";
@@ -13,12 +20,26 @@ import { PhotoStack } from "@/components/PhotoStack";
 import { ErrorState } from "@/components/ErrorState";
 import { useScreenInsets } from "@/lib/useScreenInsets";
 
-const { width } = Dimensions.get("window");
 const GAP = 8;
 const COLUMNS = 3;
 const H_PADDING = 16;
-const THUMB_W = (width - H_PADDING * 2 - GAP * (COLUMNS - 1)) / COLUMNS;
-const THUMB_H = THUMB_W * 1.5; // poster oranı (2:3)
+
+/**
+ * Kare ölçüsü PENCERE genişliğinden hesaplanıyor ve bu hesap render sırasında
+ * yapılmak ZORUNDA.
+ *
+ * Eskiden modül kapsamında `Dimensions.get("window")` ile bir kez okunuyordu:
+ * o değer JS paketi yüklenirken donuyor. Uygulama portrait'e kilitli
+ * (app.json orientation) yani ekran döndürme sorun değil, ama Android'in çoklu
+ * pencere/bölünmüş ekran kipinde pencere genişliği değişiyor ve ızgara eski
+ * genişliğe göre çizilmeye devam ediyordu — kareler taşıyor ya da sağda boşluk
+ * kalıyordu. useWindowDimensions değişimi izliyor.
+ */
+function useThumbSize() {
+  const { width } = useWindowDimensions();
+  const thumbW = (width - H_PADDING * 2 - GAP * (COLUMNS - 1)) / COLUMNS;
+  return { thumbW, thumbH: thumbW * 1.5 }; // poster oranı (2:3)
+}
 
 // memo: ekran her render olduğunda (örn. aşağı çekip yenilerken isRefetching
 // değişince) 60 hücrenin hepsi yeniden çiziliyordu. React Query yenilemede
@@ -30,12 +51,16 @@ const PosterThumb = memo(function PosterThumb({
   staggerIndex,
   reduceMotion,
   onPeek,
+  thumbW,
+  thumbH,
 }: {
   entry: EntryRow;
   peekToken: number;
   staggerIndex: number;
   reduceMotion: boolean;
   onPeek: (entryId: string) => void;
+  thumbW: number;
+  thumbH: number;
 }) {
   // Pressable'ın basınca-değişen style FONKSİYONU burada marginBottom'u (satır
   // arası boşluk) uygulamıyordu — daha önce FAB ve Anı Akışı genişletme butonunda
@@ -60,7 +85,7 @@ const PosterThumb = memo(function PosterThumb({
       accessibilityLabel={`${formatDateKey(entry.date, { day: "numeric", month: "long", year: "numeric" })} tarihli anı${
         entry.photo_count > 1 ? `, ${entry.photo_count} fotoğraf` : ""
       }${entry.pending ? ", senkronize edilmeyi bekliyor" : ""}`}
-      style={{ width: THUMB_W, marginBottom: 16 }}
+      style={{ width: thumbW, marginBottom: 16 }}
     >
       <PhotoStack
         photos={entry.back_photos}
@@ -70,8 +95,8 @@ const PosterThumb = memo(function PosterThumb({
       >
       <View
         style={{
-          width: THUMB_W,
-          height: THUMB_H,
+          width: thumbW,
+          height: thumbH,
           opacity: pressed ? 0.85 : 1,
           transform: [{ scale: pressed ? 0.97 : 1 }],
         }}
@@ -150,6 +175,7 @@ function EmptyState() {
 
 export default function AnaEkran() {
   const screen = useScreenInsets();
+  const { thumbW, thumbH } = useThumbSize();
   const { data: entries, isLoading, isRefetching, error, refetch } = useTimelineEntries();
   const isEmpty = entries?.length === 0;
 
@@ -207,9 +233,11 @@ export default function AnaEkran() {
         staggerIndex={index % COLUMNS}
         reduceMotion={reduceMotion}
         onPeek={bumpPeek}
+        thumbW={thumbW}
+        thumbH={thumbH}
       />
     ),
-    [peekTokens, reduceMotion, bumpPeek]
+    [peekTokens, reduceMotion, bumpPeek, thumbW, thumbH]
   );
 
   const todayLabel = new Date().toLocaleDateString("tr-TR", {

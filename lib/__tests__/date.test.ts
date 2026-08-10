@@ -5,6 +5,7 @@ import {
   formatWeekRange,
   parseLocalDate,
   formatDateKey,
+  parseReminderTime,
 } from "../date";
 
 describe("toLocalDateKey", () => {
@@ -148,5 +149,36 @@ describe("formatDateKey", () => {
     expect(formatDateKey("2026-01-01", { day: "numeric", month: "long" })).toBe("1 Ocak");
     expect(formatDateKey("2026-03-01", { day: "numeric", month: "long" })).toBe("1 Mart");
     expect(formatDateKey("2025-12-31", { day: "numeric", month: "long" })).toBe("31 Aralık");
+  });
+});
+
+/**
+ * Saat DB'den geliyor ("HH:MM:SS") ve bizim kodumuz yazıyor, yani bozuk olması
+ * bir veri sorunu. Eskiden `split(":").map(Number)` sonucu doğrulanmadan
+ * kullanılıyordu: bozuk değer `hour: NaN` üretip zamanlamayı sessizce anlamsız
+ * hale getiriyor, ya da setHours(NaN) ile "Invalid Date" doğurup işletim sistemi
+ * çağrısını patlatıyordu.
+ */
+describe("parseReminderTime", () => {
+  it("HH:MM:SS ve HH:MM biçimlerini okur", () => {
+    expect(parseReminderTime("21:30:00")).toEqual({ hour: 21, minute: 30 });
+    expect(parseReminderTime("21:30")).toEqual({ hour: 21, minute: 30 });
+    expect(parseReminderTime("09:05:00")).toEqual({ hour: 9, minute: 5 });
+    expect(parseReminderTime("7:05")).toEqual({ hour: 7, minute: 5 });
+  });
+
+  it("sınır değerleri kabul eder", () => {
+    expect(parseReminderTime("00:00:00")).toEqual({ hour: 0, minute: 0 });
+    expect(parseReminderTime("23:59")).toEqual({ hour: 23, minute: 59 });
+  });
+
+  it("geçersiz girdide null döner — NaN üretmez", () => {
+    for (const bad of ["", "   ", "abc", "21", "21:", ":30", "24:00", "21:60", "-1:30", "21:30:xx"]) {
+      expect(parseReminderTime(bad)).toBeNull();
+    }
+  });
+
+  it("baştaki/sondaki boşluğu tolere eder", () => {
+    expect(parseReminderTime("  21:30:00  ")).toEqual({ hour: 21, minute: 30 });
   });
 });

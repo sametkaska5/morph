@@ -51,7 +51,7 @@ beforeEach(() => {
 });
 
 describe("deleteEntry", () => {
-  it("önce kapak referansını temizler, SONRA dosyaları ve kaydı siler", async () => {
+  it("kapak referansını temizler, kaydı ve dosyaları siler", async () => {
     sb.queue("photos", {
       data: [{ storage_path: "u1/e1/foto.jpg", thumb_path: "u1/e1/thumb-foto.jpg" }],
     });
@@ -68,12 +68,49 @@ describe("deleteEntry", () => {
       { bucket: "photos", paths: ["u1/e1/foto.jpg", "u1/e1/thumb-foto.jpg"] },
     ]);
 
-    // 3) en sonda kaydın kendisi
+    // 3) kaydın kendisi
     expect(stepNames(entryDelete)).toContain("delete");
     expect(argOf(entryDelete, "eq", 1)).toBe("e1");
 
     // Sıra: kapak temizliği, kaydın silinmesinden ÖNCE gelmeli.
     expect(sb.chains.indexOf(coverClear)).toBeLessThan(sb.chains.indexOf(entryDelete));
+  });
+
+  /**
+   * SIRA: satırlar ÖNCE, dosyalar SONRA.
+   *
+   * Eskiden tersiydi ve bunu yakalayan bir test yoktu (üstteki test yalnızca
+   * kapak temizliğinin sırasına bakıyor). Dosyalar silinip ardından satır silme
+   * patlarsa geride DOSYASI OLMAYAN bir kayıt kalıyor: ızgarada ve akışta kırık
+   * görsel, kullanıcı için geri dönüşü yok. Bu sırayla en kötü durum satırı
+   * gitmiş ama dosyası kalmış bir yetim — kullanıcı hiç görmüyor, günlük süpürme
+   * topluyor. İki başarısızlıktan geri alınabilir olanı seçiyoruz.
+   * (lib/photos.ts deleteEntryPhoto aynı sırayı aynı gerekçeyle kullanıyor.)
+   */
+  it("satırları dosyalardan ÖNCE siler", async () => {
+    sb.queue("photos", {
+      data: [{ storage_path: "u1/e1/foto.jpg", thumb_path: "u1/e1/thumb-foto.jpg" }],
+    });
+
+    await runDelete("e1");
+
+    expect(sb.callOrder).toEqual([
+      "photos.select", // hangi dosyalar silinecek (satırlar gitmeden okunmalı)
+      "entries.update", // cover_photo_id FK'sini boşalt
+      "entries.delete", // satır — photos satırları cascade ile birlikte gidiyor
+      "storage.remove", // dosyalar EN SON
+    ]);
+  });
+
+  it("satır silme patlarsa dosyalara HİÇ dokunmaz", async () => {
+    // Asıl kazanç bu: dosyalar önce silinseydi burada geri dönüşsüz kaybolmuş
+    // olurlardı ve kayıt kırık görselle ayakta kalırdı.
+    sb.queue("photos", { data: [{ storage_path: "u1/e1/foto.jpg", thumb_path: null }] });
+    sb.queue("entries", {}); // cover temizliği
+    sb.queue("entries", { error: { message: "silinemedi" } });
+
+    await expect(runDelete("e1")).rejects.toEqual({ message: "silinemedi" });
+    expect(sb.storageRemovals).toHaveLength(0);
   });
 
   it("thumbnail'i olmayan eski kayıtta yalnızca tam boyu siler", async () => {

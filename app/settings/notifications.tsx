@@ -131,9 +131,19 @@ export default function NotificationSettingsScreen() {
     );
   }
 
-  function toggleStreak(next: boolean) {
+  async function toggleStreak(next: boolean) {
+    // İzin BURADA isteniyor — diğer iki anahtarla aynı şekilde.
+    //
+    // Eskiden bu anahtar bilerek izin istemiyordu ("zamanlamayı istatistik ekranı
+    // kuruyor, buraya izin akışı koymak gereksiz engel"). Ama izni fiilen isteyen
+    // tek yer scheduleStreakRiskNotification'dı ve o İstatistikler ekranının bir
+    // effect'inden çağrılıyor: sekmeye dokunmak, kullanıcının hiç beklemediği bir
+    // anda sistem izin diyaloğunu açıyordu. Zamanlama tarafı artık yalnızca mevcut
+    // izni OKUYOR (hasNotificationPermission), o yüzden izin bir kez burada
+    // sorulmalı — kullanıcı zaten o an bir bildirimi açıyor, soru beklenen yerde.
+    if (next && !(await ensurePermission())) return;
     updateMutation.mutate({ streak_enabled: next });
-    if (!next) applySchedule(cancelStreakRiskNotification, "notifications.toggleStreak");
+    if (!next) await applySchedule(cancelStreakRiskNotification, "notifications.toggleStreak");
   }
 
   async function handleTimeChange(selected: Date) {

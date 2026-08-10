@@ -137,3 +137,30 @@ describe("pickMemoryMilestones — kararlılık", () => {
     expect(a).toEqual(b);
   });
 });
+
+/**
+ * Saat doğrulanmadan kullanılırsa `setHours(NaN)` "Invalid Date" üretiyor ve
+ * `target <= now` karşılaştırması NaN yüzünden hep false kalıyor — yani geçersiz
+ * tarihli milestone'lar listeye giriyor ve zamanlama çağrısında patlıyor.
+ * Geçersiz saatte hiç üretmemek doğru davranış (bkz. lib/date.ts parseReminderTime).
+ */
+describe("pickMemoryMilestones — geçersiz hatırlatma saati", () => {
+  // 25 gün önceki kayıt: 1 aylık kilometre taşı henüz GELECEKTE, yani geçerli
+  // saatle en az bir aday üretmesi gerekiyor.
+  const entries = [entryDaysAgo("e1", 25)];
+
+  it("bozuk saatte hiç milestone üretmez (Invalid Date sızdırmaz)", () => {
+    for (const bad of ["", "abc", "24:00", "21:60", "21"]) {
+      expect(pickMemoryMilestones(entries, bad, NOW)).toEqual([]);
+    }
+  });
+
+  it("geçerli saatte normal çalışmaya devam eder", () => {
+    const result = pickMemoryMilestones(entries, TIME, NOW);
+
+    expect(result.length).toBeGreaterThan(0);
+    for (const m of result) {
+      expect(Number.isNaN(m.date.getTime())).toBe(false);
+    }
+  });
+});

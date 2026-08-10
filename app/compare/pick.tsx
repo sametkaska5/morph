@@ -1,5 +1,5 @@
 import { memo, useCallback, useState } from "react";
-import { View, FlatList, Pressable, ActivityIndicator, Dimensions } from "react-native";
+import { View, FlatList, Pressable, ActivityIndicator, useWindowDimensions } from "react-native";
 import { Text } from "@/components/Typography";
 import { Image } from "expo-image";
 import { router } from "expo-router";
@@ -14,8 +14,17 @@ import { queryKeys } from "@/lib/queryKeys";
 import { ErrorState } from "@/components/ErrorState";
 import { useScreenInsets } from "@/lib/useScreenInsets";
 
-const { width } = Dimensions.get("window");
-const THUMB_SIZE = (width - 20 * 2 - 8 * 2) / 3;
+/**
+ * Kare ölçüsü render sırasında pencereden hesaplanıyor — modül kapsamında
+ * `Dimensions.get("window")` ile okunan değer JS yüklenirken donuyor ve
+ * Android çoklu pencere kipinde ızgara eski genişliğe göre çiziliyordu.
+ * (Aynı düzeltme (tabs)/index.tsx ızgarasında da var.)
+ * 20 = yatay dolgu, 8 = sütun aralığı, 3 sütun.
+ */
+function useThumbSize() {
+  const { width } = useWindowDimensions();
+  return (width - 20 * 2 - 8 * 2) / 3;
+}
 
 // memo: seçim her değiştiğinde ekran state'i yenileniyor ve memo olmadan
 // ızgaradaki 60 hücrenin hepsi (expo-image dahil) yeniden çiziliyordu.
@@ -26,12 +35,14 @@ const PickThumb = memo(function PickThumb({
   isSelected,
   order,
   onToggle,
+  thumbSize,
 }: {
   item: PickableEntry;
   isSelected: boolean;
   /** Seçiliyse 0 ya da 1 (rozetteki "1."/"2."), değilse -1. */
   order: number;
   onToggle: (id: string) => void;
+  thumbSize: number;
 }) {
   const dateLabel = formatDateKey(item.date, {
     day: "numeric",
@@ -44,7 +55,7 @@ const PickThumb = memo(function PickThumb({
       accessibilityRole="button"
       accessibilityLabel={`${dateLabel} tarihli anı${isSelected ? `, ${order + 1}. seçim olarak işaretli` : ""}`}
       accessibilityState={{ selected: isSelected }}
-      style={{ width: THUMB_SIZE, height: THUMB_SIZE }}
+      style={{ width: thumbSize, height: thumbSize }}
     >
       <View className="flex-1 rounded-lg overflow-hidden bg-surface relative">
         {item.photoUrl ? (
@@ -79,6 +90,7 @@ const PickThumb = memo(function PickThumb({
 });
 
 export default function PickComparison() {
+  const thumbSize = useThumbSize();
   const screen = useScreenInsets();
   const { user } = useAuth();
   const { data: entries, isLoading, error, refetch } = usePickableEntries(user?.id);
@@ -150,6 +162,7 @@ export default function PickComparison() {
               isSelected={selected.includes(item.id)}
               order={selected.indexOf(item.id)}
               onToggle={toggle}
+              thumbSize={thumbSize}
             />
           )}
         />

@@ -3,7 +3,7 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
-  Dimensions,
+  useWindowDimensions,
   Modal,
   FlatList,
 } from "react-native";
@@ -52,8 +52,18 @@ function ActionMenuOption({
   );
 }
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const IMAGE_HEIGHT = SCREEN_WIDTH * 1.25;
+/**
+ * Sayfa genişliği PENCEREDEN okunuyor ve render sırasında okunmak ZORUNDA.
+ *
+ * Eskiden modül kapsamında `Dimensions.get("window")` ile bir kez alınıyordu, yani
+ * JS paketi yüklenirken donuyordu. Uygulama portrait'e kilitli (app.json
+ * orientation) ama Android'in çoklu pencere kipinde pencere genişliği değişiyor;
+ * o durumda sayfalayıcının snap noktaları (getItemLayout + contentOffset hesabı)
+ * gerçek genişlikle uyuşmayıp yana kaydırma yanlış kayda gidiyordu.
+ *
+ * Fotoğraf yüksekliği genişliğin 1.25 katı — oran korunuyor.
+ */
+const IMAGE_RATIO = 1.25;
 
 /** Bir seti "60 kg × 8" biçiminde yazar; boş alanları atlar. */
 function workoutSetLabel(s: { reps: number | null; weight: number | null }): string {
@@ -75,7 +85,13 @@ function workoutSetLabel(s: { reps: number | null; weight: number | null }): str
  * listesi) her kaydırmada baştan çiziliyordu. entryId sabit string olduğu
  * için sayfalar artık tamamen atlanıyor.
  */
-const EntryPage = memo(function EntryPage({ entryId }: { entryId: string }) {
+const EntryPage = memo(function EntryPage({
+  entryId,
+  screenWidth,
+}: {
+  entryId: string;
+  screenWidth: number;
+}) {
   const screen = useScreenInsets();
   const { user } = useAuth();
   const { data, isLoading, error, refetch } = useEntryDetail(entryId);
@@ -107,7 +123,7 @@ const EntryPage = memo(function EntryPage({ entryId }: { entryId: string }) {
 
   if (isLoading) {
     return (
-      <View style={{ width: SCREEN_WIDTH }} className="bg-bg justify-center items-center">
+      <View style={{ width: screenWidth }} className="bg-bg justify-center items-center">
         <ActivityIndicator color="#8CE05A" size="large" />
       </View>
     );
@@ -115,15 +131,15 @@ const EntryPage = memo(function EntryPage({ entryId }: { entryId: string }) {
 
   if (error) {
     return (
-      <View style={{ width: SCREEN_WIDTH }} className="bg-bg justify-center items-center">
+      <View style={{ width: screenWidth }} className="bg-bg justify-center items-center">
         <ErrorState error={error} onRetry={() => refetch()} />
       </View>
     );
   }
 
   return (
-    <ScrollView style={{ width: SCREEN_WIDTH }} className="bg-bg" bounces={false}>
-      <View className="relative w-full" style={{ height: IMAGE_HEIGHT }}>
+    <ScrollView style={{ width: screenWidth }} className="bg-bg" bounces={false}>
+      <View className="relative w-full" style={{ height: screenWidth * IMAGE_RATIO }}>
         {/* Şeritten seçilen fotoğraf; seçim yoksa kapak. */}
         {active?.url ? (
           <Image
@@ -222,6 +238,7 @@ const EntryPage = memo(function EntryPage({ entryId }: { entryId: string }) {
 
 export default function EntryDetail() {
   const screen = useScreenInsets();
+  const { width: screenWidth } = useWindowDimensions();
   const params = useLocalSearchParams();
 
   const id = useMemo(() => {
@@ -292,7 +309,11 @@ export default function EntryDetail() {
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         initialScrollIndex={initialIndex}
-        getItemLayout={(_, index) => ({ length: SCREEN_WIDTH, offset: SCREEN_WIDTH * index, index })}
+        getItemLayout={(_, index) => ({
+          length: screenWidth,
+          offset: screenWidth * index,
+          index,
+        })}
         initialNumToRender={1}
         maxToRenderPerBatch={2}
         // windowSize=3 → aynı anda en fazla 3 sayfa bağlı, bellek sınırlı kalıyor.
@@ -300,9 +321,9 @@ export default function EntryDetail() {
         // ScrollView ve bu kombinasyon Android'de sayfaları boş gösterebiliyor.
         windowSize={3}
         onMomentumScrollEnd={(e) =>
-          setActiveIndex(Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH))
+          setActiveIndex(Math.round(e.nativeEvent.contentOffset.x / screenWidth))
         }
-        renderItem={({ item }) => <EntryPage entryId={item} />}
+        renderItem={({ item }) => <EntryPage entryId={item} screenWidth={screenWidth} />}
       />
 
       {/* Üst kontroller sayfalayıcının DIŞINDA: kaydırırken yerinde kalıyorlar.

@@ -14,7 +14,9 @@
     "format": "prettier --write \"{app,components,lib}/**/*.{ts,tsx}\"",
     "format:check": "prettier --check \"{app,components,lib}/**/*.{ts,tsx}\"",
     "gen:types": "supabase gen types typescript --linked --schema public > lib/database.types.ts",
-    "update:sourcemaps": "sentry-expo-upload-sourcemaps dist"
+    "update:sourcemaps": "sentry-expo-upload-sourcemaps dist",
+    "deploy:preview": "node scripts/deploy.mjs preview",
+    "deploy:production": "node scripts/deploy.mjs production"
   },
   "//expo": "Bu üç paketin native tarafı telefondaki Expo Go APK'sine gömülü ve npm ile değiştirilemiyor. JS sürümünü yükseltmek uygulamayı açılışta çökertiyor (worklets JS/Babel sürüm uyuşmazlığı) — iki kez yaşandı. `expo install` uyumluluk için yükseltme önerse bile bu projede DOKUNULMAMALI; exclude listesi bunu kalıcı hale getiriyor. Yükseltmek gerekirse önce development build'e geçilmeli.",
   "expo": {

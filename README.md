@@ -251,7 +251,7 @@ Yukarıdaki her şey yalnızca **`eas build`** için geçerli — kaynak harital
 
 `eas update` ise **yeni bir JS paketi** yayınlıyor. O paketin kaynak haritaları kendiliğinden gitmiyor: build'den sonra kaç kez güncelleme gönderdiysen, telefondaki kod Sentry'nin elindeki haritalarla o kadar alakasız hale geliyor. Sonuç, hiç kurulmamışla aynı — yığın izi `index.android.bundle:1:284917`.
 
-Her `eas update`'ten **sonra** çalıştır:
+Bu yüzden yayını **elle iki komutla yapma** — `npm run deploy:preview` ikisini birlikte çalıştırıyor (aşağıda). Haritaları tek başına yüklemek gerekirse (örn. yayın geçti ama yükleme patladı):
 
 ```bash
 npm run update:sourcemaps
@@ -263,6 +263,8 @@ npm run update:sourcemaps
 $env:SENTRY_AUTH_TOKEN = "sntrys_ile_baslayan_token"
 ```
 
+> `$env:...` yalnızca O terminalin içinde yaşıyor — kalıcı hiçbir yere yazılmıyor, yani her yeni pencerede baştan verilmesi gerekiyor. Kalıcı istersen `[Environment]::SetEnvironmentVariable('SENTRY_AUTH_TOKEN', '...', 'User')`, ama bu token'ı kayıt defterine düz metin yazar ve o makinedeki her süreç okuyabilir. `.env`'e KOYMA: o dosyadaki `EXPO_PUBLIC_*` değişkenleri uygulama paketine gömülüyor.
+
 > Eklentinin `app.json`'daki adı **`@sentry/react-native/expo`** olmak zorunda. `@sentry/react-native` ile birebir aynı eklenti (`app.plugin.js` doğrudan `./expo`'yu döndürüyor) ama yükleme betiği eklentiyi ADINA göre arıyor; başka bir adla org/proje ayarlarını bulamayıp ortam değişkenlerine düşüyor.
 
 > Geçmiş not: bu ayarlar yokken `eas.json`'ın release profillerinde `SENTRY_DISABLE_AUTO_UPLOAD=true` vardı, çünkü Gradle eklentisi yalnızca release derlemesinde yüklemeye çalışıp org/proje bilgisi olmadan build'i düşürüyordu (`An organization ID or slug is required`). Artık gerekmiyor ve kaldırıldı. Aynı hatayı yerelde `./gradlew` ile denerken görürsen sebebi budur — o durumda `SENTRY_DISABLE_AUTO_UPLOAD=true` ile çalıştır.
@@ -272,8 +274,16 @@ $env:SENTRY_AUTH_TOKEN = "sntrys_ile_baslayan_token"
 JS değişiklikleri yeni build almadan gönderilebiliyor. Build profilleri kanallara bağlı (`development` / `preview` / `production`):
 
 ```bash
-eas update --branch preview --message "galeri kaydı düzeltildi"
+npm run deploy:preview -- --message "galeri kaydı düzeltildi"
 ```
+
+```bash
+npm run deploy:production -- --message "galeri kaydı düzeltildi"
+```
+
+Bu iki komut `scripts/deploy.mjs`'i çağırıyor: **önce** `SENTRY_AUTH_TOKEN` var mı diye bakıyor (yoksa hiç yayınlamadan duruyor — yayınladıktan sonra fark etmek geri alınamıyor), sonra `eas update`, o başarılıysa kaynak haritaları. Güncelleme patlarsa haritalara hiç geçmiyor. `--message` vermezsen eas kendi soruyor; yazdığın her ek bayrak (örn. `--platform android`) olduğu gibi `eas update`'e geçiyor.
+
+> Neden ayrı bir betik, neden `eas update && npm run update:sourcemaps` değil: `npm run X -- --message "..."` ile geçen argümanlar zincirin SONUNA ekleniyor, yani eas'a değil harita yükleyicisine gidiyor. npm'in `post<script>` kancası da çalışmıyor — `.npmrc`'deki `ignore-scripts=true` (kurulumda bağımlılık betiklerini engellemek için, bilinçli) pre/post kancalarını da kapatıyor.
 
 **`runtimeVersion` politikası `appVersion`** — yani güncelleme uyumluluğu `app.json`'daki `version` alanına bağlı. Bu, bir güncellemenin hangi build'lere ineceğini belirleyen tek şey.
 

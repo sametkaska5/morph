@@ -22,8 +22,12 @@ beforeEach(() => {
   mockSbClient = sb.client;
 });
 
+/** Gün UPSERT zinciri — mevcut tip sorgusundan sonraki ikinci entries çağrısı. */
+const workoutUpsert = () => sb.chainsFor("entries")[1];
+
 describe("saveWorkoutDay", () => {
   it("günü verilen tiple upsert eder ve dolu ölçümleri yazar", async () => {
+    sb.queue("entries", { data: null }); // mevcut tip sorgusu (o gün henüz yok)
     sb.queue("entries", { data: { id: "e1" } });
 
     await saveWorkoutDay({
@@ -34,7 +38,7 @@ describe("saveWorkoutDay", () => {
       values: { kilo: "80,5" },
     });
 
-    expect(argOf(sb.chainsFor("entries")[0], "upsert")).toEqual({
+    expect(argOf(workoutUpsert(), "upsert")).toEqual({
       user_id: "u1",
       date: "2026-08-01",
       type: "workout",
@@ -46,6 +50,7 @@ describe("saveWorkoutDay", () => {
   });
 
   it("off_day tipini olduğu gibi yazar", async () => {
+    sb.queue("entries", { data: null }); // mevcut tip sorgusu (o gün henüz yok)
     sb.queue("entries", { data: { id: "e1" } });
 
     await saveWorkoutDay({
@@ -56,10 +61,11 @@ describe("saveWorkoutDay", () => {
       values: {},
     });
 
-    expect(argOf(sb.chainsFor("entries")[0], "upsert")).toMatchObject({ type: "off_day" });
+    expect(argOf(workoutUpsert(), "upsert")).toMatchObject({ type: "off_day" });
   });
 
   it("BOŞALTILAN ölçümü siler — düzenlemede değeri kaldırmak gerçekten kaldırmalı", async () => {
+    sb.queue("entries", { data: null }); // mevcut tip sorgusu (o gün henüz yok)
     sb.queue("entries", { data: { id: "e1" } });
 
     // kilo dolu, bel BOŞALTILMIŞ. Eskiden yalnızca dolu satırlar upsert
@@ -83,6 +89,7 @@ describe("saveWorkoutDay", () => {
   });
 
   it("geçersiz girdiyi ne yazar ne siler (boş değil, sayı da değil)", async () => {
+    sb.queue("entries", { data: null }); // mevcut tip sorgusu (o gün henüz yok)
     sb.queue("entries", { data: { id: "e1" } });
 
     await saveWorkoutDay({
@@ -97,7 +104,47 @@ describe("saveWorkoutDay", () => {
     expect(sb.chainsFor("measurement_values")).toHaveLength(0);
   });
 
+  /**
+   * Bu ekran fotoğrafsız günler için. `type`'ı koşulsuz yazmak FOTOĞRAFLI bir
+   * günü 'workout'/'off_day' yapıp anı akışından düşürüyordu: fotoğraf duruyor
+   * ama hiçbir listede görünmüyor, yani kullanıcı için kaybolmuş oluyor.
+   * Ekrandaki `isPhotoDay` koruması yalnızca arayüzde — gün sorgusu dönmemişken
+   * form çizilip Kaydet'e basılabiliyordu. Kural veri katmanında da olmak zorunda.
+   */
+  it("FOTOĞRAFLI (log) bir günün tipini DEĞİŞTİRMEZ", async () => {
+    sb.queue("entries", { data: { type: "log" } }); // o gün fotoğraflı
+    sb.queue("entries", { data: { id: "e1" } });
+
+    await saveWorkoutDay({
+      userId: "u1",
+      date: "2026-08-01",
+      type: "workout",
+      note: "not",
+      values: {},
+    });
+
+    expect(argOf(workoutUpsert(), "upsert")).toMatchObject({ type: "log" });
+  });
+
+  it("workout ↔ off_day geçişini engellemez", async () => {
+    // Korunan YALNIZCA 'log'. Fotoğrafsız bir günün tipini değiştirmek bu
+    // ekranın asıl işi.
+    sb.queue("entries", { data: { type: "workout" } });
+    sb.queue("entries", { data: { id: "e1" } });
+
+    await saveWorkoutDay({
+      userId: "u1",
+      date: "2026-08-01",
+      type: "off_day",
+      note: null,
+      values: {},
+    });
+
+    expect(argOf(workoutUpsert(), "upsert")).toMatchObject({ type: "off_day" });
+  });
+
   it("gün upsert'ü patlarsa ölçümlere hiç geçmez", async () => {
+    sb.queue("entries", { data: null }); // mevcut tip sorgusu
     sb.queue("entries", { error: { message: "boom" } });
 
     await expect(
@@ -168,6 +215,7 @@ describe("saveProgram", () => {
   });
 
   it("yazmadan önce eski hareketleri siler (sil-ve-yeniden-yaz)", async () => {
+    sb.queue("entries", { data: null }); // mevcut tip sorgusu (o gün henüz yok)
     sb.queue("entries", { data: { id: "e1" } });
     sb.queue("workout_items", {});
     sb.queue("workout_items", { data: { id: "i1" } });
@@ -184,6 +232,7 @@ describe("saveProgram", () => {
   });
 
   it("adı boş hareketleri atar ve sırayı order_index ile korur", async () => {
+    sb.queue("entries", { data: null }); // mevcut tip sorgusu (o gün henüz yok)
     sb.queue("entries", { data: { id: "e1" } });
     sb.queue("workout_items", {}); // delete
     sb.queue("workout_items", { data: { id: "i1" } });
@@ -214,6 +263,7 @@ describe("saveProgram", () => {
   });
 
   it("tamamen boş setleri yazmaz, dolu setleri sırasıyla yazar", async () => {
+    sb.queue("entries", { data: null }); // mevcut tip sorgusu (o gün henüz yok)
     sb.queue("entries", { data: { id: "e1" } });
     sb.queue("workout_items", {});
     sb.queue("workout_items", { data: { id: "i1" } });
@@ -243,6 +293,7 @@ describe("saveProgram", () => {
   });
 
   it("hiç dolu set yoksa workout_sets'e hiç gitmez (kardiyo/esneme)", async () => {
+    sb.queue("entries", { data: null }); // mevcut tip sorgusu (o gün henüz yok)
     sb.queue("entries", { data: { id: "e1" } });
     sb.queue("workout_items", {});
     sb.queue("workout_items", { data: { id: "i1" } });

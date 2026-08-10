@@ -15,6 +15,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
 import { uploadPhoto, uploadThumb, coverPhotoRow, photoCacheKey } from "@/lib/storage";
 import { resizeAndCompress } from "@/lib/capture";
+import { nextOrderIndex } from "@/lib/photos";
 import { useKeyboardFocus } from "@/lib/useKeyboardFocus";
 import { useMeasurementTypes } from "@/lib/measurementTypes";
 import { useUnitPreference, displayUnit, toDisplayValue, toMetricValue } from "@/lib/units";
@@ -35,7 +36,7 @@ export default function EditEntry() {
 
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { data, isLoading, error, refetch } = useEditableEntry(id);
+  const { data, isLoading, isPlaceholderData, error, refetch } = useEditableEntry(id);
   const { data: allTypes } = useMeasurementTypes(user?.id);
   const { data: unitPref = "metric" } = useUnitPreference(user?.id);
 
@@ -81,23 +82,42 @@ export default function EditEntry() {
      Effect'te setState yapmak veri geldikten sonra fazladan bir tam render
      turu (boş form → dolu form) demekti; render sırasında "önceki değerle
      karşılaştır" kalıbı aynı senkronizasyonu commit öncesinde yapıyor
-     (react.dev: you-might-not-need-an-effect). Davranış birebir aynı:
-     placeholder → gerçek veri geçişinde de yeniden doldurulur. */
-  const [prevInit, setPrevInit] = useState<{ data: unknown; unitPref: unknown }>({
-    data: undefined,
-    unitPref: undefined,
-  });
-  if (prevInit.data !== data || prevInit.unitPref !== unitPref) {
-    setPrevInit({ data, unitPref });
-    if (data?.note) setNote(data.note);
-    if (data?.measurement_values) {
-      const initial: Record<string, string> = {};
-      for (const mv of data.measurement_values) {
-        const baseUnit = mv.measurement_types?.unit ?? "";
-        initial[mv.measurement_type_id] = String(toDisplayValue(mv.value, baseUnit, unitPref));
-      }
-      setValues(initial);
+     (react.dev: you-might-not-need-an-effect).
+
+     Karşılaştırma artık `data` NESNE KİMLİĞİNE bakmıyor, `hydrationKey`'e bakıyor.
+     Sebebi: React Query her yeniden çekmede yeni bir nesne üretiyor, yani eski
+     kontrol arka planda bir refetch olduğunda (offline-first bir uygulamada
+     refetchOnReconnect varsayılan olarak AÇIK) formu SIFIRLIYORDU — kullanıcı not
+     yazarken yazdığı kayboluyordu. Anahtar sürüme değil kaydın kimliğine bağlı,
+     yani ilk gerçek veride bir kez dolduruyor, sonra dokunmuyor.
+     Kardeş ekranlar (entry/workout.tsx, entry/program.tsx) aynı kalıbı kullanıyor. */
+  const [hydratedKey, setHydratedKey] = useState<string | null>(null);
+  /**
+   * Form GÜVENİLİR mi?
+   *
+   * `useEditableEntry` başka ekranların cache'inden bir tohum (placeholderData)
+   * veriyor ki fotoğraf anında görünsün. Ama o tohumda ölçümler ve fotoğraf
+   * satırları YOK (`measurement_values: []`, `photos: []`). Tohum gösterilirken
+   * form düzenlenebilir bırakılırsa Kaydet, olmayan verinin üstüne yazıyordu:
+   * kapak fotoğrafı bulunamadığı için "değiştir" sessizce "ekle"ye dönüşüyordu.
+   * Fotoğrafı göstermeye devam ediyoruz (tohumun asıl amacı bu), ama alanlar ve
+   * Kaydet gerçek veri gelene kadar kapalı.
+   */
+  const formReady = !!data && !isPlaceholderData && !!allTypes;
+  const hydrationKey = formReady ? `${id}:${unitPref}` : null;
+  // `data &&` burada TypeScript için: formReady onu zaten garanti ediyor ama
+  // boolean bir değişken tip daraltması yapmıyor.
+  if (data && hydrationKey && hydratedKey !== hydrationKey) {
+    setHydratedKey(hydrationKey);
+    // `?? ""`: eskiden `if (data?.note)` idi, yani notu BOŞALTILMIŞ bir kayıtta
+    // alan önceki değerinde kalıyordu.
+    setNote(data.note ?? "");
+    const initial: Record<string, string> = {};
+    for (const mv of data.measurement_values ?? []) {
+      const baseUnit = mv.measurement_types?.unit ?? "";
+      initial[mv.measurement_type_id] = String(toDisplayValue(mv.value, baseUnit, unitPref));
     }
+    setValues(initial);
   }
 
   /* ---------------- PICK IMAGE (kırp / kırpmadan seç) ---------------- */
@@ -146,6 +166,7 @@ export default function EditEntry() {
         id: string;
         storage_path: string;
         thumb_path?: string | null;
+        order_index: number;
       }>(data);
 
       let coverPhotoId = data?.cover_photo_id ?? existingPhotoRow?.id ?? null;
@@ -165,13 +186,26 @@ export default function EditEntry() {
           console.warn("thumbnail yüklenemedi, tam boy kullanılacak:", err);
         }
 
+        // Yeni fotoğraf, YERİNİ ALDIĞI fotoğrafın sırasını devralıyor.
+        //
+        // Eskiden sabit `0` yazılıyordu. Bu ekran gün başına tek fotoğraf varken
+        // yazılmıştı; artık bir güne birden fazla fotoğraf eklenebiliyor ve
+        // kapak da ilk sırada olmak zorunda değil. Kapak 2. sıradaki fotoğrafsa,
+        // onu silip yenisini 0'a yazmak mevcut 0'lı fotoğrafla çakışıyordu.
+        // (order_index'te unique kısıt YOK — bkz. 0001_init.sql — yani çakışma
+        // hata vermiyor, sessizce sıralamayı bozuyor: orderEntryPhotos eşitlikte
+        // id'ye göre sıralıyor, yani şeritteki dizilim rastgeleye dönüyordu.)
+        // Kapağı olmayan eski kayıtlarda mevcutların ardına ekliyoruz.
+        const newOrderIndex =
+          existingPhotoRow?.order_index ?? nextOrderIndex(data?.photos ?? []);
+
         const { data: newPhoto, error: photoError } = await supabase
           .from("photos")
           .insert({
             entry_id: id,
             storage_path: storagePath,
             thumb_path: newThumbPath,
-            order_index: 0,
+            order_index: newOrderIndex,
           })
           .select()
           .single();
@@ -250,6 +284,10 @@ export default function EditEntry() {
     },
   });
 
+  // Kaydet üç durumda kapalı: kayıt sürüyor, fotoğraf işleniyor, ya da form
+  // henüz gerçek veriyle dolmadı (bkz. formReady).
+  const saveBlocked = updateMutation.isPending || uploading || !formReady;
+
   // Kaydetmeden önce geçersiz/negatif/çok yüksek ölçüm var mı bak — varsa
   // engelle. Kullanıcı hangi alanın sorunlu olduğunu satır altındaki kırmızı
   // uyarıdan görüyor.
@@ -312,21 +350,16 @@ export default function EditEntry() {
 
         {/* Etiket sabit: kaydederken metin ActivityIndicator'a dönüşüyor ve
             düğmenin erişilebilir adı kayboluyordu. */}
-        <Pressable
+<Pressable
           onPress={handleUpdate}
-          disabled={updateMutation.isPending || uploading}
+          disabled={saveBlocked}
           accessibilityRole="button"
           accessibilityLabel="Kaydet"
-          accessibilityState={{
-            disabled: updateMutation.isPending || uploading,
-            busy: updateMutation.isPending || uploading,
-          }}
-          style={({ pressed }) => ({
-            opacity: pressed ? 0.85 : updateMutation.isPending || uploading ? 0.7 : 1,
-          })}
+          accessibilityState={{ disabled: saveBlocked, busy: saveBlocked }}
+          style={({ pressed }) => ({ opacity: pressed ? 0.85 : saveBlocked ? 0.7 : 1 })}
           className="bg-accent rounded-[12px] px-4 h-11 items-center justify-center"
         >
-          {updateMutation.isPending ? (
+          {updateMutation.isPending || !formReady ? (
             <ActivityIndicator color="#0B0D0A" size="small" />
           ) : (
             <Text className="text-bg text-base font-semibold">Kaydet</Text>
@@ -344,6 +377,7 @@ export default function EditEntry() {
       >
         <Pressable
           onPress={pickImage}
+          disabled={!formReady}
           accessibilityRole="button"
           accessibilityLabel="Fotoğrafı değiştir"
           style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
@@ -402,6 +436,7 @@ export default function EditEntry() {
                       }}
                       value={values[t.id] ?? ""}
                       onChangeText={(val) => setValues((prev) => ({ ...prev, [t.id]: val }))}
+                      editable={formReady}
                       keyboardType="decimal-pad"
                       placeholder={`— ${displayUnit(t.unit, unitPref)}`}
                       placeholderTextColor="#8B8A82"
@@ -444,6 +479,7 @@ export default function EditEntry() {
           ref={noteRef}
           value={note}
           onChangeText={setNote}
+          editable={formReady}
           accessibilityLabel="Not"
           placeholder="Not..."
           placeholderTextColor="#8B8A82"

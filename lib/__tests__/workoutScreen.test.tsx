@@ -148,6 +148,36 @@ describe("fotoğrafsız gün — form doldurma", () => {
     expect(screen.getByLabelText("Off day")).not.toBeSelected();
   });
 
+  /**
+   * `isPhotoDay` koruması gün sorgusuna DAYANIYOR — sorgu dönmeden o bilgi yok.
+   * Form yüklenirken çizildiği için fotoğraflı bir günde bile boş form açılıp
+   * Kaydet'e basılabiliyordu: günün notu ve ölçümleri siliniyor, tipi
+   * 'workout'a çevrilip anı akışından düşüyordu. Kardeş ekran
+   * entry/program.tsx bu korumayı zaten yapıyordu.
+   */
+  it("gün verisi YÜKLENİRKEN formu hiç çizmez", async () => {
+    mockUseWorkoutDay.mockReturnValue({ data: undefined, isLoading: true });
+    await render(<WorkoutDayScreen />);
+
+    expect(screen.queryByPlaceholderText("— kg")).toBeNull();
+    expect(screen.queryByLabelText("Off day")).toBeNull();
+    expect(screen.queryByLabelText("Günü kaydet")).toBeNull();
+  });
+
+  it("ölçüm tipleri çekilemezse de formu açmaz", async () => {
+    // allTypes olmadan form birimleri çeviremiyor ve hydration atlanıyor;
+    // yine de çizilse boş formun Kaydet'i günün notunu silerdi.
+    mockUseMeasurementTypes.mockReturnValue({
+      data: undefined,
+      error: new Error("network"),
+      refetch: jest.fn(),
+    });
+    await render(<WorkoutDayScreen />);
+
+    expect(screen.queryByLabelText("Günü kaydet")).toBeNull();
+    expect(screen.getByLabelText("Tekrar dene")).toBeTruthy();
+  });
+
   it("o gün FOTOĞRAFLI kayıtsa formu göstermez, kayda yönlendirir", async () => {
     // Bu ekrandan upsert etmek entry'nin type'ını değiştirip fotoğrafı
     // akıştan düşürürdü — o yüzden form yerine yönlendirme gösteriliyor.

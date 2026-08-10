@@ -75,7 +75,7 @@ beforeEach(() => {
   mockMutationState.isError = false;
   mockMutationState.error = null;
   mockUseAuth.mockReturnValue({ user: { id: "u1" } });
-  mockUseEditableEntry.mockReturnValue({ data: ENTRY, isLoading: false });
+  mockUseEditableEntry.mockReturnValue({ data: ENTRY, isLoading: false, isPlaceholderData: false });
   mockUseMeasurementTypes.mockReturnValue({ data: TYPES });
   mockUseUnitPreference.mockReturnValue({ data: "metric" });
 });
@@ -92,17 +92,77 @@ describe("düzenleme ekranı — form doldurma", () => {
   it("tohumlanmış (placeholder) veriden gerçek veriye geçişte ölçümleri doldurur", async () => {
     // Ekran cache'ten gelen kısmi veriyle açılıyor: not ve fotoğraf var,
     // ölçümler henüz boş. Gerçek sorgu dönünce ölçümler gelmeli.
+    // `isPlaceholderData` React Query'nin tohum aşamasını bildirme biçimi —
+    // ekran o aşamada formu düzenlenebilir YAPMIYOR (aşağıdaki teste bak).
     mockUseEditableEntry.mockReturnValue({
       data: { ...ENTRY, measurement_values: [] },
       isLoading: false,
+      isPlaceholderData: true,
     });
     const { rerender } = await render(<EditEntry />);
     expect(measureValue("kg")).toBe("");
 
-    mockUseEditableEntry.mockReturnValue({ data: ENTRY, isLoading: false });
+    mockUseEditableEntry.mockReturnValue({
+      data: ENTRY,
+      isLoading: false,
+      isPlaceholderData: false,
+    });
     await rerender(<EditEntry />);
 
     expect(measureValue("kg")).toBe("80");
+  });
+
+  /**
+   * Tohum (placeholder) verisinde ölçümler ve fotoğraf SATIRLARI yok
+   * (`measurement_values: []`, `photos: []`). O aşamada Kaydet'e basılabilseydi
+   * form olmayan verinin üstüne yazardı: kapak satırı bulunamadığı için
+   * "fotoğrafı değiştir" sessizce "fotoğraf ekle"ye dönüşüyordu.
+   */
+  it("tohum gösterilirken alanlar düzenlenemez ve Kaydet kapalı", async () => {
+    mockUseEditableEntry.mockReturnValue({
+      data: { ...ENTRY, measurement_values: [] },
+      isLoading: false,
+      isPlaceholderData: true,
+    });
+
+    await render(<EditEntry />);
+
+    expect(screen.getByLabelText("Not").props.editable).toBe(false);
+    expect(screen.getByPlaceholderText("— kg").props.editable).toBe(false);
+    expect(screen.getByLabelText("Kaydet").props.accessibilityState.disabled).toBe(true);
+  });
+
+  it("gerçek veri gelince alanlar düzenlenebilir ve Kaydet açılır", async () => {
+    await render(<EditEntry />);
+
+    expect(screen.getByLabelText("Not").props.editable).toBe(true);
+    expect(screen.getByLabelText("Kaydet").props.accessibilityState.disabled).toBe(false);
+  });
+
+  /**
+   * ASIL regresyon. Önceki kontrol `data` NESNE KİMLİĞİNE bakıyordu; React Query
+   * her yeniden çekmede yeni bir nesne ürettiği için arka plandaki bir refetch
+   * (offline-first uygulamada refetchOnReconnect varsayılan olarak açık) formu
+   * sıfırlıyordu — kullanıcı not yazarken yazdığı kayboluyordu. Aşağıdaki
+   * "sonraki render'lar EZMEZ" testi bunu yakalamıyordu çünkü AYNI nesneyi
+   * geri veriyor, yani eski kontrol de zaten eşit çıkıyordu.
+   */
+  it("arka plan yeniden çekmesi (YENİ nesne) kullanıcının yazdığını EZMEZ", async () => {
+    const { rerender } = await render(<EditEntry />);
+
+    await fireEvent.changeText(screen.getByLabelText("Not"), "yazmaya devam ediyorum");
+    await fireEvent.changeText(screen.getByPlaceholderText("— kg"), "78");
+
+    // Yapısal olarak aynı ama KİMLİĞİ farklı veri — bir refetch tam bunu üretir.
+    mockUseEditableEntry.mockReturnValue({
+      data: { ...ENTRY, measurement_values: [...ENTRY.measurement_values] },
+      isLoading: false,
+      isPlaceholderData: false,
+    });
+    await rerender(<EditEntry />);
+
+    expect(noteValue()).toBe("yazmaya devam ediyorum");
+    expect(measureValue("kg")).toBe("78");
   });
 
   it("kullanıcının yazdığını sonraki render'lar EZMEZ", async () => {

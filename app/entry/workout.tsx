@@ -25,7 +25,7 @@ export default function WorkoutDayScreen() {
 
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { data: allTypes } = useMeasurementTypes(user?.id);
+  const { data: allTypes, error: typesError, refetch: refetchTypes } = useMeasurementTypes(user?.id);
   const { data: unitPref = "metric" } = useUnitPreference(user?.id);
 
   // Tarih route param'dan (istatistik şeridinden) gelebilir; yoksa bugün.
@@ -66,6 +66,8 @@ export default function WorkoutDayScreen() {
   // kullanıcı kaydedince o günün notu ve ölçümleri siliniyordu.
   const [hydratedKey, setHydratedKey] = useState<string | null>(null);
   const hydrationKey = `${dateKey}:${existing?.id ?? "new"}`;
+  /** Form gerçek veriyle doldu mu — dolmadan çizilmemeli (aşağıdaki nota bak). */
+  const hydrated = hydratedKey === hydrationKey;
   if (!existingLoading && !existingError && allTypes && hydratedKey !== hydrationKey) {
     setHydratedKey(hydrationKey);
     if (!existing) {
@@ -179,10 +181,20 @@ export default function WorkoutDayScreen() {
         />
       )}
 
-      {existingError ? (
+      {existingError || typesError ? (
         // Formu hiç göstermiyoruz: boş formun üzerine basılan "Kaydet" o günün
         // ölçümlerini ve notunu silerdi.
-        <ErrorState error={existingError} onRetry={() => refetchExisting()} />
+        <ErrorState
+          error={existingError ?? typesError}
+          onRetry={() => (existingError ? refetchExisting() : refetchTypes())}
+        />
+      ) : !hydrated ? (
+        // Veri gelmeden formu ÇİZMİYORUZ. Eskiden çiziliyordu ve `isPhotoDay`
+        // henüz false olduğu için (sorgu dönmemiş) fotoğraflı bir günde bile
+        // boş form açılıp Kaydet'e basılabiliyordu: o günün notu ve ölçümleri
+        // siliniyor, tipi 'workout'a çevrilip anı akışından düşüyordu.
+        // Kardeş ekran entry/program.tsx bu korumayı zaten yapıyordu.
+        <ActivityIndicator color="#8CE05A" className="my-8" />
       ) : isPhotoDay ? (
         <View className="bg-surface border border-border rounded-card p-4 mt-1">
           <View className="flex-row items-center gap-3 mb-2">

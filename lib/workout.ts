@@ -63,9 +63,30 @@ export type SaveWorkoutDayPayload = {
 export async function saveWorkoutDay(payload: SaveWorkoutDayPayload) {
   const { userId, date, type, note, values } = payload;
 
+  // O gün FOTOĞRAFLI (log) bir kayıtsa tipini DEĞİŞTİRMİYORUZ.
+  //
+  // Bu ekran fotoğrafsız günler için; `type`'ı koşulsuz yazmak fotoğraflı bir
+  // günü 'workout'/'off_day' yapıp anı akışından düşürüyordu — fotoğraf duruyor
+  // ama hiçbir listede görünmüyor, yani kullanıcı için kaybolmuş oluyor.
+  // Ekran bunu `isPhotoDay` ile engelliyor ama o koruma YALNIZCA arayüzde: gün
+  // sorgusu henüz dönmemişken form çizilip Kaydet'e basılabiliyordu. Kural
+  // veri katmanına da inmeli.
+  //
+  // saveProgram aynı kararı zaten veriyor ("VARSA type'ını DEĞİŞTİRMEZ") —
+  // iki yazma yolu artık aynı davranıyor. workout ↔ off_day geçişi etkilenmiyor;
+  // korunan yalnızca 'log'.
+  const { data: existing } = await supabase
+    .from("entries")
+    .select("type")
+    .eq("user_id", userId)
+    .eq("date", date)
+    .maybeSingle();
+
+  const safeType = existing?.type === "log" ? "log" : type;
+
   const { data: entry, error: entryError } = await supabase
     .from("entries")
-    .upsert({ user_id: userId, date, type, note }, { onConflict: "user_id,date" })
+    .upsert({ user_id: userId, date, type: safeType, note }, { onConflict: "user_id,date" })
     .select()
     .single();
   if (entryError) throw entryError;

@@ -438,8 +438,12 @@ export function useEditableEntry(entryId: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("entries")
+        // order_index de okunuyor: düzenleme ekranında fotoğraf DEĞİŞTİRİLDİĞİNDE
+        // yeni satır, yerini aldığı fotoğrafın sırasını devralıyor (bkz.
+        // app/entry/edit/[id].tsx). Sabit 0 yazmak, günün başka fotoğrafları
+        // varken şeridin sırasını bozuyordu.
         .select(
-          "id, note, cover_photo_id, photos!entry_id(id, storage_path, thumb_path), measurement_values(id, value, measurement_type_id, measurement_types(name, unit))"
+          "id, note, cover_photo_id, photos!entry_id(id, storage_path, thumb_path, order_index), measurement_values(id, value, measurement_type_id, measurement_types(name, unit))"
         )
         .eq("id", entryId)
         .single();

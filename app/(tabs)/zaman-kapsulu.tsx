@@ -12,6 +12,7 @@ import { useAuth } from "@/lib/useAuth";
 import { useUnitPreference, displayUnit, toDisplayValue, type UnitPref } from "@/lib/units";
 import { openCapturePicker } from "@/lib/capture";
 import { useCapsuleEntries, usePrefetchEditableEntry, type CapsuleEntry } from "@/lib/entries";
+import { usePrefetchMeasurementTypes } from "@/lib/measurementTypes";
 import { ErrorState } from "@/components/ErrorState";
 import { useScreenInsets } from "@/lib/useScreenInsets";
 
@@ -32,25 +33,32 @@ const CapsulePage = memo(function CapsulePage({
   total,
   unitPref,
   pageHeight,
+  userId,
 }: {
   entry: CapsuleEntry;
   index: number;
   total: number;
   unitPref: UnitPref;
   pageHeight: number;
+  userId: string | undefined;
 }) {
   const screen = useScreenInsets();
   const [flipped, setFlipped] = useState(false);
   const flip = useSharedValue(0);
   const prefetchEdit = usePrefetchEditableEntry();
+  const prefetchTypes = usePrefetchMeasurementTypes(userId);
 
   function toggleFlip() {
     const next = !flipped;
     // Düzenle düğmesi yalnızca arka yüzde. Kartı çevirmek, o düğmeye basılma
-    // ihtimalinin başladığı an — düzenleme verisini şimdiden çekiyoruz ki
-    // çevirme animasyonu (450 ms) ve kullanıcının düğmeyi bulup dokunması
-    // sırasında sorgu tamamlansın, ekran açıldığında form ilk karede dolu gelsin.
-    if (next) prefetchEdit(entry.id);
+    // ihtimalinin başladığı an — düzenleme ekranının BEKLEDİĞİ İKİ SORGUYU da
+    // şimdiden başlatıyoruz ki çevirme animasyonu (450 ms) ve kullanıcının
+    // düğmeyi bulup dokunması sırasında tamamlansınlar, ekran açıldığında form
+    // ilk karede dolu gelsin. İkisi ayrı sorgu, yani paralel gidiyorlar.
+    if (next) {
+      prefetchEdit(entry.id);
+      prefetchTypes();
+    }
     setFlipped(next);
     flip.value = withTiming(next ? 1 : 0, { duration: 450 });
   }
@@ -332,6 +340,7 @@ export default function ZamanKapsulu() {
             total={entries.length}
             unitPref={unitPref}
             pageHeight={pageHeight}
+            userId={user?.id}
           />
         )}
         onEndReached={() => {

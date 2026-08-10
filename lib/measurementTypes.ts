@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 import { queryKeys } from "./queryKeys";
@@ -19,21 +20,46 @@ export type MeasurementType = {
  * politikası zaten "user_id is null or auth.uid() = user_id" olduğu için sorgu
  * filtresiz bırakılınca doğru satırlar otomatik geliyor.
  */
+async function fetchMeasurementTypes(): Promise<MeasurementType[]> {
+  const { data, error } = await supabase
+    .from("measurement_types")
+    .select("id, name, unit, target_direction, is_default, sort_order")
+    .order("sort_order");
+  if (error) throw error;
+  // DB'de target_direction düz text kolonu ama check constraint yalnızca bu
+  // iki değere izin veriyor (0001_init.sql) — daraltma güvenli.
+  return (data ?? []) as MeasurementType[];
+}
+
 export function useMeasurementTypes(userId: string | undefined) {
   return useQuery({
     queryKey: queryKeys.measurementTypes.byUser(userId),
     enabled: !!userId,
-    queryFn: async (): Promise<MeasurementType[]> => {
-      const { data, error } = await supabase
-        .from("measurement_types")
-        .select("id, name, unit, target_direction, is_default, sort_order")
-        .order("sort_order");
-      if (error) throw error;
-      // DB'de target_direction düz text kolonu ama check constraint yalnızca bu
-      // iki değere izin veriyor (0001_init.sql) — daraltma güvenli.
-      return (data ?? []) as MeasurementType[];
-    },
+    queryFn: fetchMeasurementTypes,
   });
+}
+
+/**
+ * Ölçüm tiplerini KULLANICI DÜZENLEME EKRANINI AÇMADAN ÖNCE hazırlar.
+ *
+ * Düzenleme formundaki alanlar bu listeden üretiliyor, yani liste gelmeden form
+ * çizilemiyor (app/entry/edit/[id].tsx içindeki formReady buna da bakıyor).
+ * Liste genelde AsyncStorage'daki kalıcı cache'ten anında geliyor, ama o cache
+ * boşsa — yeni kurulum, çıkış/giriş, cache sürümü değişmiş — kendi ağ turunu
+ * beklettiriyor ve kullanıcı bunu "Kaydet geç geldi" olarak görüyor.
+ *
+ * Kayıt verisiyle aynı ana bağlı (anı akışında kartın çevrilmesi) ve onunla
+ * PARALEL gidiyor: ikisi ayrı sorgu olduğu için biri diğerini beklemiyor.
+ */
+export function usePrefetchMeasurementTypes(userId: string | undefined) {
+  const queryClient = useQueryClient();
+  return useCallback(() => {
+    if (!userId) return;
+    queryClient.prefetchQuery({
+      queryKey: queryKeys.measurementTypes.byUser(userId),
+      queryFn: fetchMeasurementTypes,
+    });
+  }, [queryClient, userId]);
 }
 
 export function useAddMeasurementType(userId: string | undefined) {

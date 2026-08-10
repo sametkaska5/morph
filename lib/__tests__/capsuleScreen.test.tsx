@@ -12,10 +12,14 @@ import type { CapsuleEntry } from "../entries";
 const mockUseCapsuleEntries = jest.fn();
 const mockOpenCapturePicker = jest.fn();
 const mockPrefetchEdit = jest.fn();
+const mockPrefetchTypes = jest.fn();
 
 jest.mock("../entries", () => ({
   useCapsuleEntries: () => mockUseCapsuleEntries(),
   usePrefetchEditableEntry: () => mockPrefetchEdit,
+}));
+jest.mock("../measurementTypes", () => ({
+  usePrefetchMeasurementTypes: () => mockPrefetchTypes,
 }));
 jest.mock("../useAuth", () => ({ useAuth: () => ({ user: { id: "u1" } }) }));
 jest.mock("../units", () => ({
@@ -102,6 +106,9 @@ describe("anı akışı", () => {
 
     await fireEvent.press(screen.getByLabelText(/tarihli anı/));
     expect(mockPrefetchEdit).toHaveBeenCalledWith("e1");
+    // Ölçüm tipleri de aynı anda: form alanları o listeden üretiliyor, yani
+    // kayıt gelse bile liste gelmeden form çizilmiyor.
+    expect(mockPrefetchTypes).toHaveBeenCalled();
   });
 
   it("kart geri çevrilince tekrar çekmez", async () => {

@@ -7,6 +7,7 @@ import {
   RefreshControl,
   useWindowDimensions,
 } from "react-native";
+import { PressableFade } from "@/components/PressableFade";
 import { Text } from "@/components/Typography";
 import { Image } from "expo-image";
 import { router } from "expo-router";
@@ -197,14 +198,14 @@ const CapsulePage = memo(function CapsulePage({
           {/* program alanı, bu özellikten ÖNCE persist edilmiş (AsyncStorage) cache
               kayıtlarında bulunmayabilir — undefined'a karşı savunmalı okuyoruz. */}
           {(entry.program ?? []).length > 0 ? (
-            <Pressable
+            <PressableFade
               onPress={(e) => {
                 e.stopPropagation();
                 router.push(`/entry/program?date=${entry.date}`);
               }}
               accessibilityRole="button"
               accessibilityLabel="Antrenman programını aç"
-              style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+              dim={0.85}
               className="bg-surface border border-border rounded-card p-4 mt-4"
             >
               <View className="flex-row items-center justify-between mb-1.5">
@@ -226,7 +227,7 @@ const CapsulePage = memo(function CapsulePage({
                   +{(entry.program ?? []).length - 4} hareket daha
                 </Text>
               ) : null}
-            </Pressable>
+            </PressableFade>
           ) : null}
         </View>
 
@@ -327,15 +328,15 @@ export default function ZamanKapsulu() {
         <Text className="text-textMuted text-base text-center leading-6 mb-5 max-w-[260px]">
           İlk anını ekledikçe burada zaman içinde kayıp gidebileceksin.
         </Text>
-        <Pressable
+        <PressableFade
           onPress={openCapturePicker}
           accessibilityRole="button"
-          style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+          dim={0.85}
           className="bg-accent rounded-button px-5 py-4 flex-row items-center gap-2"
         >
           <Feather name="plus" size={18} color="#0B0D0A" />
           <Text className="text-bg text-base font-semibold">İlk anını ekle</Text>
-        </Pressable>
+        </PressableFade>
       </View>
     );
   }

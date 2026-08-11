@@ -1,4 +1,5 @@
-import { View, Pressable } from "react-native";
+import { View } from "react-native";
+import { PressableFade } from "@/components/PressableFade";
 import { Text } from "@/components/Typography";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
@@ -33,15 +34,15 @@ export default function Welcome() {
         </Text>
       </View>
 
-      <Pressable
-        style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+      <PressableFade
+        dim={0.85}
         className="bg-accent rounded-button py-4 items-center"
         accessibilityRole="button"
         accessibilityLabel="Devam et"
         onPress={handleContinue}
       >
         <Text className="text-bg text-base font-semibold">İleri</Text>
-      </Pressable>
+      </PressableFade>
     </View>
   );
 }

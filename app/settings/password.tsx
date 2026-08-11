@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Pressable, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
+import { View, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
 import { PressableFade } from "@/components/PressableFade";
 import { Text, TextInput } from "@/components/Typography";
 import { router } from "expo-router";
@@ -178,12 +178,13 @@ export default function ChangePasswordScreen() {
           </Text>
         ) : null}
 
-        <Pressable
+        <PressableFade
           onPress={handleSubmit}
           disabled={loading}
           accessibilityRole="button"
           accessibilityLabel="Şifreyi güncelle"
-          style={({ pressed }) => ({ opacity: pressed ? 0.85 : loading ? 0.7 : 1 })}
+          dim={0.85}
+          baseOpacity={loading ? 0.7 : 1}
           className="bg-accent rounded-button py-4 items-center mt-4"
         >
           {loading ? (
@@ -191,22 +192,22 @@ export default function ChangePasswordScreen() {
           ) : (
             <Text className="text-bg text-base font-semibold">Şifreyi güncelle</Text>
           )}
-        </Pressable>
+        </PressableFade>
 
         {/* Şifresini HATIRLAMAYAN kullanıcı bu ekranda ilerleyemez — mevcut
             şifre zorunlu. Onu çıkmazda bırakmamak için e-posta yolunu burada
             da açık tutuyoruz. */}
-        <Pressable
+        <PressableFade
           onPress={() => router.replace("/forgot-password")}
           disabled={loading}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           accessibilityRole="button"
           accessibilityLabel="Mevcut şifremi hatırlamıyorum"
-          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          dim={0.7}
           className="items-center py-3 mt-2"
         >
           <Text className="text-accent text-sm font-medium">Mevcut şifremi hatırlamıyorum</Text>
-        </Pressable>
+        </PressableFade>
       </View>
     </KeyboardAvoidingView>
   );

@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   useWindowDimensions,
 } from "react-native";
+import { PressableFade } from "@/components/PressableFade";
 import { Text } from "@/components/Typography";
 import { Image } from "expo-image";
 import { router } from "expo-router";
@@ -166,15 +167,15 @@ function EmptyState() {
       <Text className="text-textMuted text-base text-center leading-6 mb-5 max-w-[260px]">
         İlk anını ekle, gelecekteki kendin bugüne baktığında sana teşekkür edecek.
       </Text>
-      <Pressable
+      <PressableFade
         onPress={openCapturePicker}
         accessibilityRole="button"
-        style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+        dim={0.85}
         className="bg-accent rounded-button px-5 py-4 flex-row items-center gap-2"
       >
         <Feather name="plus" size={18} color="#0B0D0A" />
         <Text className="text-bg text-base font-semibold">İlk anını ekle</Text>
-      </Pressable>
+      </PressableFade>
     </View>
   );
 }
@@ -282,33 +283,33 @@ export default function AnaEkran() {
           {/* Antrenman programı kısayolu — arama/karşılaştır ile aynı yuvarlak
               boyut ama accent tonlu: antrenmanda hızlı erişilen asıl aksiyon,
               yer kaplamadan öne çıkıyor. */}
-          <Pressable
+          <PressableFade
             onPress={() => router.push("/entry/program")}
             accessibilityRole="button"
             accessibilityLabel="Bugünün antrenman programını aç"
-            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+            dim={0.7}
             className="w-11 h-11 rounded-full bg-accentSoft border border-accent items-center justify-center"
           >
             <Feather name="clipboard" size={20} color="#8CE05A" />
-          </Pressable>
-          <Pressable
+          </PressableFade>
+          <PressableFade
             onPress={() => router.push("/search")}
             accessibilityRole="button"
             accessibilityLabel="Anılarında ara"
-            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+            dim={0.7}
             className="w-11 h-11 rounded-full bg-surface border border-border items-center justify-center"
           >
             <Feather name="search" size={20} color="#8B8A82" />
-          </Pressable>
-          <Pressable
+          </PressableFade>
+          <PressableFade
             onPress={() => router.push("/compare/pick")}
             accessibilityRole="button"
             accessibilityLabel="Fotoğraf karşılaştır"
-            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+            dim={0.7}
             className="w-11 h-11 rounded-full bg-surface border border-border items-center justify-center"
           >
             <Feather name="repeat" size={20} color="#8B8A82" />
-          </Pressable>
+          </PressableFade>
         </View>
       </View>
 

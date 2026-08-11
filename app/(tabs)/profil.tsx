@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { View, ScrollView, Pressable, ActivityIndicator, Modal } from "react-native";
+import { PressableFade } from "@/components/PressableFade";
 import { Text } from "@/components/Typography";
 import { Image } from "expo-image";
 import { useMutation } from "@tanstack/react-query";
@@ -49,21 +50,20 @@ function SettingsRow({
   onPress: () => void;
 }) {
   return (
-    <Pressable
+    <PressableFade
       onPress={onPress}
       accessibilityRole="button"
       // Etiketsizken ekran okuyucu satırları yalnızca içlerindeki metinden
       // okuyordu ve sağdaki ikincil değer (örn. "kg, cm") ayrı bir düğüm olarak
       // geliyordu: "Birimler" ve "kg, cm" ilişkisiz iki parça gibi duyuluyordu.
       accessibilityLabel={value ? `${label}, ${value}` : label}
-      style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
       className="flex-row items-center gap-3 px-4 py-3 border-b border-border last:border-b-0"
     >
       <Feather name={icon} size={16} color={danger ? "#D9705A" : "#8CE05A"} />
       <Text className={`flex-1 text-base ${danger ? "text-danger" : "text-text"}`}>{label}</Text>
       {value ? <Text className="text-textMuted text-sm mr-1">{value}</Text> : null}
       {!danger && <Feather name="chevron-right" size={15} color="#8B8A82" />}
-    </Pressable>
+    </PressableFade>
   );
 }
 
@@ -81,12 +81,12 @@ function UnitOption({
   return (
     // Hangi birim sisteminin seçili olduğu yalnızca renk + tik ikonuyla
     // anlatılıyordu; ekran okuyucu ikisini de aynı okuyordu.
-    <Pressable
+    <PressableFade
       onPress={onPress}
       accessibilityRole="radio"
       accessibilityLabel={`${label}, ${sublabel}`}
       accessibilityState={{ selected }}
-      style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+      dim={0.8}
       className={`flex-row items-center justify-between px-4 py-4 rounded-button border ${
         selected ? "bg-accentSoft border-accent" : "bg-surface border-border"
       }`}
@@ -96,7 +96,7 @@ function UnitOption({
         <Text className="text-textMuted text-xs mt-0.5">{sublabel}</Text>
       </View>
       {selected ? <Feather name="check" size={18} color="#8CE05A" /> : null}
-    </Pressable>
+    </PressableFade>
   );
 }
 

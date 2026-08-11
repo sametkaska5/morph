@@ -1,4 +1,5 @@
-import { View, Pressable } from "react-native";
+import { View } from "react-native";
+import { PressableFade } from "./PressableFade";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Feather from "@expo/vector-icons/Feather";
 import { Text } from "@/components/Typography";
@@ -48,17 +49,18 @@ export function UpdateBanner({
           ) : null}
         </View>
 
-        <Pressable
+        <PressableFade
           onPress={onApply}
           disabled={busy}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityRole="button"
           accessibilityLabel="Yeni sürüme geçmek için yeniden başlat"
-          style={({ pressed }) => ({ opacity: pressed ? 0.7 : busy ? 0.4 : 1 })}
+          dim={0.7}
+          baseOpacity={busy ? 0.4 : 1}
           className="rounded-button bg-accent px-3 py-1.5"
         >
           <Text className="text-bg text-xs font-semibold">Yeniden başlat</Text>
-        </Pressable>
+        </PressableFade>
       </View>
     </View>
   );

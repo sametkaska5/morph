@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { View, Pressable, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
+import { View, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
+import { PressableFade } from "@/components/PressableFade";
 import { Text, TextInput } from "@/components/Typography";
 import Feather from "@expo/vector-icons/Feather";
 import { Redirect, router } from "expo-router";
@@ -199,12 +200,13 @@ export default function AuthScreen() {
               </Text>
             ) : null}
 
-            <Pressable
+            <PressableFade
               onPress={handleVerify}
               disabled={loading}
               accessibilityRole="button"
               accessibilityLabel="Kodu doğrula"
-              style={({ pressed }) => ({ opacity: pressed ? 0.85 : loading ? 0.7 : 1 })}
+              dim={0.85}
+              baseOpacity={loading ? 0.7 : 1}
               className="bg-accent rounded-button py-4 items-center mt-4"
             >
               {loading ? (
@@ -212,24 +214,24 @@ export default function AuthScreen() {
               ) : (
                 <Text className="text-bg text-base font-semibold">Doğrula</Text>
               )}
-            </Pressable>
+            </PressableFade>
 
-            <Pressable
+            <PressableFade
               onPress={handleResendCode}
               disabled={loading}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               accessibilityRole="button"
               accessibilityLabel="Kodu tekrar gönder"
-              style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+              dim={0.7}
               className="items-center py-3 mt-2"
             >
               <Text className="text-accent text-sm font-medium">Kodu tekrar gönder</Text>
-            </Pressable>
+            </PressableFade>
           </View>
 
           {/* Yanlış adres yazılmış olabilir — dönüş yolu hep açık. */}
           <View className="border-t border-border pt-4 pb-6">
-            <Pressable
+            <PressableFade
               onPress={() => {
                 setVerifyEmail(null);
                 setCode("");
@@ -239,13 +241,13 @@ export default function AuthScreen() {
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               accessibilityRole="button"
               accessibilityLabel="Farklı e-posta ile dene"
-              style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+              dim={0.7}
               className="items-center py-2"
             >
               <Text className="text-textMuted text-sm">
                 Yanlış adres mi? <Text className="text-accent font-semibold">Geri dön</Text>
               </Text>
-            </Pressable>
+            </PressableFade>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -307,15 +309,15 @@ export default function AuthScreen() {
         />
 
         {mode === "login" ? (
-          <Pressable
+          <PressableFade
             onPress={() => router.push("/forgot-password")}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             accessibilityRole="button"
-            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+            dim={0.7}
             className="items-end mb-2 py-1"
           >
             <Text className="text-accent text-sm font-medium">Şifremi unuttum</Text>
-          </Pressable>
+          </PressableFade>
         ) : null}
 
         {errorMsg ? (
@@ -335,7 +337,7 @@ export default function AuthScreen() {
                   E-postayı yanlış yazmış olabilirsin — kontrol et, ya da bu adresle yeni bir hesap
                   oluştur.
                 </Text>
-                <Pressable
+                <PressableFade
                   onPress={() => {
                     // E-posta korunuyor: kullanıcı yeniden yazmak zorunda kalmasın.
                     setMode("signup");
@@ -344,13 +346,13 @@ export default function AuthScreen() {
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   accessibilityRole="button"
                   accessibilityLabel="Bu e-postayla hesap oluştur"
-                  style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+                  dim={0.7}
                   className="mt-2 py-1"
                 >
                   <Text className="text-accent text-sm font-medium">
                     Bu e-postayla hesap oluştur
                   </Text>
-                </Pressable>
+                </PressableFade>
               </View>
             ) : null}
           </View>
@@ -358,13 +360,14 @@ export default function AuthScreen() {
 
         {/* Etiket sabit: yüklenirken metin ActivityIndicator'a dönüşüyor ve
             düğmenin erişilebilir adı kayboluyordu. */}
-        <Pressable
+        <PressableFade
           onPress={handleSubmit}
           disabled={loading}
           accessibilityRole="button"
           accessibilityLabel={mode === "login" ? "Giriş yap" : "Hesabı oluştur"}
           accessibilityState={{ disabled: loading, busy: loading }}
-          style={({ pressed }) => ({ opacity: pressed ? 0.85 : loading ? 0.7 : 1 })}
+          dim={0.85}
+          baseOpacity={loading ? 0.7 : 1}
           className="bg-accent rounded-button py-4 items-center mt-4"
         >
           {loading ? (
@@ -374,7 +377,7 @@ export default function AuthScreen() {
               {mode === "login" ? "Giriş yap" : "Hesabı oluştur"}
             </Text>
           )}
-        </Pressable>
+        </PressableFade>
 
         {mode === "signup" ? (
           <Text className="text-textFaint text-xs text-center mt-5 leading-5">
@@ -396,7 +399,7 @@ export default function AuthScreen() {
             yol" mesajı. Instagram/Facebook'ta da bu bant ekranın dibinde
             durur ve formla karışmaz. */}
         <View className="border-t border-border pt-4 pb-6">
-          <Pressable
+          <PressableFade
             onPress={() => {
               setMode(mode === "login" ? "signup" : "login");
               setErrorMsg(null);
@@ -406,7 +409,7 @@ export default function AuthScreen() {
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             accessibilityRole="button"
             accessibilityLabel={mode === "login" ? "Kayıt ekranına geç" : "Giriş ekranına geç"}
-            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+            dim={0.7}
             className="items-center py-2"
           >
             <Text className="text-textMuted text-sm">
@@ -415,7 +418,7 @@ export default function AuthScreen() {
                 {mode === "login" ? "Kayıt ol" : "Giriş yap"}
               </Text>
             </Text>
-          </Pressable>
+          </PressableFade>
         </View>
       </View>
     </KeyboardAvoidingView>

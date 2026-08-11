@@ -1,7 +1,6 @@
 import { useRef, useState } from "react";
 import {
   View,
-  Pressable,
   ActivityIndicator,
   ScrollView,
   type TextInput as RNTextInput,
@@ -226,11 +225,11 @@ export default function MeasurementSettingsScreen() {
                 renkle anlatılıyordu — ekran okuyucu ikisini de aynı okuyor,
                 kullanıcı hangisinin etkin olduğunu anlayamıyordu. */}
             <View accessibilityRole="radiogroup" className="flex-row gap-2 mb-3">
-              <Pressable
+              <PressableFade
                 onPress={() => setDirection("decrease_is_good")}
                 accessibilityRole="radio"
                 accessibilityState={{ selected: direction === "decrease_is_good" }}
-                style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+                dim={0.8}
                 className={`flex-1 py-3 rounded-lg items-center border ${
                   direction === "decrease_is_good" ? "bg-accent border-accent" : "bg-white/5 border-white/15"
                 }`}
@@ -238,12 +237,12 @@ export default function MeasurementSettingsScreen() {
                 <Text className={`text-sm font-semibold ${direction === "decrease_is_good" ? "text-bg" : "text-text"}`}>
                   Azalması İyi
                 </Text>
-              </Pressable>
-              <Pressable
+              </PressableFade>
+              <PressableFade
                 onPress={() => setDirection("increase_is_good")}
                 accessibilityRole="radio"
                 accessibilityState={{ selected: direction === "increase_is_good" }}
-                style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+                dim={0.8}
                 className={`flex-1 py-3 rounded-lg items-center border ${
                   direction === "increase_is_good" ? "bg-accent border-accent" : "bg-white/5 border-white/15"
                 }`}
@@ -251,18 +250,19 @@ export default function MeasurementSettingsScreen() {
                 <Text className={`text-sm font-semibold ${direction === "increase_is_good" ? "text-bg" : "text-text"}`}>
                   Artması İyi
                 </Text>
-              </Pressable>
+              </PressableFade>
             </View>
 
             {/* Etiket sabit: eklerken metin ActivityIndicator'a dönüşüyor ve
                 düğmenin erişilebilir adı kayboluyordu. */}
-            <Pressable
+            <PressableFade
               onPress={handleAdd}
               disabled={addMutation.isPending}
               accessibilityRole="button"
               accessibilityLabel="Ölçüm ekle"
               accessibilityState={{ disabled: addMutation.isPending, busy: addMutation.isPending }}
-              style={({ pressed }) => ({ opacity: pressed ? 0.85 : addMutation.isPending ? 0.7 : 1 })}
+              dim={0.85}
+              baseOpacity={addMutation.isPending ? 0.7 : 1}
               className="bg-accent rounded-lg py-3 items-center"
             >
               {addMutation.isPending ? (
@@ -270,7 +270,7 @@ export default function MeasurementSettingsScreen() {
               ) : (
                 <Text className="text-bg text-sm font-semibold">Ekle</Text>
               )}
-            </Pressable>
+            </PressableFade>
           </View>
         </>
       )}

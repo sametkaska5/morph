@@ -19,11 +19,11 @@ const ResultRow = memo(function ResultRow({ entry }: { entry: SearchEntry }) {
   const dateLabel = formatDateKey(entry.date, { day: "numeric", month: "long", year: "numeric" });
 
   return (
-    <Pressable
+    <PressableFade
       onPress={() => router.push(`/entry/${entry.id}`)}
       accessibilityRole="button"
       accessibilityLabel={`${dateLabel} tarihli anı${entry.note ? `, not: ${entry.note}` : ""}`}
-      style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+      dim={0.7}
       className="flex-row items-center gap-3 px-4 py-3 border-b border-border"
     >
       <View className="w-12 h-12 rounded-[8px] overflow-hidden bg-surface border border-border">
@@ -40,7 +40,7 @@ const ResultRow = memo(function ResultRow({ entry }: { entry: SearchEntry }) {
         ) : null}
       </View>
       <Feather name="chevron-right" size={15} color="#8B8A82" />
-    </Pressable>
+    </PressableFade>
   );
 });
 

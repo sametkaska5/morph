@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { View, Image, ScrollView, Pressable, ActivityIndicator } from "react-native";
+import { View, Image, ScrollView, ActivityIndicator } from "react-native";
 import { showAlert } from "@/lib/appAlert";
 import { PressableFade } from "@/components/PressableFade";
 import { Text } from "@/components/Typography";
@@ -101,14 +101,14 @@ export default function Compare() {
       )}
 
       <View className="px-4 mt-2">
-        <Pressable
+        <PressableFade
           onPress={() => router.replace("/compare/pick")}
           accessibilityRole="button"
-          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          dim={0.7}
           className="border border-accent rounded-[14px] py-3 items-center"
         >
           <Text className="text-accent text-base font-semibold">Başka Fotoğraf Seç</Text>
-        </Pressable>
+        </PressableFade>
       </View>
     </ScrollView>
   );
@@ -232,13 +232,13 @@ function ComparisonBody({ data }: { data: ComparisonData }) {
         {/* Etiket SABİT veriliyor: işlem sürerken metin yerini ActivityIndicator'a
             bırakıyor ve düğmenin erişilebilir adı tamamen kayboluyordu — ekran
             okuyucu "düğme" deyip geçiyordu. `disabled` de ayrıca bildiriliyor. */}
-        <Pressable
+        <PressableFade
           onPress={handleSave}
           disabled={pendingAction !== null}
           accessibilityRole="button"
           accessibilityLabel="Galeriye kaydet"
           accessibilityState={{ disabled: pendingAction !== null, busy: pendingAction === "save" }}
-          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          dim={0.7}
           className="flex-1 flex-row items-center justify-center gap-2 border border-border rounded-[12px] py-3 bg-surface"
         >
           {pendingAction === "save" ? (
@@ -249,14 +249,14 @@ function ComparisonBody({ data }: { data: ComparisonData }) {
               <Text className="text-text text-sm font-semibold">Kaydet</Text>
             </>
           )}
-        </Pressable>
-        <Pressable
+        </PressableFade>
+        <PressableFade
           onPress={handleShare}
           disabled={pendingAction !== null}
           accessibilityRole="button"
           accessibilityLabel="Karşılaştırmayı paylaş"
           accessibilityState={{ disabled: pendingAction !== null, busy: pendingAction === "share" }}
-          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          dim={0.7}
           className="flex-1 flex-row items-center justify-center gap-2 border border-accent rounded-[12px] py-3 bg-accentSoft"
         >
           {pendingAction === "share" ? (
@@ -267,7 +267,7 @@ function ComparisonBody({ data }: { data: ComparisonData }) {
               <Text className="text-accent text-sm font-semibold">Paylaş</Text>
             </>
           )}
-        </Pressable>
+        </PressableFade>
       </View>
 
       {rows.length > 0 ? (

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Pressable, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
+import { View, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
 import { PressableFade } from "@/components/PressableFade";
 import { Text, TextInput } from "@/components/Typography";
 import { router } from "expo-router";
@@ -157,13 +157,14 @@ export default function ForgotPasswordScreen() {
         {errorMsg ? <Text className="text-danger text-base mb-2">{errorMsg}</Text> : null}
 
         {/* Etiket sabit: yüklenirken metin ActivityIndicator'a dönüşüyor. */}
-        <Pressable
+        <PressableFade
           onPress={step === "request" ? handleSendCode : handleResetPassword}
           disabled={loading}
           accessibilityRole="button"
           accessibilityLabel={step === "request" ? "Kod gönder" : "Şifreyi güncelle"}
           accessibilityState={{ disabled: loading, busy: loading }}
-          style={({ pressed }) => ({ opacity: pressed ? 0.85 : loading ? 0.7 : 1 })}
+          dim={0.85}
+          baseOpacity={loading ? 0.7 : 1}
           className="bg-accent rounded-button py-4 items-center mt-4"
         >
           {loading ? (
@@ -173,20 +174,20 @@ export default function ForgotPasswordScreen() {
               {step === "request" ? "Kod gönder" : "Şifreyi güncelle"}
             </Text>
           )}
-        </Pressable>
+        </PressableFade>
 
         {step === "reset" ? (
-          <Pressable
+          <PressableFade
             onPress={handleSendCode}
             disabled={loading}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             accessibilityRole="button"
             accessibilityState={{ disabled: loading }}
-            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+            dim={0.7}
             className="mt-5 items-center py-2"
           >
             <Text className="text-textMuted text-sm">Kodu tekrar gönder</Text>
-          </Pressable>
+          </PressableFade>
         ) : null}
       </View>
     </KeyboardAvoidingView>

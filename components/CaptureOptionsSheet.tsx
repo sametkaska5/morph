@@ -1,4 +1,5 @@
-import { View, Pressable } from "react-native";
+import { View } from "react-native";
+import { PressableFade } from "./PressableFade";
 import { router } from "expo-router";
 import { Text } from "./Typography";
 import Feather from "@expo/vector-icons/Feather";
@@ -16,17 +17,17 @@ function CaptureOption({
   onPress: () => void;
 }) {
   return (
-    <Pressable
+    <PressableFade
       onPress={onPress}
       accessibilityRole="button"
-      style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+      dim={0.8}
       className="flex-row items-center gap-3 px-4 py-4 rounded-button bg-surface border border-border"
     >
       <View className="w-9 h-9 rounded-full bg-accentSoft items-center justify-center">
         <Feather name={icon} size={17} color="#8CE05A" />
       </View>
       <Text className="text-text text-base font-semibold">{label}</Text>
-    </Pressable>
+    </PressableFade>
   );
 }
 

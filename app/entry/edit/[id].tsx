@@ -1,4 +1,4 @@
-import { View, Pressable, ActivityIndicator, ScrollView } from "react-native";
+import { View, ActivityIndicator, ScrollView } from "react-native";
 import { showAlert } from "@/lib/appAlert";
 import { PressableFade } from "@/components/PressableFade";
 // expo-image (RN'in kendi Image'ı DEĞİL): anı akışı ve detay ekranı zaten
@@ -356,13 +356,14 @@ export default function EditEntry() {
 
         {/* Etiket sabit: kaydederken metin ActivityIndicator'a dönüşüyor ve
             düğmenin erişilebilir adı kayboluyordu. */}
-<Pressable
+<PressableFade
           onPress={handleUpdate}
           disabled={saveBlocked}
           accessibilityRole="button"
           accessibilityLabel="Kaydet"
           accessibilityState={{ disabled: saveBlocked, busy: saveBlocked }}
-          style={({ pressed }) => ({ opacity: pressed ? 0.85 : saveBlocked ? 0.7 : 1 })}
+          dim={0.85}
+          baseOpacity={saveBlocked ? 0.7 : 1}
           className="bg-accent rounded-[12px] px-4 h-11 items-center justify-center"
         >
           {updateMutation.isPending || !formReady ? (
@@ -370,7 +371,7 @@ export default function EditEntry() {
           ) : (
             <Text className="text-bg text-base font-semibold">Kaydet</Text>
           )}
-        </Pressable>
+        </PressableFade>
       </View>
 
       <ScrollView
@@ -381,12 +382,12 @@ export default function EditEntry() {
         contentContainerStyle={{ paddingTop: 24, paddingBottom: screen.bottom + keyboardPadding }}
         keyboardShouldPersistTaps="handled"
       >
-        <Pressable
+        <PressableFade
           onPress={pickImage}
           disabled={!formReady}
           accessibilityRole="button"
           accessibilityLabel="Fotoğrafı değiştir"
-          style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+          dim={0.85}
           className="mb-6 relative"
         >
           {displayUri ? (
@@ -419,7 +420,7 @@ export default function EditEntry() {
               <ActivityIndicator color="#fff" />
             </View>
           )}
-        </Pressable>
+        </PressableFade>
 
         <View className="bg-surface border border-border p-4 rounded-card mb-6">
           <Text className="text-textFaint text-sm font-semibold uppercase tracking-wide mb-3">
@@ -527,17 +528,17 @@ export default function EditEntry() {
             ana ekrana gidip aynı kaydı bulmak gerekiyordu. Aynı nesne üzerinde
             aynı işlemin, ona nereden ulaştığına göre var olup olmaması
             tutarsızlık; iki yol da artık aynı yeteneklere sahip. */}
-        <Pressable
+        <PressableFade
           onPress={() => setConfirmDelete(true)}
           disabled={updateMutation.isPending || deleteMutation.isPending}
           accessibilityRole="button"
           accessibilityLabel="Bu anıyı sil"
-          style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+          dim={0.85}
           className="mt-2 flex-row items-center justify-center gap-2 py-4 rounded-button bg-danger"
         >
           <Feather name="trash-2" size={16} color="#0B0D0A" />
           <Text className="text-bg text-base font-semibold">Bu anıyı sil</Text>
-        </Pressable>
+        </PressableFade>
       </ScrollView>
 
       {deleteMutation.isPending && (

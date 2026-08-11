@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { View, Pressable, Platform, ScrollView, ActivityIndicator } from "react-native";
+import { View, Platform, ScrollView, ActivityIndicator } from "react-native";
 import { PressableFade } from "@/components/PressableFade";
 import { Text, TextInput } from "@/components/Typography";
 import { router, useLocalSearchParams } from "expo-router";
@@ -143,19 +143,19 @@ export default function ProgramScreen() {
       </View>
 
       {/* Etiket + ipucu: new.tsx ile aynı gerekçe. */}
-      <Pressable
+      <PressableFade
         onPress={() => setShowPicker(true)}
         accessibilityRole="button"
         accessibilityLabel={`Tarih: ${date.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}`}
         accessibilityHint="Tarih seçiciyi açar"
-        style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+        dim={0.7}
         className="bg-surface border border-border rounded-button px-4 py-4 mb-3 flex-row items-center justify-between"
       >
         <Text className="text-textMuted text-base">Tarih</Text>
         <Text className="text-text text-base font-semibold">
           {date.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
         </Text>
-      </Pressable>
+      </PressableFade>
 
       {showPicker && (
         <DateTimePicker
@@ -202,16 +202,15 @@ export default function ProgramScreen() {
                   className="flex-1 text-text text-base font-semibold"
                   maxLength={60}
                 />
-                <Pressable
+                <PressableFade
                   onPress={() => setItems((prev) => prev.filter((_, i) => i !== exIndex))}
                   hitSlop={8}
                   accessibilityRole="button"
                   accessibilityLabel="Hareketi sil"
-                  style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
                   className="w-8 h-8 items-center justify-center"
                 >
                   <Feather name="trash-2" size={16} color="#8B8A82" />
-                </Pressable>
+                </PressableFade>
               </View>
 
               {/* Set tablosu başlığı */}
@@ -245,48 +244,50 @@ export default function ProgramScreen() {
                     placeholderTextColor="#8B8A82"
                     className="flex-1 bg-bg border border-border rounded-button px-3 py-2 text-text text-base text-center"
                   />
-                  <Pressable
+                  <PressableFade
                     onPress={() => removeSet(exIndex, setIndex)}
                     hitSlop={8}
                     accessibilityRole="button"
                     accessibilityLabel={`${setIndex + 1}. seti sil`}
                     disabled={exercise.sets.length === 1}
-                    style={({ pressed }) => ({ opacity: exercise.sets.length === 1 ? 0.25 : pressed ? 0.6 : 1 })}
+                    dim={exercise.sets.length === 1 ? 0.25 : 0.6}
+                    baseOpacity={exercise.sets.length === 1 ? 0.25 : 1}
                     className="w-7 h-9 items-center justify-center"
                   >
                     <Feather name="x" size={16} color="#8B8A82" />
-                  </Pressable>
+                  </PressableFade>
                 </View>
               ))}
 
-              <Pressable
+              <PressableFade
                 onPress={() => addSet(exIndex)}
-                style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+                dim={0.7}
                 accessibilityRole="button"
                 accessibilityLabel="Set ekle"
                 className="flex-row items-center justify-center gap-2 border border-dashed border-accent/50 rounded-button py-2 mt-1"
               >
                 <Feather name="plus" size={15} color="#8CE05A" />
                 <Text className="text-accent text-sm font-semibold">Set ekle</Text>
-              </Pressable>
+              </PressableFade>
             </View>
           ))}
 
-          <Pressable
+          <PressableFade
             onPress={() => setItems((prev) => [...prev, newExercise()])}
-            style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+            dim={0.85}
             accessibilityRole="button"
             accessibilityLabel="Hareket ekle"
             className="flex-row items-center justify-center gap-2 bg-surface border border-border rounded-button py-4 mb-3"
           >
             <Feather name="plus" size={18} color="#8CE05A" />
             <Text className="text-accent text-base font-semibold">Hareket ekle</Text>
-          </Pressable>
+          </PressableFade>
 
-          <Pressable
+          <PressableFade
             onPress={handleSave}
             disabled={saveMutation.isPending}
-            style={({ pressed }) => ({ opacity: pressed ? 0.85 : saveMutation.isPending ? 0.7 : 1 })}
+            dim={0.85}
+            baseOpacity={saveMutation.isPending ? 0.7 : 1}
             accessibilityRole="button"
             accessibilityLabel="Programı kaydet"
             className="bg-accent p-4 rounded-button items-center mt-3 flex-row justify-center gap-2"
@@ -296,17 +297,16 @@ export default function ProgramScreen() {
             ) : (
               <Text className="text-bg text-base font-bold">Kaydet</Text>
             )}
-          </Pressable>
+          </PressableFade>
 
-          <Pressable
+          <PressableFade
             onPress={() => router.back()}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             accessibilityRole="button"
-            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
             className="mt-4 items-center mb-8"
           >
             <Text className="text-textMuted text-base">İptal</Text>
-          </Pressable>
+          </PressableFade>
         </>
       )}
     </ScrollView>

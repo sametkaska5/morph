@@ -2,7 +2,6 @@ import { useState, useRef } from "react";
 import {
   View,
   Image,
-  Pressable,
   Platform,
   ScrollView,
   ActivityIndicator,
@@ -220,13 +219,14 @@ export default function NewEntry() {
         {/* Etiket SABİT: duruma göre değiştirilirse düğmenin erişilebilir adı
             kayboluyor (düzenleme ekranında da aynı kural). Meşguliyet
             accessibilityState'e yazılıyor, ada değil. */}
-        <Pressable
+        <PressableFade
           onPress={handleSave}
           disabled={photoProcessing}
           accessibilityRole="button"
           accessibilityLabel="Kaydı kaydet"
           accessibilityState={{ disabled: photoProcessing, busy: photoProcessing }}
-          style={({ pressed }) => ({ opacity: pressed ? 0.85 : photoProcessing ? 0.7 : 1 })}
+          dim={0.85}
+          baseOpacity={photoProcessing ? 0.7 : 1}
           className="bg-accent rounded-[12px] px-4 h-11 items-center justify-center"
         >
           {photoProcessing ? (
@@ -234,7 +234,7 @@ export default function NewEntry() {
           ) : (
             <Text className="text-bg text-base font-semibold">Kaydet</Text>
           )}
-        </Pressable>
+        </PressableFade>
       </View>
 
       <ScrollView
@@ -268,19 +268,19 @@ export default function NewEntry() {
         {/* "Tarih" ve değer ayrı iki metin düğümü; etiketsizken ekran okuyucu
           ikisini ilişkisiz okuyor ve bunun DOKUNULABİLİR olduğu hiç belli
           olmuyordu. Etiket + ipucu ikisini de çözüyor. */}
-        <Pressable
+        <PressableFade
           onPress={() => setShowPicker(true)}
           accessibilityRole="button"
           accessibilityLabel={`Tarih: ${date.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}`}
           accessibilityHint="Tarih seçiciyi açar"
-          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          dim={0.7}
           className="bg-surface border border-border rounded-button px-4 py-4 mb-3 flex-row items-center justify-between"
         >
           <Text className="text-textMuted text-base">Tarih</Text>
           <Text className="text-text text-base font-semibold">
             {date.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
           </Text>
-        </Pressable>
+        </PressableFade>
 
         {showPicker && (
           <DateTimePicker

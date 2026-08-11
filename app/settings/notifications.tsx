@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Pressable, Switch, ActivityIndicator, Platform } from "react-native";
+import { View, Switch, ActivityIndicator, Platform } from "react-native";
 import { showAlert } from "@/lib/appAlert";
 import { PressableFade } from "@/components/PressableFade";
 import { Text } from "@/components/Typography";
@@ -218,19 +218,19 @@ export default function NotificationSettingsScreen() {
             />
           </View>
 
-          <Pressable
+          <PressableFade
             onPress={() => setShowPicker(true)}
             accessibilityRole="button"
             accessibilityLabel={`Hatırlatma saati: ${settings.reminder_time.slice(0, 5)}`}
             accessibilityHint="Saat seçiciyi açar"
-            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+            dim={0.7}
             className="bg-surface border border-border rounded-button px-4 py-4 flex-row items-center justify-between"
           >
             <Text className="text-textMuted text-sm">Hatırlatma saati</Text>
             <Text className="text-text text-base font-semibold">
               {settings.reminder_time.slice(0, 5)}
             </Text>
-          </Pressable>
+          </PressableFade>
 
           {showPicker && (
             <DateTimePicker

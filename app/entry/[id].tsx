@@ -1,11 +1,11 @@
 import {
   View,
   ScrollView,
-  Pressable,
   ActivityIndicator,
   useWindowDimensions,
   FlatList,
 } from "react-native";
+import { PressableFade } from "@/components/PressableFade";
 import { Text } from "@/components/Typography";
 import { Image } from "expo-image";
 import { useLocalSearchParams, router } from "expo-router";
@@ -163,11 +163,11 @@ const EntryPage = memo(function EntryPage({
             yol sağ üstteki işlem menüsüydü; kullanıcı değiştirmek istediği sayıya
             dokunmayı bekliyor. */}
         {data?.measurement_values?.length ? (
-          <Pressable
+          <PressableFade
             onPress={() => router.push(`/entry/edit/${entryId}`)}
             accessibilityRole="button"
             accessibilityLabel="Ölçümleri düzenle"
-            style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+            dim={0.85}
             className="bg-surface border border-border rounded-card p-4 mb-4"
           >
             <View className="flex-row items-center justify-between mb-1">
@@ -184,7 +184,7 @@ const EntryPage = memo(function EntryPage({
                 </Text>
               </View>
             ))}
-          </Pressable>
+          </PressableFade>
         ) : null}
 
         {/* PROGRAM — hem gösterim hem DÜZENLEME kapısı.
@@ -193,11 +193,11 @@ const EntryPage = memo(function EntryPage({
             takvimi dahil), ama buradan program ekranına hiçbir bağlantı yoktu.
             Tek dönüş yolu Anı Akışı'nda o kartı bulup çevirmekti. */}
         {data?.workout_items?.length ? (
-          <Pressable
+          <PressableFade
             onPress={() => router.push(`/entry/program?date=${data.date}`)}
             accessibilityRole="button"
             accessibilityLabel="Antrenman programını düzenle"
-            style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+            dim={0.85}
             className="bg-surface border border-border rounded-card p-4 mb-4"
           >
             <View className="flex-row items-center justify-between mb-3">
@@ -228,16 +228,16 @@ const EntryPage = memo(function EntryPage({
                   </View>
                 );
               })}
-          </Pressable>
+          </PressableFade>
         ) : data ? (
           /* Programı OLMAYAN gün: eklemenin yolu da yoktu. Program ekranı ana
              ekrandan/istatistiklerden yalnızca BUGÜN için açılıyor, yani geçmiş
              bir güne program yazmak için tarih seçicisiyle uğraşmak gerekiyordu. */
-          <Pressable
+          <PressableFade
             onPress={() => router.push(`/entry/program?date=${data.date}`)}
             accessibilityRole="button"
             accessibilityLabel="Bu güne antrenman programı ekle"
-            style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+            dim={0.85}
             className="bg-surface border border-border rounded-card p-4 mb-4 flex-row items-center gap-3"
           >
             <View className="w-9 h-9 rounded-lg bg-accentSoft items-center justify-center">
@@ -248,17 +248,17 @@ const EntryPage = memo(function EntryPage({
               <Text className="text-textFaint text-sm">Hareket ve setleri ekle</Text>
             </View>
             <Feather name="chevron-right" size={18} color="#8B8A82" />
-          </Pressable>
+          </PressableFade>
         ) : null}
 
         {/* NOT da aynı kalıpta: üç kartın ikisi dokunulabilirken üçüncüsünün
             olmaması tutarsız olurdu. Hedef yine aynı düzenleme ekranı. */}
         {data?.note ? (
-          <Pressable
+          <PressableFade
             onPress={() => router.push(`/entry/edit/${entryId}`)}
             accessibilityRole="button"
             accessibilityLabel="Notu düzenle"
-            style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+            dim={0.85}
             className="bg-surface border border-border rounded-card p-4"
           >
             <View className="flex-row items-center justify-between mb-1">
@@ -266,7 +266,7 @@ const EntryPage = memo(function EntryPage({
               <Feather name="chevron-right" size={16} color="#8B8A82" />
             </View>
             <Text className="text-text text-base leading-6">{data.note}</Text>
-          </Pressable>
+          </PressableFade>
         ) : null}
 
         {/* SİLME — sayfanın en dibinde, yıkıcı işlem rengiyle.
@@ -277,11 +277,11 @@ const EntryPage = memo(function EntryPage({
             chevron'suz — yani yanlışlıkla basılacak bir yerde değil.
             entryId'yi doğrudan gönderiyoruz: silme, dokunulan SAYFANIN kaydına
             uygulanıyor, ekran seviyesindeki aktif indekse bağlı değil. */}
-        <Pressable
+        <PressableFade
           onPress={() => onRequestDelete(entryId)}
           accessibilityRole="button"
           accessibilityLabel="Bu anıyı sil"
-          style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+          dim={0.85}
           className="mt-6 flex-row items-center justify-center gap-2 py-4 rounded-button bg-danger"
         >
           {/* Dolu kırmızı zemin: ConfirmDialog'un onay düğmesiyle aynı kalıp
@@ -290,7 +290,7 @@ const EntryPage = memo(function EntryPage({
               okunmuyor. */}
           <Feather name="trash-2" size={16} color="#0B0D0A" />
           <Text className="text-bg text-base font-semibold">Bu anıyı sil</Text>
-        </Pressable>
+        </PressableFade>
       </View>
     </ScrollView>
   );
@@ -403,19 +403,20 @@ export default function EntryDetail() {
           Dikey konum güvenli alandan geliyor: burası tam ekran bir sayfa, yani
           durum çubuğunun ARKASINA çiziyor ve sabit 56px, çentiği büyük
           cihazlarda butonları saatin üstüne bindiriyordu. Konum sarmalayıcı
-          View'de duruyor çünkü Pressable'ın fonksiyon-form style'ına konan
-          yerleşim özellikleri bu projede güvenilir çalışmıyor. */}
+          View'de duruyor çünkü fonksiyon-form style'a konan yerleşim
+          özellikleri bu projede güvenilir çalışmıyordu — o kalıp artık
+          PressableFade ile tamamen kalktı, konum yine de burada kalıyor. */}
       <View style={{ position: "absolute", top: screen.top, left: 16, zIndex: 10 }}>
-        <Pressable
+        <PressableFade
           onPress={() => router.back()}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityRole="button"
           accessibilityLabel="Geri dön"
-          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          dim={0.7}
           className="w-11 h-11 bg-black/40 rounded-full items-center justify-center"
         >
           <Feather name="chevron-left" size={22} color="#fff" />
-        </Pressable>
+        </PressableFade>
       </View>
 
       {/* Sayaç, yanlarda başka kayıt olduğunu belli ediyor — Anı Akışı'ndaki

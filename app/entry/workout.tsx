@@ -1,5 +1,5 @@
 import { useRef, useState, type ComponentProps } from "react";
-import { View, Pressable, Platform, ScrollView, ActivityIndicator } from "react-native";
+import { View, Platform, ScrollView, ActivityIndicator } from "react-native";
 import { showAlert } from "@/lib/appAlert";
 import { PressableFade } from "@/components/PressableFade";
 import { Text, TextInput } from "@/components/Typography";
@@ -155,19 +155,19 @@ export default function WorkoutDayScreen() {
       </View>
 
       {/* Tarih seçici — new.tsx ile aynı desen (etiket/ipucu gerekçesi de orada). */}
-      <Pressable
+      <PressableFade
         onPress={() => setShowPicker(true)}
         accessibilityRole="button"
         accessibilityLabel={`Tarih: ${date.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}`}
         accessibilityHint="Tarih seçiciyi açar"
-        style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+        dim={0.7}
         className="bg-surface border border-border rounded-button px-4 py-4 mb-3 flex-row items-center justify-between"
       >
         <Text className="text-textMuted text-base">Tarih</Text>
         <Text className="text-text text-base font-semibold">
           {date.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
         </Text>
-      </Pressable>
+      </PressableFade>
 
       {showPicker && (
         <DateTimePicker
@@ -209,16 +209,16 @@ export default function WorkoutDayScreen() {
             Bu güne ait ölçüm ve notları fotoğraflı kaydın üzerinden düzenleyebilirsin. Başka bir gün için
             fotoğrafsız kayıt yapmak istersen yukarıdan tarihi değiştir.
           </Text>
-          <Pressable
+          <PressableFade
             onPress={() => router.replace(`/entry/${existing!.id}`)}
-            style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+            dim={0.85}
             accessibilityRole="button"
             accessibilityLabel="Fotoğraflı kaydı aç"
             className="bg-accent p-4 rounded-button items-center flex-row justify-center gap-2"
           >
             <Feather name="arrow-right" size={16} color="#0B0D0A" />
             <Text className="text-bg text-base font-bold">Kaydı aç</Text>
-          </Pressable>
+          </PressableFade>
         </View>
       ) : (
         <>
@@ -303,9 +303,9 @@ export default function WorkoutDayScreen() {
 
           {/* Program ayrı bir ekranda (set logger). Antrenman gününde oraya kısayol. */}
           {dayType === "workout" ? (
-            <Pressable
+            <PressableFade
               onPress={() => router.push(`/entry/program?date=${dateKey}`)}
-              style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+              dim={0.8}
               accessibilityRole="button"
               accessibilityLabel="Antrenman programını düzenle"
               className="bg-surface border border-border rounded-card p-4 mb-3 flex-row items-center gap-3"
@@ -318,7 +318,7 @@ export default function WorkoutDayScreen() {
                 <Text className="text-textFaint text-sm">Hareket ve setleri ekle</Text>
               </View>
               <Feather name="chevron-right" size={18} color="#8B8A82" />
-            </Pressable>
+            </PressableFade>
           ) : null}
 
           {/* NOT — off day nedeni ya da güne dair serbest not. */}
@@ -338,10 +338,11 @@ export default function WorkoutDayScreen() {
             />
           </View>
 
-          <Pressable
+          <PressableFade
             onPress={handleSave}
             disabled={saveMutation.isPending}
-            style={({ pressed }) => ({ opacity: pressed ? 0.85 : saveMutation.isPending ? 0.7 : 1 })}
+            dim={0.85}
+            baseOpacity={saveMutation.isPending ? 0.7 : 1}
             accessibilityRole="button"
             accessibilityLabel="Günü kaydet"
             className="bg-accent p-4 rounded-button items-center mt-6 flex-row justify-center gap-2"
@@ -351,19 +352,18 @@ export default function WorkoutDayScreen() {
             ) : (
               <Text className="text-bg text-base font-bold">Kaydet</Text>
             )}
-          </Pressable>
+          </PressableFade>
         </>
       )}
 
-      <Pressable
+      <PressableFade
         onPress={() => router.back()}
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         accessibilityRole="button"
-        style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
         className="mt-4 items-center mb-8"
       >
         <Text className="text-textMuted text-base">İptal</Text>
-      </Pressable>
+      </PressableFade>
     </ScrollView>
   );
 }
@@ -380,7 +380,7 @@ function DayTypeOption({
   onPress: () => void;
 }) {
   return (
-    <Pressable
+    <PressableFade
       onPress={onPress}
       accessibilityRole="button"
       // Etiketi açıkça veriyoruz: accessibilityState zaten seçili olup
@@ -388,13 +388,13 @@ function DayTypeOption({
       // olduğunu söyleyemiyordu.
       accessibilityLabel={label}
       accessibilityState={{ selected: active }}
-      style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+      dim={0.8}
       className={`flex-1 flex-row items-center justify-center gap-2 rounded-button py-3 border ${
         active ? "bg-accentSoft border-accent" : "bg-surface border-border"
       }`}
     >
       <Feather name={icon} size={16} color={active ? "#8CE05A" : "#8B8A82"} />
       <Text className={`text-base font-semibold ${active ? "text-accent" : "text-textMuted"}`}>{label}</Text>
-    </Pressable>
+    </PressableFade>
   );
 }

@@ -256,9 +256,9 @@ export default function Istatistikler() {
 
       {/* Antrenman sırasında hızlı erişim için ayrı kısayol: bugünün programını
           (set logger) doğrudan açar. Tarih vermiyoruz → varsayılan bugün. */}
-      <Pressable
+      <PressableFade
         onPress={() => router.push("/entry/program")}
-        style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+        dim={0.85}
         accessibilityRole="button"
         accessibilityLabel="Bugünün antrenman programını aç"
         className="mx-4 mb-4 bg-accentSoft border border-accent rounded-card p-4 flex-row items-center gap-3"
@@ -271,22 +271,22 @@ export default function Istatistikler() {
           <Text className="text-textFaint text-sm">Programı yaz — hareket ve setleri ekle</Text>
         </View>
         <Feather name="chevron-right" size={18} color="#8CE05A" />
-      </Pressable>
+      </PressableFade>
 
       <View className="flex-row gap-2 px-4 mb-4">
         {types?.map((t) => (
-          <Pressable
+          <PressableFade
             key={t.id}
             onPress={() => setActiveTypeId(t.id)}
             accessibilityRole="button"
             accessibilityState={{ selected: t.id === currentTypeId }}
-            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+            dim={0.7}
             className={`px-4 py-3 rounded-pill ${t.id === currentTypeId ? "bg-accent" : "bg-surface"}`}
           >
             <Text className={`text-sm font-semibold capitalize ${t.id === currentTypeId ? "text-bg" : "text-textMuted"}`}>
               {t.name}
             </Text>
-          </Pressable>
+          </PressableFade>
         ))}
       </View>
 
@@ -364,16 +364,15 @@ export default function Istatistikler() {
                 </Text>
               ) : null}
             </View>
-            <Pressable
+            <PressableFade
               onPress={() => setChartExpanded(false)}
               hitSlop={12}
               accessibilityRole="button"
               accessibilityLabel="Kapat"
               className="w-10 h-10 rounded-full bg-surface items-center justify-center"
-              style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
             >
               <Feather name="x" size={22} color="#F5F3EC" />
-            </Pressable>
+            </PressableFade>
           </View>
 
           {/* Büyük değer + trend + hangi güne ait */}
@@ -441,27 +440,25 @@ export default function Istatistikler() {
             </View>
           </View>
           <View className="flex-row items-center gap-1 shrink-0">
-            <Pressable
+            <PressableFade
               onPress={() => setShareModalVisible(true)}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               accessibilityRole="button"
               accessibilityLabel="Paylaşım kartı oluştur"
-              style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
               className="w-9 h-9 items-center justify-center"
             >
               <Feather name="share-2" size={17} color="#8CE05A" />
-            </Pressable>
-            <Pressable
+            </PressableFade>
+            <PressableFade
               onPress={() => router.push("/calendar-year")}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               accessibilityRole="button"
               accessibilityLabel="Yıla göre gör"
-              style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
               className="flex-row items-center gap-1 py-2 pl-1"
             >
               <Text className="text-accent text-sm font-medium capitalize">Yıla göre gör</Text>
               <Feather name="chevron-right" size={15} color="#8CE05A" />
-            </Pressable>
+            </PressableFade>
           </View>
         </View>
 
@@ -470,18 +467,17 @@ export default function Istatistikler() {
             dönük kayıt hiçbir ekrandan yapılamıyordu. İleri yön bu haftada
             duruyor: gelecek günler zaten dokunulamaz. */}
         <View className="flex-row items-center justify-between mb-3">
-          <Pressable
+          <PressableFade
             onPress={() => setWeekOffset((o) => o - 1)}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             accessibilityRole="button"
             accessibilityLabel="Önceki hafta"
-            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
             className="w-8 h-8 items-center justify-center"
           >
             <Feather name="chevron-left" size={18} color="#8B8A82" />
-          </Pressable>
+          </PressableFade>
 
-          <Pressable
+          <PressableFade
             onPress={() => setWeekOffset(0)}
             disabled={weekOffset === 0}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -489,27 +485,25 @@ export default function Istatistikler() {
             accessibilityLabel={
               weekOffset === 0 ? `${weekRangeLabel}, bu hafta` : `${weekRangeLabel}, bu haftaya dön`
             }
-            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
             className="flex-row items-center gap-1.5 px-2 py-1"
           >
             <Text className={`text-sm ${weekOffset === 0 ? "text-textFaint" : "text-text font-medium"}`}>
               {weekRangeLabel}
             </Text>
             {weekOffset !== 0 ? <Feather name="rotate-ccw" size={13} color="#8CE05A" /> : null}
-          </Pressable>
+          </PressableFade>
 
-          <Pressable
+          <PressableFade
             onPress={() => setWeekOffset((o) => Math.min(0, o + 1))}
             disabled={weekOffset === 0}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             accessibilityRole="button"
             accessibilityLabel="Sonraki hafta"
             accessibilityState={{ disabled: weekOffset === 0 }}
-            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
             className="w-8 h-8 items-center justify-center"
           >
             <Feather name="chevron-right" size={18} color={weekOffset === 0 ? "#3A3A34" : "#8B8A82"} />
-          </Pressable>
+          </PressableFade>
         </View>
 
         {weekLoading ? (
@@ -522,7 +516,7 @@ export default function Istatistikler() {
           <View className="flex-row justify-between">
             {week?.map((day) => {
               return (
-                <Pressable
+                <PressableFade
                   key={day.date}
                   onPress={() => handleDayPress(day)}
                   disabled={day.isFuture}
@@ -530,7 +524,7 @@ export default function Istatistikler() {
                   accessibilityRole="button"
                   accessibilityLabel={dayAccessibilityLabel(day)}
                   accessibilityState={{ disabled: day.isFuture }}
-                  style={({ pressed }) => ({ opacity: pressed && !day.isFuture ? 0.7 : 1 })}
+                  dim={day.isFuture ? 1 : 0.7}
                   className="items-center gap-1"
                 >
                   <View
@@ -559,7 +553,7 @@ export default function Istatistikler() {
                   <Text className={`text-xs ${day.isFuture ? "text-textFaint/40" : "text-textFaint"}`}>
                     {day.label}
                   </Text>
-                </Pressable>
+                </PressableFade>
               );
             })}
           </View>
@@ -660,7 +654,7 @@ export default function Istatistikler() {
                 <View className="flex-row gap-2">
                   {/* Etiketler sabit: işlem sürerken metin ActivityIndicator'a
                       dönüşüyor ve düğmelerin erişilebilir adı kayboluyordu. */}
-                  <Pressable
+                  <PressableFade
                     onPress={() => handleShareCard("save")}
                     disabled={sharePendingAction !== null}
                     accessibilityRole="button"
@@ -669,7 +663,7 @@ export default function Istatistikler() {
                       disabled: sharePendingAction !== null,
                       busy: sharePendingAction === "save",
                     }}
-                    style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+                    dim={0.7}
                     className="flex-1 flex-row items-center justify-center gap-2 border border-border rounded-[12px] py-3 bg-surface"
                   >
                     {sharePendingAction === "save" ? (
@@ -680,8 +674,8 @@ export default function Istatistikler() {
                         <Text className="text-text text-sm font-semibold">İndir</Text>
                       </>
                     )}
-                  </Pressable>
-                  <Pressable
+                  </PressableFade>
+                  <PressableFade
                     onPress={() => handleShareCard("share")}
                     disabled={sharePendingAction !== null}
                     accessibilityRole="button"
@@ -690,7 +684,7 @@ export default function Istatistikler() {
                       disabled: sharePendingAction !== null,
                       busy: sharePendingAction === "share",
                     }}
-                    style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+                    dim={0.7}
                     className="flex-1 flex-row items-center justify-center gap-2 border border-accent rounded-[12px] py-3 bg-accentSoft"
                   >
                     {sharePendingAction === "share" ? (
@@ -701,7 +695,7 @@ export default function Istatistikler() {
                         <Text className="text-accent text-sm font-semibold">Paylaş</Text>
                       </>
                     )}
-                  </Pressable>
+                  </PressableFade>
                 </View>
               </ScrollView>
             ) : (

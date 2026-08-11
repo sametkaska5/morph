@@ -1,4 +1,5 @@
-import { View, Pressable, Linking, ScrollView } from "react-native";
+import { View, Linking, ScrollView } from "react-native";
+import { PressableFade } from "@/components/PressableFade";
 import { Text } from "@/components/Typography";
 import { router } from "expo-router";
 import Constants from "expo-constants";
@@ -38,15 +39,15 @@ export default function HelpScreen() {
       contentContainerStyle={{ paddingBottom: screen.bottom }}
     >
       <View className="flex-row items-center gap-3 mb-6">
-        <Pressable
+        <PressableFade
           onPress={() => router.back()}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           accessibilityRole="button"
           accessibilityLabel="Geri dön"
-          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          dim={0.7}
         >
           <Feather name="chevron-left" size={22} color="#F5F3EC" />
-        </Pressable>
+        </PressableFade>
         <Text className="text-text text-xl font-bold">Yardım & Destek</Text>
       </View>
 
@@ -64,40 +65,40 @@ export default function HelpScreen() {
 
       {/* Uygulamadan ÇIKIP e-posta uygulamasını açıyor — ekran okuyucu
           kullanıcısı bunu önceden bilmeli, yoksa uygulama çökmüş gibi gelir. */}
-      <Pressable
+      <PressableFade
         onPress={sendFeedback}
         accessibilityRole="button"
         accessibilityLabel="Geri bildirim gönder"
         accessibilityHint="E-posta uygulamanı açar"
-        style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+        dim={0.7}
         className="bg-surface border border-border rounded-button px-4 py-4 flex-row items-center gap-3 mb-5"
       >
         <Feather name="mail" size={16} color={ACCENT} />
         <Text className="text-text text-base flex-1">Geri bildirim gönder</Text>
         <Feather name="chevron-right" size={15} color="#8B8A82" />
-      </Pressable>
+      </PressableFade>
 
       <View className="bg-surface border border-border rounded-card overflow-hidden mb-5">
-        <Pressable
+        <PressableFade
           onPress={() => router.push("/privacy-policy")}
           accessibilityRole="button"
-          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+          dim={0.6}
           className="flex-row items-center gap-3 px-4 py-3 border-b border-border"
         >
           <Feather name="shield" size={16} color={ACCENT} />
           <Text className="flex-1 text-text text-base">Gizlilik Politikası</Text>
           <Feather name="chevron-right" size={15} color="#8B8A82" />
-        </Pressable>
-        <Pressable
+        </PressableFade>
+        <PressableFade
           onPress={() => router.push("/terms")}
           accessibilityRole="button"
-          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+          dim={0.6}
           className="flex-row items-center gap-3 px-4 py-3"
         >
           <Feather name="file-text" size={16} color={ACCENT} />
           <Text className="flex-1 text-text text-base">Kullanım Şartları</Text>
           <Feather name="chevron-right" size={15} color="#8B8A82" />
-        </Pressable>
+        </PressableFade>
       </View>
 
       <Text className="text-textFaint text-xs text-center">Remory v{version}</Text>

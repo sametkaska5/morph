@@ -1,4 +1,5 @@
 import { View, Pressable, Modal, ActivityIndicator } from "react-native";
+import { PressableFade } from "./PressableFade";
 import Feather from "@expo/vector-icons/Feather";
 import { Text } from "@/components/Typography";
 
@@ -82,20 +83,22 @@ export function ConfirmDialog({
           <View className="flex-row gap-3 w-full">
             {onConfirm ? (
               <>
-                <Pressable
+                <PressableFade
                   onPress={dismiss}
                   disabled={pending}
                   accessibilityRole="button"
-                  style={({ pressed }) => ({ opacity: pressed ? 0.8 : pending ? 0.6 : 1 })}
+                  dim={0.8}
+                  baseOpacity={pending ? 0.6 : 1}
                   className="flex-1 py-4 rounded-button items-center bg-surface border border-border"
                 >
                   <Text className="text-text text-base font-semibold">{cancelLabel}</Text>
-                </Pressable>
-                <Pressable
+                </PressableFade>
+                <PressableFade
                   onPress={onConfirm}
                   disabled={pending}
                   accessibilityRole="button"
-                  style={({ pressed }) => ({ opacity: pressed ? 0.8 : pending ? 0.7 : 1 })}
+                  dim={0.8}
+                  baseOpacity={pending ? 0.7 : 1}
                   className={`flex-1 py-4 rounded-button items-center ${danger ? "bg-danger" : "bg-accent"}`}
                 >
                   {pending ? (
@@ -103,17 +106,17 @@ export function ConfirmDialog({
                   ) : (
                     <Text className="text-bg text-base font-semibold">{confirmLabel}</Text>
                   )}
-                </Pressable>
+                </PressableFade>
               </>
             ) : (
-              <Pressable
+              <PressableFade
                 onPress={onClose}
                 accessibilityRole="button"
-                style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+                dim={0.8}
                 className="flex-1 py-4 rounded-button items-center bg-surface border border-border"
               >
                 <Text className="text-text text-base font-semibold">Tamam</Text>
-              </Pressable>
+              </PressableFade>
             )}
           </View>
         </Pressable>

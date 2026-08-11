@@ -1,40 +1,22 @@
 import { LegalScreen } from "@/components/LegalScreen";
+import privacy from "@/lib/legal/privacy.json";
 
+/**
+ * Metin bu dosyada DEĞİL, lib/legal/privacy.json'da.
+ *
+ * NEDEN: Play Console, gizlilik politikasının uygulama DIŞINDAN erişilebilen bir
+ * adreste de yayımlanmasını şart koşuyor (docs/ altındaki sayfalar,
+ * `npm run gen:legal` ile üretiliyor). İki kopya olsaydı biri güncellenip
+ * diğeri unutulurdu ve mağazadaki politika ile uygulamadaki metin ayrışırdı —
+ * bu, uygulamanın yayından kaldırılma sebebi. Tek kaynak bunu yapısal olarak
+ * imkânsız kılıyor; CI da üretilen HTML'in güncel olduğunu doğruluyor.
+ */
 export default function PrivacyPolicyScreen() {
   return (
     <LegalScreen
-      title="Gizlilik Politikası"
-      updatedAt="20 Temmuz 2026"
-      sections={[
-        {
-          heading: "Hangi verileri topluyoruz?",
-          body: "Hesabını oluştururken e-posta adresini ve şifreni; profilinde isteğe bağlı olarak isim ve profil fotoğrafını alırız. Uygulamayı kullandıkça eklediğin anılar (tarih, fotoğraf, not) ve vücut ölçümlerin (kilo, bel, göğüs, vücut yağ oranı vb.) hesabınla ilişkilendirilerek saklanır. Ayrıca birim tercihin (metrik/emperyal) ve bildirim ayarların kaydedilir.",
-        },
-        {
-          heading: "Verilerin nasıl saklanır?",
-          body: "Tüm veriler Supabase altyapısında, şifreli bağlantı (HTTPS) üzerinden iletilir ve sunucu tarafında saklanır. Fotoğrafların yalnızca kendi hesabınla erişilebilecek şekilde korunur; hesap düzeyinde erişim kısıtlaması (Row Level Security) sayesinde başka hiçbir kullanıcı senin verilerine erişemez.",
-        },
-        {
-          heading: "Verilerini kimlerle paylaşıyoruz?",
-          body: "Verilerini hiçbir üçüncü tarafla paylaşmıyor, satmıyoruz. Uygulamada reklam ağı veya kullanım takibi yapan bir analitik servisi bulunmuyor. Supabase, yalnızca altyapıyı barındıran bir hizmet sağlayıcı olarak kullanılır.",
-        },
-        {
-          heading: "Bildirimler",
-          body: "Hatırlatma bildirimleri tamamen cihazın kendisinde yerel olarak planlanır; bu bildirimler için herhangi bir sunucudan push gönderilmez ve bildirim içerikleri dışarıya iletilmez.",
-        },
-        {
-          heading: "Verilerin üzerindeki hakların",
-          body: "Profilini, fotoğraflarını ve ölçümlerini istediğin zaman düzenleyebilir veya silebilirsin. Profil > Hesabı Sil yolunu kullanarak hesabını ve ona bağlı tüm verileri (fotoğraflar dahil) kalıcı ve geri döndürülemez şekilde silebilirsin.",
-        },
-        {
-          heading: "Çocukların gizliliği",
-          body: "Remory, 16 yaşın altındaki kullanıcılara yönelik olarak tasarlanmamıştır ve bu yaş grubundan bilerek veri toplamayız.",
-        },
-        {
-          heading: "İletişim",
-          body: "Gizlilikle ilgili sorularını sametkaska5@gmail.com adresine e-posta göndererek iletebilirsin.",
-        },
-      ]}
+      title={privacy.title}
+      updatedAt={privacy.updatedAt}
+      sections={privacy.sections}
     />
   );
 }

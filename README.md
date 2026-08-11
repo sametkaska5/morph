@@ -404,6 +404,53 @@ WAKE_LOCK  WRITE_EXTERNAL_STORAGE
 
 `SYSTEM_ALERT_WINDOW`, `READ_MEDIA_VIDEO`, `READ_MEDIA_AUDIO` ve `RECORD_AUDIO` listede yok. **Debug** varyantında ise `SYSTEM_ALERT_WINDOW` duruyor (medya izinleri orada da düşüyor) — yani dev menüsü çalışmaya devam ediyor, tasarlanan ayrım tutuyor.
 
+## Yayına çıkış (Google Play)
+
+### Yasal sayfalar — tek kaynak, iki tüketici
+
+Play Console iki şeyi uygulamanın **dışından** erişilebilir bir adreste istiyor: gizlilik politikası ve hesap silme talebi yolu. Metni HTML'e ikinci kez yazmak, uygulamadaki metinle ayrışmaya davetiye — biri güncellenir, diğeri unutulur ve mağazaya bildirdiğin politika artık uygulamanın yaptığını anlatmaz. Bu, yayından kaldırma sebebi.
+
+Bu yüzden kaynak tek: `lib/legal/*.json`. Uygulama ekranları ([privacy-policy.tsx](app/privacy-policy.tsx), [terms.tsx](app/terms.tsx)) onu import ediyor, `docs/` altındaki HTML sayfaları da ondan üretiliyor:
+
+```bash
+npm run gen:legal
+```
+
+Hesap silme sayfasının uygulama içinde karşılığı yok (ekran değil, yalnızca mağaza yükümlülüğü), içeriği üreteç betiğinde duruyor. Metni değiştirdikten sonra betiği çalıştırmayı unutursan **CI yakalar** — `docs/` yeniden üretilip commit'lenmiş hâliyle karşılaştırılıyor, tipler için yapılan kontrolün aynısı.
+
+GitHub Pages'i açmak (bir kereye mahsus): depo ayarlarında **Settings → Pages → Source: Deploy from a branch → main / docs**. Yayımlanan adresler:
+
+- `https://sametkaska5.github.io/remory/gizlilik.html` → Play Console'daki gizlilik politikası alanı
+- `https://sametkaska5.github.io/remory/hesap-silme.html` → veri güvenliği formundaki silme bağlantısı
+- `https://sametkaska5.github.io/remory/kullanim-sartlari.html` → mağaza listelemesindeki isteğe bağlı şartlar bağlantısı
+
+### Veri güvenliği formu
+
+Beyan, gizlilik metnine değil **kodun davranışına** göre doldurulur. Aşağıdaki tablo şemadan ve `lib/monitoring.ts`'ten türetildi; veri modeli değişirse burası da güncellenmeli.
+
+| Play kategorisi | Veri | Kaynak |
+|---|---|---|
+| Kişisel bilgiler → E-posta | hesap kimliği (zorunlu) | Supabase auth |
+| Kişisel bilgiler → İsim | `profiles.name` (isteğe bağlı) | `0001_init.sql` |
+| Kişisel bilgiler → Diğer | günlük notları | `entries.note` |
+| Fotoğraflar ve videolar | anı fotoğrafları + avatar | `photos` tablosu, `profiles.avatar_path` |
+| **Sağlık ve fitness** | vücut ölçümleri | `measurement_values` |
+| Uygulama bilgisi → **Çökme kayıtları** | Sentry | `lib/monitoring.ts` |
+
+Güvenlik uygulamaları: aktarımda şifreli (HTTPS) ✓, kullanıcı silme talep edebilir ✓ (`delete_own_account` + `deleteAllUserPhotos`), üçüncü tarafla paylaşılmıyor ✓ — Supabase ve Sentry Play'in tanımında "paylaşım" değil hizmet sağlayıcı.
+
+En sık atlanan iki kalem: **ölçümler sağlık verisi sayılıyor** ve **Sentry çökme kaydı topluyor**. `sendDefaultPii: false` olduğu için çökme kayıtları "kimlikle ilişkilendirilmiyor" olarak beyan edilebilir.
+
+### İlk yükleme
+
+Google, **yeni bir uygulamanın ilk AAB'sinin Play Console'dan elle yüklenmesini** şart koşuyor; Play Developer API o ilk yüklemeden önce çalışmıyor. Yani `eas submit` ancak ikinci sürümden itibaren kullanılabilir — `eas.json`'daki `submit.production` bunun için hazır bekliyor, servis hesabı anahtarı ise depoya değil `eas credentials` ile EAS'e konuyor.
+
+```bash
+npx eas-cli build --profile production --platform android
+```
+
+Ayrıca yeni **bireysel** geliştirici hesapları için Google, üretime çıkmadan önce kapalı testte belirli sayıda test kullanıcısıyla belirli bir süre koşma şartı getirmişti. Yürürlükteki hâli Play Console'da hesabına özel görünür — planı ona göre kur.
+
 ### Uygulama ikonu
 
 Üç ayrı varlık, üç ayrı kural — birini diğerinin yerine koyamazsın:

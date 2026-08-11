@@ -31,6 +31,12 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "//": "serviceAccountKeyPath BİLEREK YOK. Play servis hesabı anahtarı bir sırdır, depoya girmemeli; `eas credentials` ile EAS'e yüklenip orada saklanıyor. Ayrıca Google, YENİ bir uygulamanın İLK AAB'sinin Play Console'dan ELLE yüklenmesini şart koşuyor — Play Developer API o ilk yüklemeden önce çalışmıyor. Yani `eas submit` ancak ikinci sürümden itibaren kullanılabilir (bkz. README).",
+      "android": {
+        "track": "internal",
+        "releaseStatus": "draft"
+      }
+    }
   }
 }

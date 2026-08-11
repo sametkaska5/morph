@@ -46,6 +46,17 @@ jobs:
         if: ${{ !cancelled() }}
         run: npm test -- --ci
 
+      # docs/ altındaki yasal sayfalar lib/legal/*.json'dan üretiliyor ve
+      # GitHub Pages'ten yayımlanıyor. Fark çıkarsa biri metni değiştirip
+      # `npm run gen:legal` çalıştırmayı unutmuş demektir — bu, Play Console'a
+      # bildirilen gizlilik politikasının uygulamadakinden AYRILMASI anlamına
+      # gelir ve mağaza için yayından kaldırma sebebidir.
+      - name: Yasal sayfalar guncel mi
+        if: ${{ !cancelled() }}
+        run: |
+          npm run gen:legal
+          git diff --exit-code docs/
+
   # Ayrı bir iş: quality ile paralel koşsun. Jest testleri saniyeler sürerken
   # bu iş konteyner indirip veritabanı ayağa kaldırıyor, ikisini aynı işe
   # koymak hızlı geri bildirimi yavaşın arkasında bekletirdi.

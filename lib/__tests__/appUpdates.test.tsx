@@ -44,8 +44,19 @@ function Probe() {
   return <Text onPress={apply}>{ready ? "hazir" : "yok"}</Text>;
 }
 
+/**
+ * `__DEV__` jest ortamında varsayılan olarak `true` — yani testler hiç
+ * dokunmasa hepsi "geliştirme derlemesi" yolunu ölçerdi ve güncelleme kontrolü
+ * hiç çalışmazdı. Varsayılanı üretim (false) yapıp, geliştirme davranışını
+ * kendi testinde açıkça açıyoruz.
+ */
+function setDevBuild(value: boolean) {
+  (globalThis as { __DEV__?: boolean }).__DEV__ = value;
+}
+
 beforeEach(() => {
   jest.clearAllMocks();
+  setDevBuild(false);
   mockIsEnabled = true;
   mockPending = false;
   mockCheck.mockResolvedValue({ isAvailable: false });
@@ -85,9 +96,23 @@ describe("useAppUpdate", () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
-  it("expo-updates KAPALIYSA (geliştirme) hiç kontrol etmez", async () => {
-    // checkForUpdateAsync geliştirmede hata fırlatıyor.
+  it("expo-updates YAPILANDIRILMAMIŞSA hiç kontrol etmez", async () => {
     mockIsEnabled = false;
+
+    await render(<Probe />);
+
+    expect(mockCheck).not.toHaveBeenCalled();
+  });
+
+  /**
+   * Geliştirme derlemesinde `isEnabled` TRUE dönüyor — yapılandırma var — ama
+   * API çalışmıyor: checkForUpdateAsync "not supported in development builds"
+   * diye reddediyor. Eskiden yalnızca isEnabled'a bakıldığı için her açılışta
+   * konsola kırmızı hata düşüyor ve Sentry'ye sahte bir kayıt gidiyordu.
+   */
+  it("geliştirme derlemesinde isEnabled true olsa bile kontrol etmez", async () => {
+    setDevBuild(true);
+    mockIsEnabled = true;
 
     await render(<Probe />);
 

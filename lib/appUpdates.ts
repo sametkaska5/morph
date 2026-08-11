@@ -51,11 +51,21 @@ export function useAppUpdate(): { ready: boolean; apply: () => void } {
   const busy = useRef(false);
 
   useEffect(() => {
-    // Geliştirmede güncelleme diye bir şey yok: JS Metro'dan geliyor ve
-    // checkForUpdateAsync burada hata fırlatıyor. `isEnabled` bunun resmi
-    // kontrolü — `__DEV__` yerine onu kullanıyoruz çünkü updates, release
-    // olmayan başka ortamlarda da (örn. yapılandırma eksikse) kapalı olabiliyor.
-    if (!Updates.isEnabled) return;
+    /**
+     * İKİ AYRI KAPI ve ikisi de gerekli — biri diğerini kapsamıyor:
+     *
+     *   __DEV__            Geliştirme derlemesi (expo-dev-client). Burada
+     *                      updates YAPILANDIRMASI açık olduğu için isEnabled
+     *                      `true` dönüyor, ama API'nin kendisi çalışmıyor:
+     *                      checkForUpdateAsync "not supported in development
+     *                      builds" diyerek reddediyor. Eskiden yalnızca
+     *                      isEnabled'a bakılıyordu, dolayısıyla her açılışta
+     *                      konsola kırmızı bir hata düşüyor ve Sentry'ye sahte
+     *                      bir kayıt gidiyordu.
+     *
+     *   Updates.isEnabled  Updates'in hiç yapılandırılmadığı ortamlar.
+     */
+    if (__DEV__ || !Updates.isEnabled) return;
 
     let cancelled = false;
 

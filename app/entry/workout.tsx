@@ -1,6 +1,7 @@
 import { useRef, useState, type ComponentProps } from "react";
 import { View, Pressable, Platform, ScrollView, ActivityIndicator } from "react-native";
 import { showAlert } from "@/lib/appAlert";
+import { PressableFade } from "@/components/PressableFade";
 import { Text, TextInput } from "@/components/Typography";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -140,15 +141,15 @@ export default function WorkoutDayScreen() {
       keyboardShouldPersistTaps="handled"
     >
       <View className="flex-row justify-between items-center mb-4">
-        <Pressable
+        <PressableFade
           onPress={() => router.back()}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           accessibilityRole="button"
           accessibilityLabel="Geri dön"
-          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          dim={0.7}
         >
           <Feather name="chevron-left" size={22} color="#F5F3EC" />
-        </Pressable>
+        </PressableFade>
         <Text className="text-text text-xl font-bold">Fotoğrafsız gün</Text>
         <View style={{ width: 22 }} />
       </View>
@@ -284,15 +285,14 @@ export default function WorkoutDayScreen() {
                       >
                         {displayUnit(t.unit, unitPref)}
                       </Text>
-                      <Pressable
+                      <PressableFade
                         hitSlop={8}
                         accessibilityRole="button"
                         accessibilityLabel="Sonraki alana geç"
-                        style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
                         onPress={() => measureRefs.current[i + 1]?.focus()}
                       >
                         <Feather name="chevron-right" size={16} color="#8B8A82" />
-                      </Pressable>
+                      </PressableFade>
                     </View>
                   </View>
                   {errorText ? <Text className="text-danger text-xs mt-1 text-right">{errorText}</Text> : null}

@@ -9,6 +9,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { showAlert } from "@/lib/appAlert";
+import { PressableFade } from "@/components/PressableFade";
 import { Text, TextInput } from "@/components/Typography";
 import { router } from "expo-router";
 import { useMutation, useQueryClient, type InfiniteData } from "@tanstack/react-query";
@@ -205,15 +206,14 @@ export default function NewEntry() {
         className="flex-row justify-between items-center px-5 pb-3 border-b border-border"
         style={{ paddingTop: screen.top }}
       >
-        <Pressable
+        <PressableFade
           onPress={() => router.back()}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           accessibilityRole="button"
           accessibilityLabel="İptal et ve geri dön"
-          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
         >
           <Text className="text-textMuted text-base">İptal</Text>
-        </Pressable>
+        </PressableFade>
 
         <Text className="text-text text-xl font-bold">Yeni Kayıt</Text>
 
@@ -349,11 +349,10 @@ export default function NewEntry() {
                     >
                       {displayUnit(t.unit, unitPref)}
                     </Text>
-                    <Pressable
+                    <PressableFade
                       hitSlop={8}
                       accessibilityRole="button"
                       accessibilityLabel="Sonraki alana geç"
-                      style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
                       onPress={() => {
                         const next = inputRefs.current[i + 1];
                         if (next) next.focus();
@@ -361,7 +360,7 @@ export default function NewEntry() {
                       }}
                     >
                       <Feather name="chevron-right" size={16} color="#8B8A82" />
-                    </Pressable>
+                    </PressableFade>
                   </View>
                 </View>
                 {errorText ? (

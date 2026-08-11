@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { View, Image, ScrollView, Pressable, ActivityIndicator } from "react-native";
 import { showAlert } from "@/lib/appAlert";
+import { PressableFade } from "@/components/PressableFade";
 import { Text } from "@/components/Typography";
 import { router, useLocalSearchParams } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
@@ -69,15 +70,15 @@ export default function Compare() {
   return (
     <ScrollView className="flex-1 bg-bg" contentContainerStyle={{ paddingTop: screen.top, paddingBottom: screen.bottom }}>
       <View className="flex-row items-center justify-between px-4 mb-1">
-        <Pressable
+        <PressableFade
           onPress={() => router.back()}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           accessibilityRole="button"
           accessibilityLabel="Geri dön"
-          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          dim={0.7}
         >
           <Feather name="chevron-left" size={22} color="#F5F3EC" />
-        </Pressable>
+        </PressableFade>
         <View className="items-center">
           <Text className="text-text text-xl font-bold">Karşılaştırma</Text>
           <Text className="text-textFaint text-xs">Değişimini gör</Text>

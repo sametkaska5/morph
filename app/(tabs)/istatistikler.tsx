@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, ScrollView, Pressable, ActivityIndicator, Image, Modal, RefreshControl } from "react-native";
 import { showAlert } from "@/lib/appAlert";
+import { PressableFade } from "@/components/PressableFade";
 import { Text } from "@/components/Typography";
 import { useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
@@ -313,7 +314,7 @@ export default function Istatistikler() {
                 ) : null}
               </View>
 
-              <Pressable
+              <PressableFade
                 onPress={() => {
                   setModalSelectedIndex(selectedIndex);
                   setChartExpanded(true);
@@ -321,10 +322,9 @@ export default function Istatistikler() {
                 hitSlop={10}
                 accessibilityRole="button"
                 accessibilityLabel="Grafiği büyüt"
-                style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
               >
                 <Feather name="maximize-2" size={18} color="#8B8A82" />
-              </Pressable>
+              </PressableFade>
             </View>
 
             <MeasurementChart

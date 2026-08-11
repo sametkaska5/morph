@@ -1,5 +1,6 @@
 import { memo, useCallback, useState } from "react";
 import { View, FlatList, Pressable, ActivityIndicator, useWindowDimensions } from "react-native";
+import { PressableFade } from "@/components/PressableFade";
 import { Text } from "@/components/Typography";
 import { Image } from "expo-image";
 import { router } from "expo-router";
@@ -126,15 +127,15 @@ export default function PickComparison() {
   return (
     <View className="flex-1 bg-bg" style={{ paddingTop: screen.top }}>
       <View className="flex-row items-center justify-between px-4 mb-1">
-        <Pressable
+        <PressableFade
           onPress={() => router.back()}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           accessibilityRole="button"
           accessibilityLabel="Geri dön"
-          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          dim={0.7}
         >
           <Feather name="chevron-left" size={22} color="#F5F3EC" />
-        </Pressable>
+        </PressableFade>
         <Text className="text-text text-xl font-bold">İki Fotoğraf Seç</Text>
         <View style={{ width: 22 }} />
       </View>

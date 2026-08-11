@@ -1,4 +1,5 @@
-import { View, Pressable, ScrollView } from "react-native";
+import { View, ScrollView } from "react-native";
+import { PressableFade } from "./PressableFade";
 import { Text } from "./Typography";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
@@ -22,15 +23,15 @@ export function LegalScreen({
       contentContainerStyle={{ paddingBottom: screen.bottom }}
     >
       <View className="flex-row items-center gap-3 mb-2">
-        <Pressable
+        <PressableFade
           onPress={() => router.back()}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           accessibilityRole="button"
           accessibilityLabel="Geri dön"
-          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          dim={0.7}
         >
           <Feather name="chevron-left" size={22} color="#F5F3EC" />
-        </Pressable>
+        </PressableFade>
         <Text className="text-text text-xl font-bold">{title}</Text>
       </View>
       <Text className="text-textFaint text-xs mb-6">Son güncelleme: {updatedAt}</Text>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { View, Pressable, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
+import { PressableFade } from "@/components/PressableFade";
 import { Text, TextInput } from "@/components/Typography";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
@@ -114,15 +115,15 @@ export default function ChangePasswordScreen() {
         style={{ paddingTop: screen.top, paddingBottom: screen.insets.bottom }}
       >
         <View className="flex-row items-center gap-3 mb-6">
-          <Pressable
+          <PressableFade
             onPress={() => router.back()}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             accessibilityRole="button"
             accessibilityLabel="Geri dön"
-            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+            dim={0.7}
           >
             <Feather name="chevron-left" size={22} color="#F5F3EC" />
-          </Pressable>
+          </PressableFade>
           <Text className="text-text text-xl font-bold">Şifre değiştir</Text>
         </View>
 

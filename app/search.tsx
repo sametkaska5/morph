@@ -1,5 +1,6 @@
 import { memo, useMemo, useState } from "react";
 import { View, Pressable, FlatList, ActivityIndicator, RefreshControl } from "react-native";
+import { PressableFade } from "@/components/PressableFade";
 import { Text, TextInput } from "@/components/Typography";
 import { Image } from "expo-image";
 import { router } from "expo-router";
@@ -66,15 +67,15 @@ export default function SearchScreen() {
   return (
     <View className="flex-1 bg-bg px-4" style={{ paddingTop: screen.top }}>
       <View className="flex-row items-center gap-3 mb-4">
-        <Pressable
+        <PressableFade
           onPress={() => router.back()}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           accessibilityRole="button"
           accessibilityLabel="Geri dön"
-          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          dim={0.7}
         >
           <Feather name="chevron-left" size={22} color="#F5F3EC" />
-        </Pressable>
+        </PressableFade>
         <Text className="text-text text-xl font-bold">Anılarında ara</Text>
       </View>
 

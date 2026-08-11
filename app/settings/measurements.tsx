@@ -7,6 +7,7 @@ import {
   type TextInput as RNTextInput,
 } from "react-native";
 import { showAlert } from "@/lib/appAlert";
+import { PressableFade } from "@/components/PressableFade";
 import { Text, TextInput } from "@/components/Typography";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
@@ -96,15 +97,15 @@ export default function MeasurementSettingsScreen() {
         onClose={() => setPendingDelete(null)}
       />
       <View className="flex-row items-center gap-3 mb-6">
-        <Pressable
+        <PressableFade
           onPress={() => router.back()}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           accessibilityRole="button"
           accessibilityLabel="Geri dön"
-          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          dim={0.7}
         >
           <Feather name="chevron-left" size={22} color="#F5F3EC" />
-        </Pressable>
+        </PressableFade>
         <Text className="text-text text-xl font-bold">Takip Edilen Ölçümler</Text>
       </View>
 
@@ -182,15 +183,14 @@ export default function MeasurementSettingsScreen() {
                     >
                       {t.unit}
                     </Text>
-                    <Pressable
+                    <PressableFade
                       hitSlop={10}
                       accessibilityRole="button"
                       accessibilityLabel={`${t.name} ölçümünü sil`}
-                      style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
                       onPress={() => setPendingDelete({ id: t.id, label: t.name })}
                     >
                       <Feather name="trash-2" size={16} color="#D9705A" />
-                    </Pressable>
+                    </PressableFade>
                   </View>
                 </View>
               ))

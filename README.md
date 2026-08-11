@@ -117,6 +117,7 @@ app/
 
 components/
   Typography.tsx       Inter fontunu uygulayan Text / TextInput sarmalayıcıları
+  PressableFade.tsx    basınca sönen dokunulabilir alan — Pressable'ın fonksiyon-form style'ı yerine
   ErrorBoundary.tsx    render çökmelerini yakalar (kök layout'ta), Sentry'ye bildirir
   ErrorState.tsx       veri yüklenemediğinde ikon + açıklama + "Tekrar dene"
   MeasurementChart.tsx interaktif ölçüm grafiği (satır içi + büyütme modu)

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { View, Pressable, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
+import { PressableFade } from "@/components/PressableFade";
 import { Text, TextInput } from "@/components/Typography";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
@@ -84,20 +85,20 @@ export default function ForgotPasswordScreen() {
       className="flex-1 bg-bg"
       style={{ paddingBottom: screen.insets.bottom }}
     >
-      {/* Konum sarmalayıcı View'de, Pressable'ın kendi style'ında DEĞİL: bu
-          projede fonksiyon-form style'a konan yerleşim özellikleri üç ayrı
-          yerde sessizce uygulanmadı. Fonksiyon-form artık yalnızca basılma
-          opaklığını taşıyor. Üst konum da sabit 56px değil güvenli alandan. */}
+      {/* Konum sarmalayıcı View'de, düğmenin kendi style'ında DEĞİL: bu projede
+          fonksiyon-form style'a konan yerleşim özellikleri üç ayrı yerde
+          sessizce uygulanmadı. Basma sönümü artık PressableFade'in işi, düğme
+          hiç style almıyor. Üst konum da sabit 56px değil güvenli alandan. */}
       <View style={{ position: "absolute", top: screen.top, left: 24, zIndex: 10 }}>
-        <Pressable
+        <PressableFade
           onPress={() => router.back()}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           accessibilityRole="button"
           accessibilityLabel="Geri dön"
-          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          dim={0.7}
         >
           <Feather name="chevron-left" size={22} color="#F5F3EC" />
-        </Pressable>
+        </PressableFade>
       </View>
 
       <View className="flex-1 justify-center px-6">

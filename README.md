@@ -404,10 +404,29 @@ WAKE_LOCK  WRITE_EXTERNAL_STORAGE
 
 `SYSTEM_ALERT_WINDOW`, `READ_MEDIA_VIDEO`, `READ_MEDIA_AUDIO` ve `RECORD_AUDIO` listede yok. **Debug** varyantında ise `SYSTEM_ALERT_WINDOW` duruyor (medya izinleri orada da düşüyor) — yani dev menüsü çalışmaya devam ediyor, tasarlanan ayrım tutuyor.
 
+### Uygulama ikonu
+
+Üç ayrı varlık, üç ayrı kural — birini diğerinin yerine koyamazsın:
+
+| Dosya | Nerede | İçeriğin kanvasa oranı |
+|---|---|---|
+| `icon.png` | iOS + genel | %66.4, opak koyu zemin (köşeler yalnızca hafifçe yuvarlanıyor) |
+| `adaptive-icon.png` | Android launcher | **%58**, saydam zemin |
+| `splash-icon.png` | açılış ekranı | %62.1, saydam zemin (`imageWidth: 200` ile ayrıca ölçekleniyor) |
+
+Android'in adaptif ikonu üç halkalı bir ölçü sistemi kullanıyor: katman **108dp**, maskeye giren görüş alanı **72dp** (%66.7), kritik içerik için güvenli daire **66dp** (%61.1). Dış bölge parallax için ayrılmış ve durağan görünümde kırpılıyor.
+
+`adaptive-icon.png` eskiden `splash-icon.png` ile bire bir aynı dosyaydı; içerik %62.1'de, yani 66dp güvenli dairesinin bir puan dışındaydı. Kesilmiyordu ama maskenin kenarına dayanıyordu — dairesel maskede halka görünür alanın %93'üne kadar gidiyor, hiç nefes payı kalmıyordu. Şimdi %58'e çekildi (≈62.6dp), güvenli dairenin içinde.
+
+Zemin **dosyaya gömülmüyor**: ön katman saydam, arka plan `app.json` → `android.adaptiveIcon.backgroundColor` (`#0A0A08`) ile geliyor. Yeni bir varyant üretirken bu saydamlık korunmalı, yoksa maskenin köşelerinde ikonun kendi zemini görünür.
+
+Ölçmek için (herhangi bir görüntü aracıyla): saydam olmayan piksellerin sınır kutusunu al, kenar uzunluğunu kanvas genişliğine böl. Merkez kayması 0 olmalı.
+
+İkon **native bir kaynak** (`mipmap/ic_launcher_foreground`), yani kablosuz güncellemeyle gitmiyor — değiştirildiğinde `app.json`'daki `version` elle artırılmalı ve yeni bir build alınmalı.
+
 ## Bilinen açık uçlar
 
 - Onboarding tek ekranda (`welcome.tsx`); planlanan ek adımlar henüz yok. Akış bağlı ve testli — adım eklemek istendiğinde `app/index.tsx`'teki karara dokunmadan `(onboarding)` altına yeni ekran koymak yeterli.
 - Yasal metinler ve `settings/help.tsx`'in render testi yok — içerikleri statik. Veri yazan ve geri alınamaz akışların hepsi testli.
-- `assets/images/adaptive-icon.png` ile `splash-icon.png` bire bir aynı dosya. Android adaptif ikonun dış bölgesini kırptığı için logonun kenarları kesiliyor — güvenli alanı olan ayrı bir varyant gerekiyor.
 - `npm run gen:types` yalnızca proje Supabase CLI'a link'liyken çalışır; aksi halde `lib/database.types.ts` elle güncellenmeli.
 - Galeriye kaydetme (`app/compare/index.tsx`), `expo-media-library`'yi try/catch'li `require` ile yüklüyor: bu native modül Expo Go'da bulunmadığı için import anında throw eder, yakalanır ve "Kaydet" bilinçli olarak devre dışı kalıp kullanıcıyı development build'e / "Paylaş"a yönlendirir. Beklenen davranış — galeri kaydı için development/production build gerekir.

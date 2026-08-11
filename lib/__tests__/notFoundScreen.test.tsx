@@ -1,8 +1,10 @@
 /**
  * "Bu sayfa yok" ekranı.
  *
- * Statik metinli ekranların (yasal metinler, yardım) render testi yok — içerikleri
- * değişmiyor. Bu ekran farklı: VAR OLMA SEBEBİ tek bir eylem, kurtarma yolu.
+ * Statik metinli ekranlarda (yardım) render testi yok — içerikleri değişmiyor.
+ * Yasal metinlerin testi metni değil değişmezlerini doğruluyor (bkz.
+ * legalScreens.test.tsx). Bu ekran ikisinden de farklı: VAR OLMA SEBEBİ tek bir
+ * eylem, kurtarma yolu.
  * Düğme çalışmazsa kullanıcı derin bağlantıyla düştüğü çıkmazda kalıyor ve
  * uygulamayı kapatmaktan başka seçeneği olmuyor — üstelik bu, ekran doğru
  * render edildiği için gözle bakınca fark edilmiyor.

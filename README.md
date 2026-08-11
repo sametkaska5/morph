@@ -427,6 +427,6 @@ Zemin **dosyaya gömülmüyor**: ön katman saydam, arka plan `app.json` → `an
 ## Bilinen açık uçlar
 
 - Onboarding tek ekranda (`welcome.tsx`); planlanan ek adımlar henüz yok. Akış bağlı ve testli — adım eklemek istendiğinde `app/index.tsx`'teki karara dokunmadan `(onboarding)` altına yeni ekran koymak yeterli.
-- Yasal metinler ve `settings/help.tsx`'in render testi yok — içerikleri statik. Veri yazan ve geri alınamaz akışların hepsi testli.
+- Statik metinli ekranların (yasal metinler, yardım) testleri metnin KENDİSİNİ doğrulamıyor — öyle bir test değişiklik dedektörü olurdu. Doğrulanan, metnin sağlaması gereken değişmezler: başlık/soru benzersizliği (üç ekran da onları React anahtarı olarak kullanıyor), boş bölüm olmaması, gizlilik politikasında silme yolunun tarif edilmiş olması (Play'in veri güvenliği beyanı şart koşuyor), yardım ekranındaki `mailto` konusunun kodlanmış olması, yasal yolların diskte gerçekten karşılığı bulunması ve geri/yönlendirme düğmeleri. Veri yazan ve geri alınamaz akışların hepsi testli.
 - `npm run gen:types` yalnızca proje Supabase CLI'a link'liyken çalışır; aksi halde `lib/database.types.ts` elle güncellenmeli.
 - Galeriye kaydetme (`app/compare/index.tsx`), `expo-media-library`'yi try/catch'li `require` ile yüklüyor: bu native modül Expo Go'da bulunmadığı için import anında throw eder, yakalanır ve "Kaydet" bilinçli olarak devre dışı kalıp kullanıcıyı development build'e / "Paylaş"a yönlendirir. Beklenen davranış — galeri kaydı için development/production build gerekir.

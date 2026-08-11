@@ -9,7 +9,11 @@ import { useScreenInsets } from "@/lib/useScreenInsets";
 const ACCENT = "#8CE05A";
 const SUPPORT_EMAIL = "sametkaska5@gmail.com";
 
-const FAQ = [
+/**
+ * Dışa açık: testler soruların benzersizliğini (aşağıda React anahtarı olarak
+ * kullanılıyor) ve hiçbirinin boş kalmadığını buradan doğruluyor.
+ */
+export const FAQ = [
   {
     q: "Günde birden fazla kayıt ekleyebilir miyim?",
     a: "Hayır, her gün için tek bir kayıt tutulur. Aynı günü tekrar düzenlemek istersen Anı Akışı veya İstatistik ekranından o güne dokunup düzenleyebilirsin.",

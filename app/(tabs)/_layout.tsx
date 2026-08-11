@@ -7,6 +7,7 @@ import Feather from "@expo/vector-icons/Feather";
 import { useAuth } from "@/lib/useAuth";
 import { useMeasurementTypes } from "@/lib/measurementTypes";
 import { usePrefetchStatsScreen } from "@/lib/stats";
+import { usePrefetchProfileStats } from "@/lib/profileStats";
 import { useIsOnline } from "@/lib/useIsOnline";
 import { useAppUpdate } from "@/lib/appUpdates";
 import { openCapturePicker } from "@/lib/capture";
@@ -74,20 +75,26 @@ function OfflineBanner() {
 }
 
 /**
- * Hiçbir şey çizmiyor: yalnızca istatistikler ekranının verisini arka planda
- * hazırlıyor (grafik serisi + hafta şeridi). Gerekçesi usePrefetchStatsScreen'de.
+ * Hiçbir şey çizmiyor: yalnızca sekmelerin verisini arka planda hazırlıyor —
+ * istatistikler (grafik serisi + hafta şeridi) ve profil (sayaçlar).
  *
- * AYRI BİR BİLEŞEN olması bilinçli: ölçüm tipleri sorgusuna abone oluyor ve veri
- * geldiğinde yeniden render oluyor. Bu abonelik TabsLayout'un içinde olsaydı
- * sekme yerleşiminin tamamı o anda yeniden render olurdu — görünmez bir yan
- * etki için gereksiz bir maliyet.
+ * Neden dokunuş değil de montaj: sekme çubuğu her zaman ekranda, yani "o sekmeye
+ * basılabilir" hâli uygulamanın tamamı boyunca sürüyor; beklenecek bir niyet anı
+ * yok. (Anı akışındaki kart çevirmeden farkı bu.)
+ *
+ * AYRI BİR BİLEŞEN olması bilinçli: sorgulara abone oluyor ve veri geldiğinde
+ * yeniden render oluyor. Bu abonelik TabsLayout'un içinde olsaydı sekme
+ * yerleşiminin tamamı o anda yeniden render olurdu — görünmez bir yan etki için
+ * gereksiz bir maliyet.
  */
-function StatsPrefetcher() {
+function TabDataPrefetcher() {
   const { user } = useAuth();
   const { data: types } = useMeasurementTypes(user?.id);
-  // Ekran açılışta listedeki İLK tipi gösteriyor (bkz. istatistikler.tsx:
-  // `activeTypeId ?? types?.[0]?.id`), o yüzden ön yükleme de onu hedefliyor.
+  // İstatistikler ekranı açılışta listedeki İLK tipi gösteriyor (bkz.
+  // istatistikler.tsx: `activeTypeId ?? types?.[0]?.id`), ön yükleme de onu
+  // hedefliyor.
   usePrefetchStatsScreen(user?.id, types?.[0]?.id);
+  usePrefetchProfileStats(user?.id);
   return null;
 }
 
@@ -113,7 +120,7 @@ export default function TabsLayout() {
 
   return (
     <View style={{ flex: 1 }}>
-      <StatsPrefetcher />
+      <TabDataPrefetcher />
       {!isOnline ? <OfflineBanner /> : null}
       {/* Güvenli alanı yalnızca EN ÜSTTEKİ şerit ekliyor — ikisi birden
           eklerse çentiğin altında çift boşluk oluşuyor. */}

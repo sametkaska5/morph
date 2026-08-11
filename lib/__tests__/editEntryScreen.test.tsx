@@ -16,10 +16,15 @@ const mockUseEditableEntry = jest.fn();
 const mockUseMeasurementTypes = jest.fn();
 const mockUseUnitPreference = jest.fn();
 const mockMutate = jest.fn();
+const mockDeleteMutate = jest.fn();
+const mockDismissAll = jest.fn();
 const mockMutationState = { isPending: false, isError: false, error: null as unknown };
 
 jest.mock("../useAuth", () => ({ useAuth: () => mockUseAuth() }));
-jest.mock("../entries", () => ({ useEditableEntry: () => mockUseEditableEntry() }));
+jest.mock("../entries", () => ({
+  useEditableEntry: () => mockUseEditableEntry(),
+  useDeleteEntry: () => ({ mutate: mockDeleteMutate, isPending: false }),
+}));
 jest.mock("../measurementTypes", () => ({
   useMeasurementTypes: () => mockUseMeasurementTypes(),
 }));
@@ -28,7 +33,7 @@ jest.mock("../units", () => ({
   useUnitPreference: () => mockUseUnitPreference(),
 }));
 jest.mock("expo-router", () => ({
-  router: { back: jest.fn() },
+  router: { back: jest.fn(), dismissAll: () => mockDismissAll() },
   useLocalSearchParams: () => ({ id: "e1" }),
 }));
 jest.mock("expo-image", () => ({ Image: "Image" }));
@@ -261,5 +266,58 @@ describe("düzenleme ekranı — doğrulama ve hata", () => {
 
     expect(screen.getByText(/İnternet bağlantısı kurulamadı/)).toBeTruthy();
     expect(screen.queryByText(/Network request failed/)).toBeNull();
+  });
+});
+
+/**
+ * SİLME — anı akışından düzenlemeye DOĞRUDAN giriliyor, yani kullanıcı detay
+ * ekranını hiç görmüyor. Silme yalnızca orada olduğu için, akıştan gelen bir
+ * kullanıcının anıyı silmesinin hiçbir yolu yoktu; önce ana ekrana gidip aynı
+ * kaydı bulması gerekiyordu.
+ */
+describe("düzenleme ekranı — silme", () => {
+  it("sayfanın dibinde silme düğmesi var", async () => {
+    await render(<EditEntry />);
+
+    expect(screen.getByLabelText("Bu anıyı sil")).toBeTruthy();
+  });
+
+  it("onay kutusu onaylanmadan silmez", async () => {
+    await render(<EditEntry />);
+
+    await fireEvent.press(screen.getByLabelText("Bu anıyı sil"));
+
+    // Kutu açıldı ama henüz onaylanmadı: geri alınamaz işlem tek dokunuşla olmaz.
+    expect(screen.getByText("Bu anıyı sil?")).toBeTruthy();
+    expect(mockDeleteMutate).not.toHaveBeenCalled();
+  });
+
+  it("onaylayınca bu kaydı siler", async () => {
+    await render(<EditEntry />);
+
+    await fireEvent.press(screen.getByLabelText("Bu anıyı sil"));
+    await fireEvent.press(screen.getByText("Sil"));
+
+    expect(mockDeleteMutate).toHaveBeenCalledWith("e1", expect.any(Object));
+  });
+
+  /**
+   * Silme bitince `back` DEĞİL `dismissAll`.
+   *
+   * Bu ekrana iki yoldan geliniyor: anı akışından doğrudan (üstte tek ekran) ve
+   * ana ekran → detay → düzenle (üstte iki ekran). `back` ikinci yolda kullanıcıyı
+   * AZ ÖNCE SİLDİĞİ kaydın detay ekranına düşürürdü — sorgu boş döner, kullanıcı
+   * hata sayfasıyla karşılaşır. Sessizce yanlış olan türden bir hata.
+   */
+  it("silme bitince yığını kökene indirir, tek adım geri gitmez", async () => {
+    await render(<EditEntry />);
+
+    await fireEvent.press(screen.getByLabelText("Bu anıyı sil"));
+    await fireEvent.press(screen.getByText("Sil"));
+
+    const options = mockDeleteMutate.mock.calls[0][1];
+    options.onSuccess();
+
+    expect(mockDismissAll).toHaveBeenCalledTimes(1);
   });
 });

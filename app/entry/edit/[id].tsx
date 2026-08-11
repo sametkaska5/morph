@@ -20,13 +20,14 @@ import { useKeyboardFocus } from "@/lib/useKeyboardFocus";
 import { useMeasurementTypes } from "@/lib/measurementTypes";
 import { useUnitPreference, displayUnit, toDisplayValue, toMetricValue } from "@/lib/units";
 import { validateMeasurementInput, measurementErrorText } from "@/lib/measurementInput";
-import { useEditableEntry } from "@/lib/entries";
+import { useEditableEntry, useDeleteEntry } from "@/lib/entries";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { queryKeys } from "@/lib/queryKeys";
 import { actionErrorMessage } from "@/lib/errors";
 import { alertError } from "@/lib/alerts";
 import { ErrorState } from "@/components/ErrorState";
 import { useScreenInsets } from "@/lib/useScreenInsets";
-import { hapticSuccess } from "@/lib/haptics";
+import { hapticSuccess, hapticWarning } from "@/lib/haptics";
 
 /* ---------------- PAGE ---------------- */
 
@@ -57,6 +58,9 @@ export default function EditEntry() {
   // measurement_type_id -> girilen değer (string, boş olabilir)
   const [values, setValues] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState(false);
+  /** Silme onay kutusu açık mı. */
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const deleteMutation = useDeleteEntry();
   const inputRefs = useRef<(TextInput | null)[]>([]);
   const noteRef = useRef<TextInput | null>(null);
   const { scrollRef, onScroll, revealField, keyboardPadding } = useKeyboardFocus();
@@ -514,7 +518,59 @@ export default function EditEntry() {
             {actionErrorMessage(updateMutation.error)}
           </Text>
         ) : null}
+
+        {/* SİLME — kayıt detayındaki ("entry/[id].tsx") kalıbın birebir aynısı:
+            sayfanın en dibinde, dolu kırmızı zemin, chevron yok.
+
+            NEDEN BURADA DA VAR: anı akışından düzenlemeye DOĞRUDAN giriliyor,
+            yani kullanıcı detay ekranını hiç görmüyor ve o yoldan bir anıyı
+            silmenin hiçbir yolu yoktu — akıştaki bir anıyı silmek için önce
+            ana ekrana gidip aynı kaydı bulmak gerekiyordu. Aynı nesne üzerinde
+            aynı işlemin, ona nereden ulaştığına göre var olup olmaması
+            tutarsızlık; iki yol da artık aynı yeteneklere sahip. */}
+        <Pressable
+          onPress={() => setConfirmDelete(true)}
+          disabled={updateMutation.isPending || deleteMutation.isPending}
+          accessibilityRole="button"
+          accessibilityLabel="Bu anıyı sil"
+          style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+          className="mt-2 flex-row items-center justify-center gap-2 py-4 rounded-button bg-danger"
+        >
+          <Feather name="trash-2" size={16} color="#0B0D0A" />
+          <Text className="text-bg text-base font-semibold">Bu anıyı sil</Text>
+        </Pressable>
       </ScrollView>
+
+      {deleteMutation.isPending && (
+        <View className="absolute inset-0 bg-black/50 items-center justify-center z-20">
+          <ActivityIndicator color="#fff" />
+        </View>
+      )}
+
+      <ConfirmDialog
+        visible={confirmDelete}
+        icon="trash-2"
+        danger
+        title="Bu anıyı sil?"
+        message="Bu işlem geri alınamaz, fotoğraf ve ölçümler kalıcı olarak silinir."
+        confirmLabel="Sil"
+        onConfirm={() => {
+          setConfirmDelete(false);
+          hapticWarning();
+          deleteMutation.mutate(id, {
+            /* dismissAll, back DEĞİL. Bu ekrana iki yoldan geliniyor:
+               akıştan doğrudan (üstte tek ekran var) ve ana ekran → detay →
+               düzenle (üstte iki ekran var). `back` ikinci yolda kullanıcıyı
+               AZ ÖNCE SİLDİĞİ kaydın detay ekranına düşürürdü: sorgu boş döner,
+               kullanıcı hata sayfasıyla karşılaşır. dismissAll ikisinde de
+               yığını kökene indiriyor, yani kullanıcı hangi sekmeden geldiyse
+               oraya dönüyor. */
+            onSuccess: () => router.dismissAll(),
+            onError: (err) => alertError("Anı silinemedi", err, "editEntry.delete"),
+          });
+        }}
+        onClose={() => setConfirmDelete(false)}
+      />
     </View>
   );
 }

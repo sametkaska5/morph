@@ -9,7 +9,7 @@ import Feather from "@expo/vector-icons/Feather";
 import { useAuth } from "@/lib/useAuth";
 import { toLocalDateKey, parseLocalDate } from "@/lib/date";
 import { useKeyboardFocus } from "@/lib/useKeyboardFocus";
-import { useProgramDay, saveProgram, type WorkoutItemDraft, type WorkoutSetDraft } from "@/lib/workout";
+import { useProgramDay, saveProgram, type WorkoutItemDraft, type WorkoutSetDraft, SAVE_PROGRAM_MUTATION_KEY } from "@/lib/workout";
 import { invalidateAfterDayWrite } from "@/lib/entries";
 import { alertError } from "@/lib/alerts";
 import { ErrorState } from "@/components/ErrorState";
@@ -71,6 +71,7 @@ export default function ProgramScreen() {
   }
 
   const saveMutation = useMutation({
+    mutationKey: SAVE_PROGRAM_MUTATION_KEY,
     mutationFn: saveProgram,
     onSuccess: () => {
       // Liste tek yerde (bkz. lib/entries.ts invalidateAfterDayWrite) — burada

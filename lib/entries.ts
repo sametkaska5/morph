@@ -217,7 +217,13 @@ export function useSearchIndex(userId: string | undefined) {
         .select("id, date, note, cover_photo_id, photos!entry_id(id, storage_path, thumb_path)")
         .eq("user_id", userId!)
         .eq("type", "log")
-        .order("date", { ascending: false });
+        .order("date", { ascending: false })
+        // Client-side arama için tüm kayıtları tek sorguyla çekiyoruz.
+        // Kişisel bir günlük uygulamasında makul üst sınır: 1000 kayıt ~3 yıl
+        // günlük kayıt demek. Büyük kullanım tabanı veya çok daha uzun geçmiş
+        // için server-side full-text search (PostgreSQL tsvector / pg_trgm)
+        // daha uygun olur; bu değer o geçişi kolaylaştırmak için burada.
+        .limit(1000);
 
       if (error) throw error;
 
@@ -260,8 +266,10 @@ export function usePickableEntries(userId: string | undefined) {
         .select("id, date, photos!cover_photo_id(storage_path, thumb_path)")
         .eq("user_id", userId!)
         .eq("type", "log")
-        .order("date", { ascending: false })
-        .limit(60);
+        .order("date", { ascending: false });
+      // Limit KALDIRILDI: karşılaştırma ekranı yalnızca son 60 günü gösteriyordu;
+      // daha eski fotoğraflarla karşılaştırma yapılamıyordu. Yalnızca id+tarih+kapak
+      // yolu çekiliyor (bulk veri değil), sınırsız tutmak güvenli.
       if (error) throw error;
 
       // Izgara görünümü: küçük kopyayı tercih et, yoksa tam boya düş.
@@ -383,8 +391,11 @@ export function useEntryOrder() {
         .from("entries")
         .select("id")
         .eq("type", "log")
-        .order("date", { ascending: false })
-        .limit(60);
+        .order("date", { ascending: false });
+      // Limit KALDIRILDI: useTimelineEntries artık sonsuz sayfalı (TIMELINE_PAGE_SIZE=30),
+      // yani ızgarada 60'tan eski kayıtlar görünür. Detay ekranındaki ← → kaydırma bu
+      // sıraya bakarak hangi kaydın geleceğini belirler; liste eksikse kaydırma o noktada
+      // kopar. Yalnızca id çekiliyor (bulk veri değil), bu yüzden sınırsız tutmak güvenli.
       if (error) throw error;
       return (data ?? []).map((e) => e.id);
     },

@@ -16,6 +16,7 @@ import { DraggableSheet } from "@/components/DraggableSheet";
 import { ErrorState } from "@/components/ErrorState";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { alertError } from "@/lib/alerts";
+import { showAlert } from "@/lib/appAlert";
 import { useScreenInsets } from "@/lib/useScreenInsets";
 import { formatDateKey } from "@/lib/date";
 
@@ -118,6 +119,12 @@ export default function Profil() {
 
   const deleteAccountMutation = useMutation({
     mutationFn: () => deleteAccount(user!.id),
+    onSuccess: () => {
+      // signOut zaten auth ekranına yönlendiriyor (bkz. useAuth), ama kullanıcının
+      // hesabının gerçekten silindigini açıkça bilmesi gerekiyor — yoksa "arayüz
+      // dondu mu, silindi mi?" belirsizliği kalıyor.
+      showAlert("Hesabın silindi", "Tüm verilerinin kopyaları kalıcı olarak silindi.");
+    },
     onError: (err) => alertError("Hesap silinemedi", err, "profile.deleteAccount"),
   });
 

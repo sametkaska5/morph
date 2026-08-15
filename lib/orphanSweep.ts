@@ -167,7 +167,11 @@ export async function maybeSweepOrphans(userId: string): Promise<void> {
     await AsyncStorage.setItem(LAST_SWEEP_KEY, String(Date.now()));
 
     if (deleted > 0) {
-      console.log(`[orphanSweep] ${deleted}/${scanned} yetim dosya temizlendi`);
+      captureError(new Error(`[orphanSweep] ${deleted}/${scanned} yetim dosya temizlendi`), {
+        where: "orphanSweep.cleanup",
+        deleted,
+        scanned,
+      });
     }
   } catch (err) {
     captureError(err, { where: "orphanSweep" });

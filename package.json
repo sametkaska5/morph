@@ -69,7 +69,6 @@
     "expo-splash-screen": "~57.0.5",
     "expo-status-bar": "~57.0.1",
     "expo-updates": "~57.0.12",
-    "jest-expo": "~57.0.2",
     "nativewind": "^4.0.1",
     "react": "19.2.3",
     "react-native": "0.86.0",

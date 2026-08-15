@@ -1,7 +1,23 @@
+import type { QueryClient } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 import { parseMeasurementInput } from "./measurementInput";
 import { queryKeys } from "./queryKeys";
+import { captureError } from "./monitoring";
+import { invalidateAfterDayWrite } from "./entries";
+
+/**
+ * Offline kuyruğu için sabit mutation anahtarları.
+ *
+ * React Query, uygulamayı kapalıyken offline kuyruğuna alınan
+ * (paused) mutation'ları yeniden hydrate ederken yalnızca
+ * mutationKey + variables'ı AsyncStorage'dan okuyabiliyor;
+ * mutationFn'i hatırlamıyor. Bu yüzden fonksiyonları key'e bağlı
+ * registerWorkoutMutationDefaults ile global olarak kaydediyoruz
+ * (bkz. app/_layout.tsx) — bkz. SAVE_ENTRY_MUTATION_KEY aynı kalıp.
+ */
+export const SAVE_WORKOUT_DAY_MUTATION_KEY = ["saveWorkoutDay"] as const;
+export const SAVE_PROGRAM_MUTATION_KEY = ["saveProgram"] as const;
 
 /**
  * Fotoğrafsız gün + antrenman programı veri katmanı.
@@ -23,7 +39,9 @@ export type WorkoutDayType = "workout" | "off_day";
 export type WorkoutDayData = {
   id: string;
   date: string;
-  type: string;
+  // DB'deki check constraint ile eşleştirildi: log|workout|off_day.
+  // Eskiden `string` tipindeydi; union ile yanlış değer yazma derleme zamanında yakalanabilir.
+  type: "log" | "workout" | "off_day";
   note: string | null;
   measurement_values: { measurement_type_id: string; value: number }[];
 };
@@ -220,28 +238,42 @@ export async function saveProgram(payload: SaveProgramPayload) {
   const { error: delError } = await supabase.from("workout_items").delete().eq("entry_id", entryId);
   if (delError) throw delError;
 
-  for (const it of clean) {
-    const { data: itemRow, error: itemError } = await supabase
-      .from("workout_items")
-      .insert({ entry_id: entryId, name: it.name, order_index: it.order_index })
-      .select("id")
-      .single();
-    if (itemError) throw itemError;
+  if (clean.length === 0) return entryId;
 
-    const setRows = it.sets
+  // Tüm hareketleri TEK seferde ekle ve oluşturulan id'leri geri al.
+  // Eskiden: her hareket için ayrı roundtrip (N+1) — 10 hareket = 10 DB çağrısı.
+  // Şimdi: tek bir INSERT ... RETURNING id, order_index.
+  const { data: itemRows, error: itemError } = await supabase
+    .from("workout_items")
+    .insert(
+      clean.map((it) => ({ entry_id: entryId, name: it.name, order_index: it.order_index }))
+    )
+    .select("id, order_index");
+  if (itemError) throw itemError;
+
+  // Dönen satırları order_index → id olarak eşleştiriyoruz.
+  // clean[i].order_index = i garantisi var (üstteki map) ve DB bu değeri
+  // aynen saklıyor, yani eşleştirme kaymaz.
+  const itemIdByIndex = new Map((itemRows ?? []).map((r) => [r.order_index, r.id]));
+
+  // Tüm setleri tek bir dizi halinde topla, ardından TEK INSERT.
+  // Eskiden: hareket başına ayrı roundtrip — 10 hareket × set = çok sayıda çağrı.
+  const allSetRows = clean.flatMap((it) => {
+    const itemId = itemIdByIndex.get(it.order_index);
+    if (!itemId) return [];
+    return it.sets
       .map((s, i) => ({
-        workout_item_id: itemRow.id,
+        workout_item_id: itemId,
         reps: parseIntOrNull(s.reps),
         weight: parseMeasurementInput(s.weight),
         order_index: i,
       }))
-      // Tamamen boş setleri (ne tekrar ne ağırlık) yazma.
       .filter((s) => s.reps !== null || s.weight !== null);
+  });
 
-    if (setRows.length > 0) {
-      const { error: setError } = await supabase.from("workout_sets").insert(setRows);
-      if (setError) throw setError;
-    }
+  if (allSetRows.length > 0) {
+    const { error: setError } = await supabase.from("workout_sets").insert(allSetRows);
+    if (setError) throw setError;
   }
 
   return entryId;
@@ -252,4 +284,30 @@ function parseIntOrNull(raw: string): number | null {
   if (trimmed === "") return null;
   const num = parseInt(trimmed, 10);
   return Number.isFinite(num) ? num : null;
+}
+
+/**
+ * saveWorkoutDay ve saveProgram mutationFn'lerini queryClient'a kaydeder.
+ *
+ * saveEntry'nin registerEntryMutationDefaults ile aynı kalıbı izler:
+ * restart sonrası resumePausedMutations() bu kayıtlı fonksiyonu bulup
+ * offline'da kuyruğa alınmış kayıtları senkronize edebilir.
+ *
+ * İÇERİK KISITLAMASI — Yalnızca JSON-serileştirilebilir payload:
+ *   SaveWorkoutDayPayload: {userId, date, type, note, values} ✔
+ *   SaveProgramPayload:    {userId, date, items[]}            ✔
+ * Her iki tip de AsyncStorage'a güvenle yazılıp okunabilir.
+ */
+export function registerWorkoutMutationDefaults(queryClient: QueryClient) {
+  queryClient.setMutationDefaults(SAVE_WORKOUT_DAY_MUTATION_KEY, {
+    mutationFn: saveWorkoutDay,
+    onSuccess: () => invalidateAfterDayWrite(queryClient),
+    onError: (err) => captureError(err, { where: "saveWorkoutDay" }),
+  });
+
+  queryClient.setMutationDefaults(SAVE_PROGRAM_MUTATION_KEY, {
+    mutationFn: saveProgram,
+    onSuccess: () => invalidateAfterDayWrite(queryClient),
+    onError: (err) => captureError(err, { where: "saveProgram" }),
+  });
 }

@@ -13,7 +13,7 @@ import { useMeasurementTypes } from "@/lib/measurementTypes";
 import { useKeyboardFocus } from "@/lib/useKeyboardFocus";
 import { useUnitPreference, displayUnit, toDisplayValue, toMetricValue } from "@/lib/units";
 import { validateMeasurementInput, measurementErrorText } from "@/lib/measurementInput";
-import { useWorkoutDay, saveWorkoutDay, type WorkoutDayType } from "@/lib/workout";
+import { useWorkoutDay, saveWorkoutDay, type WorkoutDayType, SAVE_WORKOUT_DAY_MUTATION_KEY } from "@/lib/workout";
 import { invalidateAfterDayWrite } from "@/lib/entries";
 import { alertError } from "@/lib/alerts";
 import { ErrorState } from "@/components/ErrorState";
@@ -90,6 +90,7 @@ export default function WorkoutDayScreen() {
   }
 
   const saveMutation = useMutation({
+    mutationKey: SAVE_WORKOUT_DAY_MUTATION_KEY,
     mutationFn: saveWorkoutDay,
     onSuccess: () => {
       // Liste tek yerde (bkz. lib/entries.ts invalidateAfterDayWrite) — burada

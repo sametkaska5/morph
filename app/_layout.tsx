@@ -21,6 +21,7 @@ import {
 import { AuthProvider, useAuth } from "@/lib/useAuth";
 import { registerAuthAutoRefresh } from "@/lib/supabase";
 import { registerEntryMutationDefaults, QUERY_CACHE_STORAGE_KEY } from "@/lib/entryMutations";
+import { registerWorkoutMutationDefaults } from "@/lib/workout";
 import { maybeSweepOrphans } from "@/lib/orphanSweep";
 import {
   refreshMemoryNotifications,
@@ -55,6 +56,7 @@ const queryClient = new QueryClient({
   },
 });
 registerEntryMutationDefaults(queryClient);
+registerWorkoutMutationDefaults(queryClient);
 
 // Hata izlemeyi uygulama açılışında bir kez başlat (DSN yoksa no-op).
 initMonitoring();

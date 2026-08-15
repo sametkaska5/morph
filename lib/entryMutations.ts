@@ -64,7 +64,7 @@ export async function saveEntry(payload: SaveEntryPayload) {
     try {
       thumbPath = await uploadThumb(userId, entry.id, thumbBase64);
     } catch (err) {
-      console.warn("thumbnail yüklenemedi, tam boy kullanılacak:", err);
+      captureError(err, { where: "saveEntry.thumb", userId, entryId: entry.id });
     }
   }
 

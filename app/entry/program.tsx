@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { View, Platform, ScrollView, ActivityIndicator } from "react-native";
 import { PressableFade } from "@/components/PressableFade";
 import { Text, TextInput } from "@/components/Typography";
@@ -16,6 +16,10 @@ import { ErrorState } from "@/components/ErrorState";
 import { useScreenInsets } from "@/lib/useScreenInsets";
 import { hapticSuccess } from "@/lib/haptics";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+/** AsyncStorage anahtarı — tarih başına bir taslak slot. */
+const draftKey = (date: string) => `program-draft:${date}`;
 
 const EMPTY_SET: WorkoutSetDraft = { reps: "", weight: "" };
 const newExercise = (): WorkoutItemDraft => ({ name: "", sets: [{ ...EMPTY_SET }] });
@@ -39,6 +43,47 @@ export default function ProgramScreen() {
   const [items, setItems] = useState<WorkoutItemDraft[]>([]);
   // Hangi hareketin silineceği — null ise ConfirmDialog kapalı.
   const [deleteExIndex, setDeleteExIndex] = useState<number | null>(null);
+  // Kaydedilmemiş değişiklik uyarısı.
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  // Kullanıcı herhangi bir şey değiştirdi mi? Ref: re-render gerektirmiyor.
+  const isDirty = useRef(false);
+  /**
+   * Taslak geri yüklendi mi?
+   *
+   * Sunucu verisi (hydration) taslakı ezmesin diye kullanılıyor.
+   * AsyncStorage okuması async olduğundan render-time hydration
+   * taslaktan önce çalışabilir; bu ref’i kontrol ederek ikinci
+   * geçişi engelliyoruz.
+   */
+  const draftRestored = useRef(false);
+
+  // Taslak geri yükleme: mount’ta AsyncStorage’dan oku.
+  useEffect(() => {
+    async function restoreDraft() {
+      try {
+        const raw = await AsyncStorage.getItem(draftKey(dateKey));
+        if (raw) {
+          const { items: saved } = JSON.parse(raw) as { items: WorkoutItemDraft[] };
+          setItems(saved);
+          isDirty.current = true;
+          draftRestored.current = true;
+        }
+      } catch {
+        // Okunamadıysa sessizce geç — sunucu verisi devreye girer.
+      }
+    }
+    restoreDraft();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // yalnızca mount’ta
+
+  // Taslak kaydetme: items her değiştiğinde 800ms debounce ile yaz.
+  useEffect(() => {
+    if (!isDirty.current) return;
+    const timer = setTimeout(() => {
+      AsyncStorage.setItem(draftKey(dateKey), JSON.stringify({ items })).catch(() => {});
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [items, dateKey]);
 
   const nameRefs = useRef<(TextInput | null)[]>([]);
   // Her setin tekrar (reps) alanı için ref — kg alanından "İleri" ile geçiş.
@@ -58,8 +103,9 @@ export default function ProgramScreen() {
   // kullanıcı kaydedince gerçekte var olan programın üstüne boş yazılıyordu.
   const [hydratedKey, setHydratedKey] = useState<string | null>(null);
   const hydrationKey = `${dateKey}:${existing?.entryId ?? "new"}`;
-  if (!isLoading && !error && hydratedKey !== hydrationKey) {
+  if (!isLoading && !error && hydratedKey !== hydrationKey && !draftRestored.current) {
     setHydratedKey(hydrationKey);
+    isDirty.current = false; // yeni veri geldi, form temiz
     if (!existing || existing.items.length === 0) {
       setItems([]);
     } else {
@@ -93,9 +139,11 @@ export default function ProgramScreen() {
   });
 
   function updateExercise(exIndex: number, patch: Partial<WorkoutItemDraft>) {
+    isDirty.current = true;
     setItems((prev) => prev.map((it, i) => (i === exIndex ? { ...it, ...patch } : it)));
   }
   function updateSet(exIndex: number, setIndex: number, patch: Partial<WorkoutSetDraft>) {
+    isDirty.current = true;
     setItems((prev) =>
       prev.map((it, i) =>
         i === exIndex
@@ -105,6 +153,7 @@ export default function ProgramScreen() {
     );
   }
   function addSet(exIndex: number) {
+    isDirty.current = true;
     // Silinen son set varsa geri getir (geri al); yoksa boş set ekle.
     const recovered = lastDeletedSets.current[exIndex];
     if (recovered) {
@@ -119,6 +168,7 @@ export default function ProgramScreen() {
     }
   }
   function removeSet(exIndex: number, setIndex: number) {
+    isDirty.current = true;
     // Silinen seti sakla — "Set ekle" ile geri alınabilir.
     setItems((prev) => {
       const exercise = prev[exIndex];
@@ -133,7 +183,17 @@ export default function ProgramScreen() {
 
   function handleSave() {
     if (!user) return;
+    isDirty.current = false;
+    AsyncStorage.removeItem(draftKey(dateKey)).catch(() => {});
     saveMutation.mutate({ userId: user.id, date: dateKey, items });
+  }
+
+  function handleBack() {
+    if (isDirty.current) {
+      setShowDiscardConfirm(true);
+    } else {
+      router.back();
+    }
   }
 
   return (
@@ -147,7 +207,7 @@ export default function ProgramScreen() {
     >
       <View className="flex-row justify-between items-center mb-4">
         <PressableFade
-          onPress={() => router.back()}
+          onPress={handleBack}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           accessibilityRole="button"
           accessibilityLabel="Geri dön"
@@ -297,7 +357,7 @@ export default function ProgramScreen() {
           ))}
 
           <PressableFade
-            onPress={() => setItems((prev) => [...prev, newExercise()])}
+            onPress={() => { isDirty.current = true; setItems((prev) => [...prev, newExercise()]); }}
             dim={0.85}
             accessibilityRole="button"
             accessibilityLabel="Hareket ekle"
@@ -324,7 +384,7 @@ export default function ProgramScreen() {
           </PressableFade>
 
           <PressableFade
-            onPress={() => router.back()}
+            onPress={handleBack}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             accessibilityRole="button"
             className="mt-4 items-center mb-8"
@@ -352,6 +412,24 @@ export default function ProgramScreen() {
           setDeleteExIndex(null);
         }}
         onClose={() => setDeleteExIndex(null)}
+      />
+
+      <ConfirmDialog
+        visible={showDiscardConfirm}
+        icon="alert-triangle"
+        danger
+        title="Değişiklikler kaybolacak"
+        message="Kaydedilmemiş değişikliklerini kaybedeceksin. Çıkmak istediğine emin misin?"
+        confirmLabel="Çık"
+        cancelLabel="Geri dön"
+        onConfirm={() => {
+          isDirty.current = false;
+          draftRestored.current = false;
+          AsyncStorage.removeItem(draftKey(dateKey)).catch(() => {});
+          setShowDiscardConfirm(false);
+          router.back();
+        }}
+        onClose={() => setShowDiscardConfirm(false)}
       />
     </ScrollView>
   );

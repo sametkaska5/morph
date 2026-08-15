@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { View, Platform, ScrollView, ActivityIndicator } from "react-native";
+import { View, Platform, ScrollView, ActivityIndicator, Alert } from "react-native";
 import { PressableFade } from "@/components/PressableFade";
 import { Text, TextInput } from "@/components/Typography";
 import { router, useLocalSearchParams } from "expo-router";
@@ -41,6 +41,8 @@ export default function ProgramScreen() {
   // Her setin tekrar (reps) alanı için ref — kg alanından "İleri" ile geçiş.
   // Anahtar: `${egzersizIndex}-${setIndex}`
   const repsRefs = useRef<Record<string, TextInput | null>>({});
+  // Silinen son set — "Set ekle" ile geri alınabilir. Egzersiz başına bir slot.
+  const lastDeletedSets = useRef<Record<number, WorkoutSetDraft>>({});
   const { scrollRef, onScroll, revealField, keyboardPadding } = useKeyboardFocus();
 
   // O tarihte program varsa bir kez doldur (düzenleme). Her (tarih, entry) için
@@ -100,15 +102,42 @@ export default function ProgramScreen() {
     );
   }
   function addSet(exIndex: number) {
-    setItems((prev) =>
-      prev.map((it, i) => (i === exIndex ? { ...it, sets: [...it.sets, { ...EMPTY_SET }] } : it))
-    );
+    // Silinen son set varsa geri getir (geri al); yoksa boş set ekle.
+    const recovered = lastDeletedSets.current[exIndex];
+    if (recovered) {
+      delete lastDeletedSets.current[exIndex];
+      setItems((prev) =>
+        prev.map((it, i) => (i === exIndex ? { ...it, sets: [...it.sets, { ...recovered }] } : it))
+      );
+    } else {
+      setItems((prev) =>
+        prev.map((it, i) => (i === exIndex ? { ...it, sets: [...it.sets, { ...EMPTY_SET }] } : it))
+      );
+    }
   }
   function removeSet(exIndex: number, setIndex: number) {
-    setItems((prev) =>
-      prev.map((it, i) =>
-        i === exIndex ? { ...it, sets: it.sets.filter((_, j) => j !== setIndex) } : it
-      )
+    Alert.alert(
+      "Seti sil",
+      "Bu seti silmek istediğine emin misin?",
+      [
+        { text: "Hayır", style: "cancel" },
+        {
+          text: "Evet, sil",
+          style: "destructive",
+          onPress: () => {
+            // Silinen seti sakla — "Set ekle" ile geri alınabilir.
+            setItems((prev) => {
+              const exercise = prev[exIndex];
+              if (exercise) {
+                lastDeletedSets.current[exIndex] = { ...exercise.sets[setIndex] };
+              }
+              return prev.map((it, i) =>
+                i === exIndex ? { ...it, sets: it.sets.filter((_, j) => j !== setIndex) } : it
+              );
+            });
+          },
+        },
+      ]
     );
   }
 

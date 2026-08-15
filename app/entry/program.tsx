@@ -38,6 +38,9 @@ export default function ProgramScreen() {
   const [items, setItems] = useState<WorkoutItemDraft[]>([]);
 
   const nameRefs = useRef<(TextInput | null)[]>([]);
+  // Her setin tekrar (reps) alanı için ref — kg alanından "İleri" ile geçiş.
+  // Anahtar: `${egzersizIndex}-${setIndex}`
+  const repsRefs = useRef<Record<string, TextInput | null>>({});
   const { scrollRef, onScroll, revealField, keyboardPadding } = useKeyboardFocus();
 
   // O tarihte program varsa bir kez doldur (düzenleme). Her (tarih, entry) için
@@ -97,14 +100,8 @@ export default function ProgramScreen() {
     );
   }
   function addSet(exIndex: number) {
-    // Yeni set son setin değerlerini kopyalar — antrenmanda çoğu set benzer,
-    // sadece değişeni düzeltmek en az dokunuş.
     setItems((prev) =>
-      prev.map((it, i) => {
-        if (i !== exIndex) return it;
-        const last = it.sets[it.sets.length - 1] ?? EMPTY_SET;
-        return { ...it, sets: [...it.sets, { ...last }] };
-      })
+      prev.map((it, i) => (i === exIndex ? { ...it, sets: [...it.sets, { ...EMPTY_SET }] } : it))
     );
   }
   function removeSet(exIndex: number, setIndex: number) {
@@ -232,11 +229,18 @@ export default function ProgramScreen() {
                     onChangeText={(val) => updateSet(exIndex, setIndex, { weight: val })}
                     onFocus={() => revealField(nameRefs.current[exIndex])}
                     keyboardType="decimal-pad"
+                    returnKeyType="next"
+                    onSubmitEditing={() =>
+                      repsRefs.current[`${exIndex}-${setIndex}`]?.focus()
+                    }
                     placeholder="—"
                     placeholderTextColor="#8B8A82"
                     className="flex-1 bg-bg border border-border rounded-button px-3 py-2 text-text text-base text-center"
                   />
                   <TextInput
+                    ref={(el) => {
+                      repsRefs.current[`${exIndex}-${setIndex}`] = el;
+                    }}
                     value={set.reps}
                     onChangeText={(val) => updateSet(exIndex, setIndex, { reps: val })}
                     onFocus={() => revealField(nameRefs.current[exIndex])}

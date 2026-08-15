@@ -262,7 +262,7 @@ const CapsulePage = memo(function CapsulePage({
         style={{ top: screen.top }}
         className="absolute left-0 right-0 flex-row justify-between items-center px-4"
       >
-        <Text className="text-text text-xl font-semibold">Anı Akışı</Text>
+        <Text className="text-text text-xl font-semibold">Podyum</Text>
         <View className="bg-black/50 rounded-pill px-3 py-1">
           <Text className="text-text text-xs font-medium">
             {index + 1}/{total}

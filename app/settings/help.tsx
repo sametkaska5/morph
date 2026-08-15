@@ -16,7 +16,7 @@ const SUPPORT_EMAIL = "sametkaska5@gmail.com";
 export const FAQ = [
   {
     q: "Günde birden fazla kayıt ekleyebilir miyim?",
-    a: "Hayır, her gün için tek bir kayıt tutulur. Aynı günü tekrar düzenlemek istersen Anı Akışı veya İstatistik ekranından o güne dokunup düzenleyebilirsin.",
+    a: "Hayır, her gün için tek bir kayıt tutulur. Aynı günü tekrar düzenlemek istersen Podyum veya İstatistik ekranından o güne dokunup düzenleyebilirsin.",
   },
   {
     q: "İnternetim yokken kayıt ekleyebilir miyim?",

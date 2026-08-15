@@ -164,7 +164,7 @@ export default function TabsLayout() {
         <Tabs.Screen
           name="zaman-kapsulu"
           options={{
-            title: "Anı Akışı",
+            title: "Podyum",
             tabBarIcon: ({ color }) => <Feather name="calendar" size={24} color={color} />,
           }}
         />

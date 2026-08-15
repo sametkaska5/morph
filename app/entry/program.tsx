@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { View, Platform, ScrollView, ActivityIndicator, Alert } from "react-native";
+import { View, Platform, ScrollView, ActivityIndicator } from "react-native";
 import { PressableFade } from "@/components/PressableFade";
 import { Text, TextInput } from "@/components/Typography";
 import { router, useLocalSearchParams } from "expo-router";
@@ -15,6 +15,7 @@ import { alertError } from "@/lib/alerts";
 import { ErrorState } from "@/components/ErrorState";
 import { useScreenInsets } from "@/lib/useScreenInsets";
 import { hapticSuccess } from "@/lib/haptics";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 const EMPTY_SET: WorkoutSetDraft = { reps: "", weight: "" };
 const newExercise = (): WorkoutItemDraft => ({ name: "", sets: [{ ...EMPTY_SET }] });
@@ -36,6 +37,8 @@ export default function ProgramScreen() {
   const { data: existing, isLoading, error, refetch } = useProgramDay(user?.id, dateKey);
 
   const [items, setItems] = useState<WorkoutItemDraft[]>([]);
+  // Hangi hareketin silineceği — null ise ConfirmDialog kapalı.
+  const [deleteExIndex, setDeleteExIndex] = useState<number | null>(null);
 
   const nameRefs = useRef<(TextInput | null)[]>([]);
   // Her setin tekrar (reps) alanı için ref — kg alanından "İleri" ile geçiş.
@@ -116,29 +119,16 @@ export default function ProgramScreen() {
     }
   }
   function removeSet(exIndex: number, setIndex: number) {
-    Alert.alert(
-      "Seti sil",
-      "Bu seti silmek istediğine emin misin?",
-      [
-        { text: "Hayır", style: "cancel" },
-        {
-          text: "Evet, sil",
-          style: "destructive",
-          onPress: () => {
-            // Silinen seti sakla — "Set ekle" ile geri alınabilir.
-            setItems((prev) => {
-              const exercise = prev[exIndex];
-              if (exercise) {
-                lastDeletedSets.current[exIndex] = { ...exercise.sets[setIndex] };
-              }
-              return prev.map((it, i) =>
-                i === exIndex ? { ...it, sets: it.sets.filter((_, j) => j !== setIndex) } : it
-              );
-            });
-          },
-        },
-      ]
-    );
+    // Silinen seti sakla — "Set ekle" ile geri alınabilir.
+    setItems((prev) => {
+      const exercise = prev[exIndex];
+      if (exercise) {
+        lastDeletedSets.current[exIndex] = { ...exercise.sets[setIndex] };
+      }
+      return prev.map((it, i) =>
+        i === exIndex ? { ...it, sets: it.sets.filter((_, j) => j !== setIndex) } : it
+      );
+    });
   }
 
   function handleSave() {
@@ -230,7 +220,7 @@ export default function ProgramScreen() {
                   maxLength={60}
                 />
                 <PressableFade
-                  onPress={() => setItems((prev) => prev.filter((_, i) => i !== exIndex))}
+                  onPress={() => setDeleteExIndex(exIndex)}
                   hitSlop={8}
                   accessibilityRole="button"
                   accessibilityLabel="Hareketi sil"
@@ -343,6 +333,26 @@ export default function ProgramScreen() {
           </PressableFade>
         </>
       )}
+
+      <ConfirmDialog
+        visible={deleteExIndex !== null}
+        icon="trash-2"
+        danger
+        title="Hareketi sil?"
+        message={
+          deleteExIndex !== null && items[deleteExIndex]?.name
+            ? `"${items[deleteExIndex].name}" ve tüm setleri silinecek.`
+            : "Bu hareketi ve tüm setlerini silmek istediğine emin misin?"
+        }
+        confirmLabel="Sil"
+        onConfirm={() => {
+          if (deleteExIndex !== null) {
+            setItems((prev) => prev.filter((_, i) => i !== deleteExIndex));
+          }
+          setDeleteExIndex(null);
+        }}
+        onClose={() => setDeleteExIndex(null)}
+      />
     </ScrollView>
   );
 }

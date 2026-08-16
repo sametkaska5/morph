@@ -105,6 +105,15 @@ export function useDeleteMeasurementType(userId: string | undefined) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (typeId: string) => {
+      // Önce bağlı değerleri sil — DB'de ON DELETE CASCADE var (0019 migration)
+      // ama istemci tarafından da yapıyoruz: hem açıklayıcı hata mesajı alırız
+      // hem eski DB sürümlerine karşı güvende oluruz.
+      const { error: valuesError } = await supabase
+        .from("measurement_values")
+        .delete()
+        .eq("measurement_type_id", typeId);
+      if (valuesError) throw valuesError;
+
       const { error } = await supabase.from("measurement_types").delete().eq("id", typeId);
       if (error) throw error;
     },

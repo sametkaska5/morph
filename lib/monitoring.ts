@@ -49,7 +49,7 @@ export function initMonitoring() {
 export function captureError(error: unknown, context?: Record<string, unknown>) {
   if (enabled) {
     try {
-      Sentry.captureException(error, context ? { extra: context } : undefined);
+      Sentry.captureException(toError(error), context ? { extra: context } : undefined);
     } catch {
       // Bildirim başarısız olursa yut — bir hatayı raporlarken yeni hata üretmeyelim.
     }
@@ -57,3 +57,42 @@ export function captureError(error: unknown, context?: Record<string, unknown>) 
   if (context) console.error("[monitoring]", error, context);
   else console.error("[monitoring]", error);
 }
+
+/**
+ * Herhangi bir değeri Sentry'nin düzgün işleyeceği bir `Error` nesnesine çevirir.
+ *
+ * Sorun: Supabase PostgrestError / AuthError / StorageError nesneleri `Error`
+ * sınıfından türemiyor — düz obje. Sentry bunları `captureException`'a verince
+ * "Object captured as exception with keys: code, details, hint, message" uyarısı
+ * gösteriyor ve stack trace oluşturmuyor.
+ *
+ * Çözüm: objenin `message` alanını başlık, JSON temsilini detay olarak kullanan
+ * bir `Error` yarat; Sentry bunu düzgün bir istisna olarak işler.
+ */
+function toError(error: unknown): Error {
+  if (error instanceof Error) return error;
+
+  if (error !== null && typeof error === "object") {
+    const obj = error as Record<string, unknown>;
+    const message =
+      typeof obj["message"] === "string"
+        ? obj["message"]
+        : typeof obj["error_description"] === "string"
+          ? obj["error_description"]
+          : "Unknown error";
+
+    const wrapped = new Error(message);
+    // Orijinal alanları stack'te görmek için cause'a bağla (ES2022+, RN desteği var).
+    wrapped.cause = error;
+    // Ek bağlam: Supabase hata kodu ve ipucu Sentry'de görünsün.
+    if (typeof obj["code"] === "string") {
+      wrapped.name = `SupabaseError [${obj["code"]}]`;
+    }
+    return wrapped;
+  }
+
+  if (typeof error === "string") return new Error(error);
+
+  return new Error(String(error));
+}
+

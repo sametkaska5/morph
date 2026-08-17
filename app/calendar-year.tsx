@@ -1,3 +1,4 @@
+import { theme } from "@/lib/theme";
 import { useState } from "react";
 import { View, ScrollView, Pressable, ActivityIndicator, RefreshControl } from "react-native";
 import { PressableFade } from "@/components/PressableFade";
@@ -38,7 +39,12 @@ function getMonthGrid(year: number, monthIndex: number) {
  * yolu. Odaklanamayan kutu, o kullanıcıdan özelliği tümden gizlerdi. Gelecek
  * günler hâlâ salt dekor, onlar odak dışında (`null` döner).
  */
-function dayCellLabel(dateKey: string, status: string | undefined, isToday: boolean, isFuture: boolean) {
+function dayCellLabel(
+  dateKey: string,
+  status: string | undefined,
+  isToday: boolean,
+  isFuture: boolean,
+) {
   if (isFuture) return null;
 
   const dayNumber = Number(dateKey.slice(8, 10));
@@ -67,7 +73,11 @@ function MonthCalendar({
   year: number;
   monthIndex: number;
   statusMap: Record<string, { id: string; type: string }>;
-  onDayPress: (dateKey: string, entry: { id: string; type: string } | undefined, isFuture: boolean) => void;
+  onDayPress: (
+    dateKey: string,
+    entry: { id: string; type: string } | undefined,
+    isFuture: boolean,
+  ) => void;
 }) {
   const weeks = getMonthGrid(year, monthIndex);
   const todayKey = toLocalDateKey(new Date());
@@ -78,7 +88,8 @@ function MonthCalendar({
       {weeks.map((week, wi) => (
         <View key={wi} className="flex-row mb-1">
           {week.map((dateKey, di) => {
-            if (!dateKey) return <View key={di} style={{ flex: 1, aspectRatio: 1, marginHorizontal: 2 }} />;
+            if (!dateKey)
+              return <View key={di} style={{ flex: 1, aspectRatio: 1, marginHorizontal: 2 }} />;
             const entry = statusMap[dateKey];
             const status = entry?.type;
             const isFuture = dateKey > todayKey;
@@ -102,14 +113,14 @@ function MonthCalendar({
                   status === "log"
                     ? "bg-accent"
                     : status === "off_day"
-                    ? "bg-offDaySoft border border-offDay"
-                    : status === "workout"
-                    ? "bg-accentSoft border border-accent"
-                    : isToday
-                    ? "border border-dashed border-accent"
-                    : isFuture
-                    ? "bg-transparent"
-                    : "bg-white/5"
+                      ? "bg-offDaySoft border border-offDay"
+                      : status === "workout"
+                        ? "bg-accentSoft border border-accent"
+                        : isToday
+                          ? "border border-dashed border-accent"
+                          : isFuture
+                            ? "bg-transparent"
+                            : "bg-white/5"
                 }`}
               />
             );
@@ -124,7 +135,13 @@ export default function CalendarYear() {
   const screen = useScreenInsets();
   const { user } = useAuth();
   const [year, setYear] = useState(new Date().getFullYear());
-  const { data: statusMap, isLoading, isRefetching, error, refetch } = useYearEntries(user?.id, year);
+  const {
+    data: statusMap,
+    isLoading,
+    isRefetching,
+    error,
+    refetch,
+  } = useYearEntries(user?.id, year);
 
   // Takvim artık salt görsel değil: hafta şeridiyle AYNI kuralla (bkz.
   // lib/dayRoute.ts) o güne gidiyor. Aylar öncesine dönük bir off day
@@ -133,7 +150,7 @@ export default function CalendarYear() {
   function handleDayPress(
     dateKey: string,
     entry: { id: string; type: string } | undefined,
-    isFuture: boolean
+    isFuture: boolean,
   ) {
     const route = dayRoute({
       date: dateKey,
@@ -147,15 +164,19 @@ export default function CalendarYear() {
   return (
     <ScrollView
       className="flex-1 bg-bg"
-      contentContainerStyle={{ paddingTop: screen.top, paddingBottom: screen.bottom, paddingHorizontal: 20 }}
+      contentContainerStyle={{
+        paddingTop: screen.top,
+        paddingBottom: screen.bottom,
+        paddingHorizontal: 20,
+      }}
       // Yıl ızgarası uzun ve kullanıcı yıllar arasında geziniyor; yeni eklenen
       // bir günün burada belirmesi için ekrandan çıkıp girmek gerekiyordu.
       refreshControl={
         <RefreshControl
           refreshing={isRefetching}
           onRefresh={() => refetch()}
-          tintColor="#8CE05A"
-          colors={["#8CE05A"]}
+          tintColor={theme.colors.accent}
+          colors={[theme.colors.accent]}
         />
       }
     >
@@ -167,7 +188,7 @@ export default function CalendarYear() {
           accessibilityLabel="Geri dön"
           dim={0.7}
         >
-          <Feather name="chevron-left" size={22} color="#F5F3EC" />
+          <Feather name="chevron-left" size={22} color={theme.colors.text} />
         </PressableFade>
         <View className="flex-row items-center gap-4">
           <PressableFade
@@ -176,7 +197,7 @@ export default function CalendarYear() {
             accessibilityRole="button"
             accessibilityLabel="Önceki yıl"
           >
-            <Feather name="chevron-left" size={18} color="#8B8A82" />
+            <Feather name="chevron-left" size={18} color={theme.colors.textFaint} />
           </PressableFade>
           <Text className="text-text text-xl font-bold" accessibilityRole="header">
             {year}
@@ -189,7 +210,11 @@ export default function CalendarYear() {
             accessibilityLabel="Sonraki yıl"
             accessibilityState={{ disabled: year >= new Date().getFullYear() }}
           >
-            <Feather name="chevron-right" size={18} color={year >= new Date().getFullYear() ? "#3A3A34" : "#8B8A82"} />
+            <Feather
+              name="chevron-right"
+              size={18}
+              color={year >= new Date().getFullYear() ? "#3A3A34" : "#8B8A82"}
+            />
           </PressableFade>
         </View>
         <View style={{ width: 22 }} />
@@ -211,7 +236,7 @@ export default function CalendarYear() {
       </View>
 
       {isLoading ? (
-        <ActivityIndicator color="#8CE05A" className="mt-10" />
+        <ActivityIndicator color={theme.colors.accent} className="mt-10" />
       ) : error ? (
         // Hatasızken 365 boş kutu çiziliyordu: o yıl hiç kayıt yapılmamış gibi.
         <ErrorState error={error} onRetry={() => refetch()} />

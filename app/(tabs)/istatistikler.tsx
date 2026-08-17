@@ -1,5 +1,14 @@
+import { theme } from "@/lib/theme";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { View, ScrollView, Pressable, ActivityIndicator, Image, Modal, RefreshControl } from "react-native";
+import {
+  View,
+  ScrollView,
+  Pressable,
+  ActivityIndicator,
+  Image,
+  Modal,
+  RefreshControl,
+} from "react-native";
 import { showAlert } from "@/lib/appAlert";
 import { PressableFade } from "@/components/PressableFade";
 import { Text } from "@/components/Typography";
@@ -16,6 +25,7 @@ import { useMeasurementTypes } from "@/lib/measurementTypes";
 import { useUnitPreference, displayUnit, toDisplayValue } from "@/lib/units";
 import { formatWeekRange, formatDateKey } from "@/lib/date";
 import { dayRoute, type DayRouteInput } from "@/lib/dayRoute";
+import { WeekTracker } from "@/components/Stats/WeekTracker";
 import { ErrorState } from "@/components/ErrorState";
 import {
   useMeasurementSeries,
@@ -73,17 +83,22 @@ export default function Istatistikler() {
     }
   }, [queryClient]);
 
-  function dayAccessibilityLabel(day: { date: string; type: string | null; isFuture: boolean; isToday: boolean }) {
+  function dayAccessibilityLabel(day: {
+    date: string;
+    type: string | null;
+    isFuture: boolean;
+    isToday: boolean;
+  }) {
     const dateLabel = formatDateKey(day.date, { day: "numeric", month: "long", weekday: "long" });
     if (day.isFuture) return `${dateLabel}, henüz gelmedi`;
     const statusLabel =
       day.type === "log"
         ? "fotoğraflı kayıt var, açmak için dokun"
         : day.type === "off_day"
-        ? "off day olarak işaretli, düzenlemek için dokun"
-        : day.type === "workout"
-        ? "antrenman günü, düzenlemek için dokun"
-        : "boş, ölçüm veya program eklemek için dokun";
+          ? "off day olarak işaretli, düzenlemek için dokun"
+          : day.type === "workout"
+            ? "antrenman günü, düzenlemek için dokun"
+            : "boş, ölçüm veya program eklemek için dokun";
     return `${dateLabel}${day.isToday ? ", bugün" : ""}, ${statusLabel}`;
   }
 
@@ -113,7 +128,12 @@ export default function Istatistikler() {
   // karttaki "X gün üst üste" o eski haftanın serisini gösterirdi (ve streak
   // bildirimi yanlış veriyle yeniden kurulurdu). weekOffset 0 iken iki çağrı
   // aynı sorgu anahtarına düştüğü için tek istek atılıyor.
-  const { data: week, isLoading: weekLoading, error: weekError, refetch: refetchWeek } = useWeek(user?.id, weekOffset);
+  const {
+    data: week,
+    isLoading: weekLoading,
+    error: weekError,
+    refetch: refetchWeek,
+  } = useWeek(user?.id, weekOffset);
   const { data: currentWeek } = useWeek(user?.id, 0);
   const {
     data: shareablePhotos,
@@ -131,7 +151,7 @@ export default function Istatistikler() {
       activeType
         ? (series?.map((s) => toDisplayValue(s.value, activeType.unit, unitPref)) ?? [])
         : (series?.map((s) => s.value) ?? []),
-    [series, activeType, unitPref]
+    [series, activeType, unitPref],
   );
   const unitLabel = activeType ? displayUnit(activeType.unit, unitPref) : "";
 
@@ -153,11 +173,11 @@ export default function Istatistikler() {
   const { delta: modalDelta, isGood: modalIsGoodDelta } = computeTrend(
     modalCurrentValue,
     modalPreviousValue,
-    activeType?.target_direction
+    activeType?.target_direction,
   );
   // Seçili gün etiketi (yoksa "Son değer").
   const modalSelectedDate =
-    modalActiveIndex != null ? series?.[modalActiveIndex]?.date ?? null : null;
+    modalActiveIndex != null ? (series?.[modalActiveIndex]?.date ?? null) : null;
 
   // Başka bir ölçüme geçilince önceki serinin seçili noktası anlamsız kalıyor.
   // Effect yerine render sırasında senkronize ediyoruz — fazladan bir commit'lenmiş
@@ -170,17 +190,22 @@ export default function Istatistikler() {
   const { delta, isGood: isGoodDelta } = computeTrend(
     currentValue,
     previousValue,
-    activeType?.target_direction
+    activeType?.target_direction,
   );
 
   const currentStreak = currentWeek ? computeWeekStreak(currentWeek) : 0;
-  const weekRangeLabel = week?.length ? formatWeekRange(week[0].date, week[week.length - 1].date) : "";
+  const weekRangeLabel = week?.length
+    ? formatWeekRange(week[0].date, week[week.length - 1].date)
+    : "";
 
   // Türetilmiş seçim: state'teki id listede yoksa (kayıt silindi / liste
   // yenilendi) ilk fotoğrafa düşer. Eskiden bunu bir useEffect state'i
   // düzelterek yapıyordu — ızgaradaki vurgu selectedSharePhoto.id'den okunduğu
   // sürece ayrıca senkronize edilecek bir state kalmıyor.
-  const selectedSharePhoto = shareablePhotos?.find((photo) => photo.id === selectedSharePhotoId) ?? shareablePhotos?.[0] ?? null;
+  const selectedSharePhoto =
+    shareablePhotos?.find((photo) => photo.id === selectedSharePhotoId) ??
+    shareablePhotos?.[0] ??
+    null;
 
   const { data: notifSettings } = useNotificationSettings(user?.id);
 
@@ -197,7 +222,7 @@ export default function Istatistikler() {
         if (!MediaLibrary) {
           showAlert(
             "Bu özellik Expo Go'da desteklenmiyor",
-            "Galeriye kaydetmek için development build gerekiyor. Bu arada 'Paylaş' ile görseli doğrudan gönderebilirsin."
+            "Galeriye kaydetmek için development build gerekiyor. Bu arada 'Paylaş' ile görseli doğrudan gönderebilirsin.",
           );
           return;
         }
@@ -224,7 +249,7 @@ export default function Istatistikler() {
       alertError(
         kind === "save" ? "Kaydetme başarısız" : "Paylaşım başarısız",
         err,
-        `stats.shareCard.${kind}`
+        `stats.shareCard.${kind}`,
       );
     } finally {
       setSharePendingAction(null);
@@ -245,8 +270,8 @@ export default function Istatistikler() {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={onRefresh}
-          tintColor="#8CE05A"
-          colors={["#8CE05A"]}
+          tintColor={theme.colors.accent}
+          colors={[theme.colors.accent]}
         />
       }
     >
@@ -264,13 +289,13 @@ export default function Istatistikler() {
         className="mx-4 mb-4 bg-accentSoft border border-accent rounded-card p-4 flex-row items-center gap-3"
       >
         <View className="w-10 h-10 rounded-lg bg-accent/20 items-center justify-center">
-          <Feather name="clipboard" size={20} color="#8CE05A" />
+          <Feather name="clipboard" size={20} color={theme.colors.accent} />
         </View>
         <View className="flex-1">
           <Text className="text-text text-base font-semibold">Bugünün antrenmanı</Text>
           <Text className="text-textFaint text-sm">Programı yaz — hareket ve setleri ekle</Text>
         </View>
-        <Feather name="chevron-right" size={18} color="#8CE05A" />
+        <Feather name="chevron-right" size={18} color={theme.colors.accent} />
       </PressableFade>
 
       <View className="flex-row gap-2 px-4 mb-4">
@@ -283,7 +308,9 @@ export default function Istatistikler() {
             dim={0.7}
             className={`px-4 py-3 rounded-pill ${t.id === currentTypeId ? "bg-accent" : "bg-surface"}`}
           >
-            <Text className={`text-sm font-semibold capitalize ${t.id === currentTypeId ? "text-bg" : "text-textMuted"}`}>
+            <Text
+              className={`text-sm font-semibold capitalize ${t.id === currentTypeId ? "text-bg" : "text-textMuted"}`}
+            >
               {t.name}
             </Text>
           </PressableFade>
@@ -292,7 +319,7 @@ export default function Istatistikler() {
 
       <View className="mx-4 mb-4 bg-surface border border-border rounded-card p-4">
         {seriesLoading ? (
-          <ActivityIndicator color="#8CE05A" />
+          <ActivityIndicator color={theme.colors.accent} />
         ) : seriesError ? (
           // Hatasız hâlde "Bu ölçüm için henüz veri yok." yazıyordu: kullanıcı
           // aylardır girdiği ölçümlerin kaybolduğunu sanırdı.
@@ -308,7 +335,9 @@ export default function Istatistikler() {
                   <Text className="text-base font-medium text-textMuted">{unitLabel}</Text>
                 </Text>
                 {delta != null ? (
-                  <Text className={`text-sm font-semibold ${isGoodDelta ? "text-accent" : "text-danger"}`}>
+                  <Text
+                    className={`text-sm font-semibold ${isGoodDelta ? "text-accent" : "text-danger"}`}
+                  >
                     {delta > 0 ? "↑" : delta < 0 ? "↓" : "•"} {Math.abs(delta)} {unitLabel}
                   </Text>
                 ) : null}
@@ -323,7 +352,7 @@ export default function Istatistikler() {
                 accessibilityRole="button"
                 accessibilityLabel="Grafiği büyüt"
               >
-                <Feather name="maximize-2" size={18} color="#8B8A82" />
+                <Feather name="maximize-2" size={18} color={theme.colors.textFaint} />
               </PressableFade>
             </View>
 
@@ -351,7 +380,9 @@ export default function Istatistikler() {
           {/* Başlık: ölçüm adı + tarih aralığı, sağda kapat butonu */}
           <View className="flex-row items-start justify-between">
             <View className="flex-1 pr-3">
-              <Text className="text-text text-2xl font-bold capitalize">{activeType?.name ?? ""}</Text>
+              <Text className="text-text text-2xl font-bold capitalize">
+                {activeType?.name ?? ""}
+              </Text>
               {series && series.length > 0 ? (
                 <Text className="text-textFaint text-sm mt-1">
                   {formatDateKey(series[0].date, { day: "numeric", month: "short" })}
@@ -371,7 +402,7 @@ export default function Istatistikler() {
               accessibilityLabel="Kapat"
               className="w-10 h-10 rounded-full bg-surface items-center justify-center"
             >
-              <Feather name="x" size={22} color="#F5F3EC" />
+              <Feather name="x" size={22} color={theme.colors.text} />
             </PressableFade>
           </View>
 
@@ -383,8 +414,11 @@ export default function Istatistikler() {
                 <Text className="text-xl font-medium text-textMuted"> {unitLabel}</Text>
               </Text>
               {modalDelta != null ? (
-                <Text className={`text-base font-semibold ${modalIsGoodDelta ? "text-accent" : "text-danger"}`}>
-                  {modalDelta > 0 ? "↑" : modalDelta < 0 ? "↓" : "•"} {Math.abs(modalDelta)} {unitLabel}
+                <Text
+                  className={`text-base font-semibold ${modalIsGoodDelta ? "text-accent" : "text-danger"}`}
+                >
+                  {modalDelta > 0 ? "↑" : modalDelta < 0 ? "↓" : "•"} {Math.abs(modalDelta)}{" "}
+                  {unitLabel}
                 </Text>
               ) : null}
             </View>
@@ -421,146 +455,24 @@ export default function Istatistikler() {
         </View>
       </Modal>
 
-      <View className="mx-4 bg-surface border border-border rounded-card p-4">
-        {/* Sol blok flex-1 + shrink: metinler taşmak yerine kısalsın. Sağdaki iki
-            aksiyon eskiden tek satıra sığmıyordu (ikon + "X gün üst üste" + "Paylaş"
-            + "Yıla göre gör" ≈ 435px, telefon ise 360-390px) ve kartın düzenini
-            bozuyordu — "Paylaş" artık yalnızca ikon, etiketi erişilebilirlik
-            tarafında duruyor. */}
-        <View className="flex-row items-center justify-between mb-3 gap-2">
-          <View className="flex-row items-center gap-3 flex-1 min-w-0">
-            <View className="w-9 h-9 rounded-lg bg-stamp/15 items-center justify-center">
-              <Feather name="zap" size={18} color="#FF7A3D" />
-            </View>
-            <View className="flex-1 min-w-0">
-              <Text className="text-text text-base font-semibold" numberOfLines={1}>
-                {currentStreak} gün üst üste
-              </Text>
-              <Text className="text-textFaint text-xs capitalize">bu hafta</Text>
-            </View>
-          </View>
-          <View className="flex-row items-center gap-1 shrink-0">
-            <PressableFade
-              onPress={() => setShareModalVisible(true)}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              accessibilityRole="button"
-              accessibilityLabel="Paylaşım kartı oluştur"
-              className="w-9 h-9 items-center justify-center"
-            >
-              <Feather name="share-2" size={17} color="#8CE05A" />
-            </PressableFade>
-            <PressableFade
-              onPress={() => router.push("/calendar-year")}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              accessibilityRole="button"
-              accessibilityLabel="Yıla göre gör"
-              className="flex-row items-center gap-1 py-2 pl-1"
-            >
-              <Text className="text-accent text-sm font-medium capitalize">Yıla göre gör</Text>
-              <Feather name="chevron-right" size={15} color="#8CE05A" />
-            </PressableFade>
-          </View>
-        </View>
+      <WeekTracker
+        currentStreak={currentStreak}
+        weekRangeLabel={weekRangeLabel}
+        weekOffset={weekOffset}
+        setWeekOffset={setWeekOffset}
+        weekLoading={weekLoading}
+        weekError={weekError}
+        week={week}
+        refetchWeek={refetchWeek}
+        onSharePress={() => setShareModalVisible(true)}
+      />
 
-        {/* Hafta gezinmesi — geçmiş bir günü işaretlemenin (off day dahil) tek
-            yolu buradan o güne dokunmak; şerit bu haftaya kilitliyken geçmişe
-            dönük kayıt hiçbir ekrandan yapılamıyordu. İleri yön bu haftada
-            duruyor: gelecek günler zaten dokunulamaz. */}
-        <View className="flex-row items-center justify-between mb-3">
-          <PressableFade
-            onPress={() => setWeekOffset((o) => o - 1)}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            accessibilityRole="button"
-            accessibilityLabel="Önceki hafta"
-            className="w-8 h-8 items-center justify-center"
-          >
-            <Feather name="chevron-left" size={18} color="#8B8A82" />
-          </PressableFade>
-
-          <PressableFade
-            onPress={() => setWeekOffset(0)}
-            disabled={weekOffset === 0}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            accessibilityRole="button"
-            accessibilityLabel={
-              weekOffset === 0 ? `${weekRangeLabel}, bu hafta` : `${weekRangeLabel}, bu haftaya dön`
-            }
-            className="flex-row items-center gap-1.5 px-2 py-1"
-          >
-            <Text className={`text-sm ${weekOffset === 0 ? "text-textFaint" : "text-text font-medium"}`}>
-              {weekRangeLabel}
-            </Text>
-            {weekOffset !== 0 ? <Feather name="rotate-ccw" size={13} color="#8CE05A" /> : null}
-          </PressableFade>
-
-          <PressableFade
-            onPress={() => setWeekOffset((o) => Math.min(0, o + 1))}
-            disabled={weekOffset === 0}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            accessibilityRole="button"
-            accessibilityLabel="Sonraki hafta"
-            accessibilityState={{ disabled: weekOffset === 0 }}
-            className="w-8 h-8 items-center justify-center"
-          >
-            <Feather name="chevron-right" size={18} color={weekOffset === 0 ? "#3A3A34" : "#8B8A82"} />
-          </PressableFade>
-        </View>
-
-        {weekLoading ? (
-          <ActivityIndicator color="#8CE05A" />
-        ) : weekError ? (
-          // Hatasızken şerit yedi boş kutu çiziyordu — o haftanın kayıtları
-          // silinmiş gibi. Seri sayacı da sessizce 0'a düşüyordu.
-          <ErrorState error={weekError} onRetry={() => refetchWeek()} />
-        ) : (
-          <View className="flex-row justify-between">
-            {week?.map((day) => {
-              return (
-                <PressableFade
-                  key={day.date}
-                  onPress={() => handleDayPress(day)}
-                  disabled={day.isFuture}
-                  hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
-                  accessibilityRole="button"
-                  accessibilityLabel={dayAccessibilityLabel(day)}
-                  accessibilityState={{ disabled: day.isFuture }}
-                  dim={day.isFuture ? 1 : 0.7}
-                  className="items-center gap-1"
-                >
-                  <View
-                    className={`w-8 h-8 rounded-md items-center justify-center ${
-                      day.type === "log"
-                        ? "bg-accent"
-                        : day.type === "off_day"
-                        ? "bg-offDaySoft border border-offDay"
-                        : day.type === "workout"
-                        ? "bg-accentSoft border border-accent"
-                        : day.isFuture
-                        ? "bg-transparent"
-                        : day.isToday
-                        ? "bg-accentSoft border border-dashed border-accent"
-                        : "bg-white/5 border border-dashed border-white/20"
-                    }`}
-                  >
-                    {day.type === "log" ? (
-                      <Feather name="zap" size={14} color="#0B0D0A" />
-                    ) : day.type === "off_day" ? (
-                      <Feather name="moon" size={14} color="#B8C0E0" />
-                    ) : day.type === "workout" ? (
-                      <Feather name="check" size={14} color="#8CE05A" />
-                    ) : null}
-                  </View>
-                  <Text className={`text-xs ${day.isFuture ? "text-textFaint/40" : "text-textFaint"}`}>
-                    {day.label}
-                  </Text>
-                </PressableFade>
-              );
-            })}
-          </View>
-        )}
-      </View>
-
-      <Modal transparent visible={shareModalVisible} animationType="slide" onRequestClose={() => setShareModalVisible(false)}>
+      <Modal
+        transparent
+        visible={shareModalVisible}
+        animationType="slide"
+        onRequestClose={() => setShareModalVisible(false)}
+      >
         <View className="flex-1 bg-black/70 justify-end">
           <View className="bg-bg rounded-t-[28px] border-t border-border p-4 max-h-[92%]">
             <View className="flex-row items-start justify-between mb-4">
@@ -578,21 +490,28 @@ export default function Istatistikler() {
                 accessibilityRole="button"
                 accessibilityLabel="Paylaşımı kapat"
               >
-                <Feather name="x" size={20} color="#F5F3EC" />
+                <Feather name="x" size={20} color={theme.colors.text} />
               </Pressable>
             </View>
 
             {sharePhotosLoading ? (
-              <ActivityIndicator color="#8CE05A" className="my-6" />
+              <ActivityIndicator color={theme.colors.accent} className="my-6" />
             ) : sharePhotosError ? (
               // Hatasızken "paylaşabileceğin fotoğraf yok" boş durumuna
               // düşüyordu — fotoğrafları olan kullanıcı için yanlış bilgi.
               <ErrorState error={sharePhotosError} onRetry={() => refetchSharePhotos()} />
             ) : shareablePhotos && shareablePhotos.length > 0 ? (
-              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 8 }}>
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 8 }}
+              >
                 <View className="mb-4">
                   <Text className="text-text text-sm font-semibold mb-2">Fotoğraf seç</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ gap: 10 }}
+                  >
                     {shareablePhotos.map((photo) => {
                       const isActive = selectedSharePhoto?.id === photo.id;
                       return (
@@ -608,9 +527,15 @@ export default function Istatistikler() {
                           accessibilityState={{ selected: isActive }}
                           className={`rounded-[16px] overflow-hidden border ${isActive ? "border-accent" : "border-border"}`}
                         >
-                          <Image source={{ uri: photo.photoUrl! }} style={{ width: 90, height: 90 }} resizeMode="cover" />
+                          <Image
+                            source={{ uri: photo.photoUrl! }}
+                            style={{ width: 90, height: 90 }}
+                            resizeMode="cover"
+                          />
                           <View className="px-2 py-1 bg-surface">
-                            <Text className="text-textFaint text-xs">{formatDateKey(photo.date, { day: "numeric", month: "short" })}</Text>
+                            <Text className="text-textFaint text-xs">
+                              {formatDateKey(photo.date, { day: "numeric", month: "short" })}
+                            </Text>
                           </View>
                         </Pressable>
                       );
@@ -619,10 +544,19 @@ export default function Istatistikler() {
                 </View>
 
                 <View className="mb-4 rounded-card border border-border bg-surface p-3">
-                  <View ref={shareCardRef} collapsable={false} className="rounded-[24px] overflow-hidden bg-[#0B0D0A]" style={{ minHeight: 420 }}>
+                  <View
+                    ref={shareCardRef}
+                    collapsable={false}
+                    className="rounded-[24px] overflow-hidden bg-[#0B0D0A]"
+                    style={{ minHeight: 420 }}
+                  >
                     <View className="absolute inset-0">
                       {selectedSharePhoto?.photoUrl ? (
-                        <Image source={{ uri: selectedSharePhoto.photoUrl }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+                        <Image
+                          source={{ uri: selectedSharePhoto.photoUrl }}
+                          style={{ width: "100%", height: "100%" }}
+                          resizeMode="cover"
+                        />
                       ) : (
                         <View className="w-full h-full bg-white/10 items-center justify-center">
                           <Text className="text-textMuted text-sm">Fotoğraf yok</Text>
@@ -638,7 +572,9 @@ export default function Istatistikler() {
                           görselde var olmayan bir seri iddia ediliyordu. */}
                       {currentStreak > 0 ? (
                         <View className="rounded-full border border-white/20 bg-black/55 px-4 py-2 mb-3">
-                          <Text className="text-white text-xl font-bold text-center">{currentStreak} gün üst üste</Text>
+                          <Text className="text-white text-xl font-bold text-center">
+                            {currentStreak} gün üst üste
+                          </Text>
                         </View>
                       ) : null}
                       <View className="flex-row items-center gap-2 rounded-full border border-white/20 bg-black/55 px-3 py-2">
@@ -667,10 +603,10 @@ export default function Istatistikler() {
                     className="flex-1 flex-row items-center justify-center gap-2 border border-border rounded-[12px] py-3 bg-surface"
                   >
                     {sharePendingAction === "save" ? (
-                      <ActivityIndicator size="small" color="#F5F3EC" />
+                      <ActivityIndicator size="small" color={theme.colors.text} />
                     ) : (
                       <>
-                        <Feather name="download" size={16} color="#F5F3EC" />
+                        <Feather name="download" size={16} color={theme.colors.text} />
                         <Text className="text-text text-sm font-semibold">İndir</Text>
                       </>
                     )}
@@ -688,10 +624,10 @@ export default function Istatistikler() {
                     className="flex-1 flex-row items-center justify-center gap-2 border border-accent rounded-[12px] py-3 bg-accentSoft"
                   >
                     {sharePendingAction === "share" ? (
-                      <ActivityIndicator size="small" color="#8CE05A" />
+                      <ActivityIndicator size="small" color={theme.colors.accent} />
                     ) : (
                       <>
-                        <Feather name="share-2" size={16} color="#8CE05A" />
+                        <Feather name="share-2" size={16} color={theme.colors.accent} />
                         <Text className="text-accent text-sm font-semibold">Paylaş</Text>
                       </>
                     )}

@@ -1,3 +1,4 @@
+import { theme } from "@/lib/theme";
 import { View } from "react-native";
 import { PressableFade } from "./PressableFade";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -41,7 +42,7 @@ export function UpdateBanner({
       className="bg-accentSoft border-b border-accent"
     >
       <View className="flex-row items-center gap-3 px-4 py-2.5">
-        <Feather name="download" size={15} color="#8CE05A" />
+        <Feather name="download" size={15} color={theme.colors.accent} />
         <View className="flex-1">
           <Text className="text-text text-sm font-semibold">Yeni sürüm hazır</Text>
           {busy ? (

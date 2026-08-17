@@ -38,14 +38,16 @@ export function pickOrphans(
   candidates: CandidateFile[],
   referenced: Set<string>,
   now: number,
-  safetyWindowMs: number = SAFETY_WINDOW_MS
+  safetyWindowMs: number = SAFETY_WINDOW_MS,
 ): string[] {
   const cutoff = now - safetyWindowMs;
-  return candidates
-    .filter((c) => !referenced.has(c.path))
-    // createdAt null ise `now` varsayıyoruz -> now > cutoff -> korunur (silinmez).
-    .filter((c) => (c.createdAt ?? now) <= cutoff)
-    .map((c) => c.path);
+  return (
+    candidates
+      .filter((c) => !referenced.has(c.path))
+      // createdAt null ise `now` varsayıyoruz -> now > cutoff -> korunur (silinmez).
+      .filter((c) => (c.createdAt ?? now) <= cutoff)
+      .map((c) => c.path)
+  );
 }
 
 /**
@@ -136,7 +138,9 @@ async function collectCandidateFiles(userId: string): Promise<CandidateFile[]> {
  * eder (çağıran yutar). Referans kümesi güvenle çekilemezse (throw) hiçbir dosya
  * silinmez — false-delete'e karşı en önemli güvence budur.
  */
-export async function sweepOrphanPhotos(userId: string): Promise<{ scanned: number; deleted: number }> {
+export async function sweepOrphanPhotos(
+  userId: string,
+): Promise<{ scanned: number; deleted: number }> {
   const referenced = await collectReferencedPaths(userId);
   const candidates = await collectCandidateFiles(userId);
   const orphans = pickOrphans(candidates, referenced, Date.now());

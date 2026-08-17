@@ -1,3 +1,4 @@
+import { theme } from "@/lib/theme";
 import { View } from "react-native";
 import { PressableFade } from "./PressableFade";
 import { router } from "expo-router";
@@ -24,7 +25,7 @@ function CaptureOption({
       className="flex-row items-center gap-3 px-4 py-4 rounded-button bg-surface border border-border"
     >
       <View className="w-9 h-9 rounded-full bg-accentSoft items-center justify-center">
-        <Feather name={icon} size={17} color="#8CE05A" />
+        <Feather name={icon} size={17} color={theme.colors.accent} />
       </View>
       <Text className="text-text text-base font-semibold">{label}</Text>
     </PressableFade>

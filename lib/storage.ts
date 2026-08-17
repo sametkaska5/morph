@@ -150,7 +150,7 @@ export type EntryRowWithPhotos<T extends PhotoRowLike = PhotoRowLike> = {
  * eşleşeni seçiyoruz; kapağı olmayan eski kayıtlar için ilk fotoğrafa geri düşüyoruz.
  */
 export function coverPhotoRow<T extends PhotoRowLike = PhotoRowLike>(
-  entryRow: EntryRowWithPhotos<T> | null | undefined
+  entryRow: EntryRowWithPhotos<T> | null | undefined,
 ): T | null {
   const photos = entryRow?.photos;
   if (photos == null) return null;
@@ -253,7 +253,7 @@ export async function getPhotoUrl(path: string, variant?: PhotoVariant) {
  */
 export async function getPhotoUrls(
   paths: string[],
-  variant?: PhotoVariant
+  variant?: PhotoVariant,
 ): Promise<Map<string, string>> {
   const uniquePaths = [...new Set(paths)];
   if (uniquePaths.length === 0) return new Map();
@@ -263,7 +263,9 @@ export async function getPhotoUrls(
     if (transformed) return transformed;
   }
 
-  const { data, error } = await supabase.storage.from("photos").createSignedUrls(uniquePaths, SIGNED_URL_EXPIRY);
+  const { data, error } = await supabase.storage
+    .from("photos")
+    .createSignedUrls(uniquePaths, SIGNED_URL_EXPIRY);
   if (error) throw error;
 
   const map = new Map<string, string>();
@@ -276,7 +278,7 @@ export async function getPhotoUrls(
 /** Başarısız olursa null döner ve çağıran dönüşümsüz batch'e geri düşer. */
 async function signWithTransform(
   paths: string[],
-  variant: PhotoVariant
+  variant: PhotoVariant,
 ): Promise<Map<string, string> | null> {
   const transform = PHOTO_VARIANTS[variant];
   try {
@@ -287,7 +289,7 @@ async function signWithTransform(
           .createSignedUrl(path, SIGNED_URL_EXPIRY, { transform });
         if (error) throw error;
         return [path, data.signedUrl] as const;
-      })
+      }),
     );
     return new Map(entries);
   } catch {
@@ -295,4 +297,3 @@ async function signWithTransform(
     return null;
   }
 }
-

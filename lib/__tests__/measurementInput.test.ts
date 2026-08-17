@@ -86,7 +86,9 @@ describe("validateMeasurementInput", () => {
   it("bilinmeyen/özel birimde yalnızca genel (çok yüksek) sınır uygulanır", () => {
     // Örn. 'adım' gibi özel bir birim: 40000 geçerli olmalı, sadece saçma büyük eleniyor.
     expect(validateMeasurementInput("40000", "adım").status).toBe("ok");
-    expect(validateMeasurementInput(String(MEASUREMENT_GENERIC_MAX + 1), "adım").status).toBe("too_high");
+    expect(validateMeasurementInput(String(MEASUREMENT_GENERIC_MAX + 1), "adım").status).toBe(
+      "too_high",
+    );
   });
 
   it("birim verilmezse genel sınır uygulanır", () => {
@@ -103,6 +105,8 @@ describe("measurementErrorText", () => {
   it("invalid/negative/too_high için Türkçe uyarı verir", () => {
     expect(measurementErrorText(validateMeasurementInput("abc", "kg"))).toBe("Sayı gir");
     expect(measurementErrorText(validateMeasurementInput("-1", "kg"))).toBe("Negatif olamaz");
-    expect(measurementErrorText(validateMeasurementInput("9999", "kg"))).toBe("Çok yüksek (en fazla 1000)");
+    expect(measurementErrorText(validateMeasurementInput("9999", "kg"))).toBe(
+      "Çok yüksek (en fazla 1000)",
+    );
   });
 });

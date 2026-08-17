@@ -1,3 +1,4 @@
+import { theme } from "@/lib/theme";
 import { View } from "react-native";
 import { PressableFade } from "@/components/PressableFade";
 import { Text } from "@/components/Typography";
@@ -26,7 +27,7 @@ export default function Welcome() {
     <View className="flex-1 bg-bg justify-between px-6 py-16">
       <View className="items-center mt-16">
         <View className="w-14 h-14 rounded-2xl border-[1.5px] border-accent items-center justify-center mb-4 bg-accentSoft">
-          <Feather name="hexagon" size={24} color="#8CE05A" />
+          <Feather name="hexagon" size={24} color={theme.colors.accent} />
         </View>
         <Text className="text-text text-4xl font-bold uppercase tracking-wide">Remory</Text>
         <Text className="text-textMuted text-base text-center mt-3">

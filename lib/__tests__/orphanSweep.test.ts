@@ -61,11 +61,7 @@ describe("pickOrphans", () => {
       file("u/e/yetim-eski.jpg", 50), // referanssız + eski -> SİL
       file("u/e/yetim-yeni.jpg", 1), // referanssız + yeni -> kal
     ];
-    const referenced = new Set([
-      "u/e/kapak.jpg",
-      "u/e/thumb-1.jpg",
-      "u/avatar/avatar-1.jpg",
-    ]);
+    const referenced = new Set(["u/e/kapak.jpg", "u/e/thumb-1.jpg", "u/avatar/avatar-1.jpg"]);
     expect(pickOrphans(candidates, referenced, NOW, WINDOW)).toEqual(["u/e/yetim-eski.jpg"]);
   });
 
@@ -102,7 +98,7 @@ describe("sweepOrphanPhotos", () => {
           { name: "thumb-kapak.jpg", created_at: OLD },
           { name: "yetim.jpg", created_at: OLD },
         ],
-      }
+      },
     );
 
     const result = await sweepOrphanPhotos("u1");
@@ -116,7 +112,7 @@ describe("sweepOrphanPhotos", () => {
     sb.queue("profiles", { data: { avatar_path: "u1/avatar/avatar-1.jpg" } });
     sb.queueStorageList(
       { data: [{ name: "avatar" }] },
-      { data: [{ name: "avatar-1.jpg", created_at: OLD }] }
+      { data: [{ name: "avatar-1.jpg", created_at: OLD }] },
     );
 
     await sweepOrphanPhotos("u1");

@@ -49,7 +49,7 @@ export function pickMemoryMilestones(
   entries: MemoryEntry[],
   reminderTime: string,
   now: Date,
-  limit: number = MAX_MEMORY_NOTIFICATIONS
+  limit: number = MAX_MEMORY_NOTIFICATIONS,
 ): MemoryMilestone[] {
   // Saat doğrulanmadan kullanılırsa setHours(NaN) "Invalid Date" üretiyor; o
   // tarihle zamanlama denemesi işletim sistemi çağrısında patlıyor. Geçersizse
@@ -83,7 +83,7 @@ export function pickMemoryMilestones(
   all.sort(
     (a, b) =>
       a.date.getTime() - b.date.getTime() ||
-      (a.entryId < b.entryId ? -1 : a.entryId > b.entryId ? 1 : a.months - b.months)
+      (a.entryId < b.entryId ? -1 : a.entryId > b.entryId ? 1 : a.months - b.months),
   );
 
   return all.slice(0, Math.max(0, limit));

@@ -162,9 +162,7 @@ export function useProgramDay(userId: string | undefined, date: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("entries")
-        .select(
-          "id, workout_items(name, order_index, workout_sets(reps, weight, order_index))"
-        )
+        .select("id, workout_items(name, order_index, workout_sets(reps, weight, order_index))")
         .eq("user_id", userId!)
         .eq("date", date)
         .maybeSingle();
@@ -245,9 +243,7 @@ export async function saveProgram(payload: SaveProgramPayload) {
   // Şimdi: tek bir INSERT ... RETURNING id, order_index.
   const { data: itemRows, error: itemError } = await supabase
     .from("workout_items")
-    .insert(
-      clean.map((it) => ({ entry_id: entryId, name: it.name, order_index: it.order_index }))
-    )
+    .insert(clean.map((it) => ({ entry_id: entryId, name: it.name, order_index: it.order_index })))
     .select("id, order_index");
   if (itemError) throw itemError;
 

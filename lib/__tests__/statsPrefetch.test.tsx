@@ -78,7 +78,7 @@ describe("istatistikler ön yüklemesi", () => {
     });
 
     await waitFor(() =>
-      expect(client.getQueryData(queryKeys.currentWeek.byWeek("u1", 0))).toBeDefined()
+      expect(client.getQueryData(queryKeys.currentWeek.byWeek("u1", 0))).toBeDefined(),
     );
     expect(sb.chainsFor("measurement_values")).toHaveLength(0);
   });

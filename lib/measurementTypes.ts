@@ -65,7 +65,11 @@ export function usePrefetchMeasurementTypes(userId: string | undefined) {
 export function useAddMeasurementType(userId: string | undefined) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { name: string; unit: string; target_direction: TargetDirection }) => {
+    mutationFn: async (input: {
+      name: string;
+      unit: string;
+      target_direction: TargetDirection;
+    }) => {
       if (!userId) throw new Error("Giriş yapılmamış");
 
       // Sıra numarası ARTAN olmalı. Eskiden her özel tipe sabit 100 yazılıyordu:
@@ -80,10 +84,7 @@ export function useAddMeasurementType(userId: string | undefined) {
         .eq("user_id", userId);
       if (readError) throw readError;
 
-      const nextSortOrder = Math.max(
-        100,
-        ...(existing ?? []).map((t) => t.sort_order + 1)
-      );
+      const nextSortOrder = Math.max(100, ...(existing ?? []).map((t) => t.sort_order + 1));
 
       const { error } = await supabase.from("measurement_types").insert({
         user_id: userId,
@@ -95,7 +96,34 @@ export function useAddMeasurementType(userId: string | undefined) {
       });
       if (error) throw error;
     },
-    onSuccess: () => {
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.measurementTypes.byUser(userId) });
+      const previousTypes = queryClient.getQueryData<MeasurementType[]>(
+        queryKeys.measurementTypes.byUser(userId),
+      );
+
+      const nextSortOrder = Math.max(100, ...(previousTypes ?? []).map((t) => t.sort_order + 1));
+      const optimisticType: MeasurementType = {
+        id: `temp-${Date.now()}`,
+        name: input.name,
+        unit: input.unit,
+        target_direction: input.target_direction,
+        is_default: false,
+        sort_order: nextSortOrder,
+      };
+
+      queryClient.setQueryData<MeasurementType[]>(
+        queryKeys.measurementTypes.byUser(userId),
+        (old) => [...(old ?? []), optimisticType],
+      );
+      return { previousTypes };
+    },
+    onError: (err, newType, context) => {
+      if (context?.previousTypes) {
+        queryClient.setQueryData(queryKeys.measurementTypes.byUser(userId), context.previousTypes);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.measurementTypes.byUser(userId) });
     },
   });
@@ -117,7 +145,25 @@ export function useDeleteMeasurementType(userId: string | undefined) {
       const { error } = await supabase.from("measurement_types").delete().eq("id", typeId);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onMutate: async (typeId) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.measurementTypes.byUser(userId) });
+      const previousTypes = queryClient.getQueryData<MeasurementType[]>(
+        queryKeys.measurementTypes.byUser(userId),
+      );
+
+      queryClient.setQueryData<MeasurementType[]>(
+        queryKeys.measurementTypes.byUser(userId),
+        (old) => (old ?? []).filter((t) => t.id !== typeId),
+      );
+
+      return { previousTypes };
+    },
+    onError: (err, typeId, context) => {
+      if (context?.previousTypes) {
+        queryClient.setQueryData(queryKeys.measurementTypes.byUser(userId), context.previousTypes);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.measurementTypes.byUser(userId) });
     },
   });

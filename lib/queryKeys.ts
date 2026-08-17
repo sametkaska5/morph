@@ -21,14 +21,14 @@ export const queryKeys = {
     all: ["entries"] as const,
     timeline: () => ["entries", "timeline"] as const,
     capsule: () => ["entries", "capsule"] as const,
-    searchIndex: (userId: string | undefined) => ["entries", "search-index", userId] as const,
+    search: (userId: string | undefined, searchTerm: string) =>
+      ["entries", "search", userId, searchTerm] as const,
     pickable: (userId: string | undefined) => ["entries", "pickable", userId] as const,
     order: () => ["entries", "order"] as const,
     /** Eskiden ["yearEntries", ...] idi — aile DIŞINDA kaldığı için hiçbir
      *  mutation onu invalidate etmiyordu ve yıl takvimi yeni kayıttan sonra
      *  bayat kalıyordu. Aileye taşımak bug'ı kökten çözdü. */
-    year: (userId: string | undefined, year: number) =>
-      ["entries", "year", userId, year] as const,
+    year: (userId: string | undefined, year: number) => ["entries", "year", userId, year] as const,
   },
 
   /** Tek girdi detayı (görüntüleme + düzenleme formu). */
@@ -80,6 +80,5 @@ export const queryKeys = {
 
   comparison: (a: string | undefined, b: string | undefined) => ["comparison", a, b] as const,
 
-  notificationSettings: (userId: string | undefined) =>
-    ["notification_settings", userId] as const,
+  notificationSettings: (userId: string | undefined) => ["notification_settings", userId] as const,
 } as const;

@@ -1,3 +1,4 @@
+import { theme } from "@/lib/theme";
 import { useRef, useState, type ComponentProps } from "react";
 import { View, Platform, ScrollView, ActivityIndicator } from "react-native";
 import { showAlert } from "@/lib/appAlert";
@@ -13,7 +14,12 @@ import { useMeasurementTypes } from "@/lib/measurementTypes";
 import { useKeyboardFocus } from "@/lib/useKeyboardFocus";
 import { useUnitPreference, displayUnit, toDisplayValue, toMetricValue } from "@/lib/units";
 import { validateMeasurementInput, measurementErrorText } from "@/lib/measurementInput";
-import { useWorkoutDay, saveWorkoutDay, type WorkoutDayType, SAVE_WORKOUT_DAY_MUTATION_KEY } from "@/lib/workout";
+import {
+  useWorkoutDay,
+  saveWorkoutDay,
+  type WorkoutDayType,
+  SAVE_WORKOUT_DAY_MUTATION_KEY,
+} from "@/lib/workout";
 import { invalidateAfterDayWrite } from "@/lib/entries";
 import { alertError } from "@/lib/alerts";
 import { ErrorState } from "@/components/ErrorState";
@@ -27,7 +33,11 @@ export default function WorkoutDayScreen() {
 
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { data: allTypes, error: typesError, refetch: refetchTypes } = useMeasurementTypes(user?.id);
+  const {
+    data: allTypes,
+    error: typesError,
+    refetch: refetchTypes,
+  } = useMeasurementTypes(user?.id);
   const { data: unitPref = "metric" } = useUnitPreference(user?.id);
 
   // Tarih route param'dan (istatistik şeridinden) gelebilir; yoksa bugün.
@@ -111,7 +121,10 @@ export default function WorkoutDayScreen() {
       return s === "invalid" || s === "negative" || s === "too_high";
     });
     if (hasInvalid) {
-      showAlert("Geçersiz ölçüm", "Bazı ölçüm değerleri geçerli değil. Kırmızı uyarıları düzeltip tekrar dene.");
+      showAlert(
+        "Geçersiz ölçüm",
+        "Bazı ölçüm değerleri geçerli değil. Kırmızı uyarıları düzeltip tekrar dene.",
+      );
       return;
     }
 
@@ -120,7 +133,8 @@ export default function WorkoutDayScreen() {
     const metricValues: Record<string, string> = {};
     for (const t of allTypes ?? []) {
       const v = validateMeasurementInput(values[t.id] ?? "", displayUnit(t.unit, unitPref));
-      metricValues[t.id] = v.status === "ok" ? String(toMetricValue(v.value, t.unit, unitPref)) : "";
+      metricValues[t.id] =
+        v.status === "ok" ? String(toMetricValue(v.value, t.unit, unitPref)) : "";
     }
 
     saveMutation.mutate({
@@ -138,7 +152,11 @@ export default function WorkoutDayScreen() {
       onScroll={onScroll}
       scrollEventThrottle={16}
       className="flex-1 bg-bg"
-      contentContainerStyle={{ padding: 20, paddingTop: screen.top, paddingBottom: screen.bottom + keyboardPadding }}
+      contentContainerStyle={{
+        padding: 20,
+        paddingTop: screen.top,
+        paddingBottom: screen.bottom + keyboardPadding,
+      }}
       keyboardShouldPersistTaps="handled"
     >
       <View className="flex-row justify-between items-center mb-4">
@@ -149,7 +167,7 @@ export default function WorkoutDayScreen() {
           accessibilityLabel="Geri dön"
           dim={0.7}
         >
-          <Feather name="chevron-left" size={22} color="#F5F3EC" />
+          <Feather name="chevron-left" size={22} color={theme.colors.text} />
         </PressableFade>
         <Text className="text-text text-xl font-bold">Fotoğrafsız gün</Text>
         <View style={{ width: 22 }} />
@@ -197,18 +215,20 @@ export default function WorkoutDayScreen() {
         // boş form açılıp Kaydet'e basılabiliyordu: o günün notu ve ölçümleri
         // siliniyor, tipi 'workout'a çevrilip anı akışından düşüyordu.
         // Kardeş ekran entry/program.tsx bu korumayı zaten yapıyordu.
-        <ActivityIndicator color="#8CE05A" className="my-8" />
+        <ActivityIndicator color={theme.colors.accent} className="my-8" />
       ) : isPhotoDay ? (
         <View className="bg-surface border border-border rounded-card p-4 mt-1">
           <View className="flex-row items-center gap-3 mb-2">
             <View className="w-9 h-9 rounded-lg bg-accentSoft items-center justify-center">
-              <Feather name="image" size={18} color="#8CE05A" />
+              <Feather name="image" size={18} color={theme.colors.accent} />
             </View>
-            <Text className="text-text text-base font-semibold flex-1">Bu günün fotoğraflı kaydı var</Text>
+            <Text className="text-text text-base font-semibold flex-1">
+              Bu günün fotoğraflı kaydı var
+            </Text>
           </View>
           <Text className="text-textMuted text-base mb-4">
-            Bu güne ait ölçüm ve notları fotoğraflı kaydın üzerinden düzenleyebilirsin. Başka bir gün için
-            fotoğrafsız kayıt yapmak istersen yukarıdan tarihi değiştir.
+            Bu güne ait ölçüm ve notları fotoğraflı kaydın üzerinden düzenleyebilirsin. Başka bir
+            gün için fotoğrafsız kayıt yapmak istersen yukarıdan tarihi değiştir.
           </Text>
           <PressableFade
             onPress={() => router.replace(`/entry/${existing!.id}`)}
@@ -217,7 +237,7 @@ export default function WorkoutDayScreen() {
             accessibilityLabel="Fotoğraflı kaydı aç"
             className="bg-accent p-4 rounded-button items-center flex-row justify-center gap-2"
           >
-            <Feather name="arrow-right" size={16} color="#0B0D0A" />
+            <Feather name="arrow-right" size={16} color={theme.colors.bg} />
             <Text className="text-bg text-base font-bold">Kaydı aç</Text>
           </PressableFade>
         </View>
@@ -242,10 +262,12 @@ export default function WorkoutDayScreen() {
 
           {/* ÖLÇÜMLER — new/edit ekranlarıyla aynı satır deseni. */}
           <View className="bg-surface border border-border rounded-card p-4 mb-3">
-            <Text className="text-textFaint text-sm font-semibold mb-2 tracking-wide">ÖLÇÜMLER</Text>
+            <Text className="text-textFaint text-sm font-semibold mb-2 tracking-wide">
+              ÖLÇÜMLER
+            </Text>
             {allTypes?.map((t, i) => {
               const errorText = measurementErrorText(
-                validateMeasurementInput(values[t.id] ?? "", displayUnit(t.unit, unitPref))
+                validateMeasurementInput(values[t.id] ?? "", displayUnit(t.unit, unitPref)),
               );
               return (
                 <View key={t.id} className="py-2">
@@ -267,7 +289,7 @@ export default function WorkoutDayScreen() {
                         // yalnızca "metin girişi" diyip geçiyordu. Birim de etikete
                         // giriyor, aksi halde neyin girildiği duyulmuyor.
                         accessibilityLabel={`${t.name}, ${displayUnit(t.unit, unitPref)}`}
-                        placeholderTextColor="#8B8A82"
+                        placeholderTextColor={theme.colors.textFaint}
                         returnKeyType="next"
                         blurOnSubmit={false}
                         onFocus={() => revealField(measureRefs.current[i])}
@@ -280,10 +302,7 @@ export default function WorkoutDayScreen() {
                           sabit 80px olduğu için uzun birimler ("kilogram", "santimetre")
                           placeholder'da da kırpılıyordu. max-w + numberOfLines: aşırı uzun
                           bir birim satırı bozmak yerine kendisi kısalıyor. */}
-                      <Text
-                        className="text-textFaint text-sm max-w-[72px]"
-                        numberOfLines={1}
-                      >
+                      <Text className="text-textFaint text-sm max-w-[72px]" numberOfLines={1}>
                         {displayUnit(t.unit, unitPref)}
                       </Text>
                       <PressableFade
@@ -292,11 +311,13 @@ export default function WorkoutDayScreen() {
                         accessibilityLabel="Sonraki alana geç"
                         onPress={() => measureRefs.current[i + 1]?.focus()}
                       >
-                        <Feather name="chevron-right" size={16} color="#8B8A82" />
+                        <Feather name="chevron-right" size={16} color={theme.colors.textFaint} />
                       </PressableFade>
                     </View>
                   </View>
-                  {errorText ? <Text className="text-danger text-xs mt-1 text-right">{errorText}</Text> : null}
+                  {errorText ? (
+                    <Text className="text-danger text-xs mt-1 text-right">{errorText}</Text>
+                  ) : null}
                 </View>
               );
             })}
@@ -312,13 +333,13 @@ export default function WorkoutDayScreen() {
               className="bg-surface border border-border rounded-card p-4 mb-3 flex-row items-center gap-3"
             >
               <View className="w-9 h-9 rounded-lg bg-accentSoft items-center justify-center">
-                <Feather name="clipboard" size={18} color="#8CE05A" />
+                <Feather name="clipboard" size={18} color={theme.colors.accent} />
               </View>
               <View className="flex-1">
                 <Text className="text-text text-base font-semibold">Antrenman programı</Text>
                 <Text className="text-textFaint text-sm">Hareket ve setleri ekle</Text>
               </View>
-              <Feather name="chevron-right" size={18} color="#8B8A82" />
+              <Feather name="chevron-right" size={18} color={theme.colors.textFaint} />
             </PressableFade>
           ) : null}
 
@@ -330,7 +351,7 @@ export default function WorkoutDayScreen() {
               value={note}
               onChangeText={setNote}
               placeholder="birkaç kelime yaz..."
-              placeholderTextColor="#8B8A82"
+              placeholderTextColor={theme.colors.textFaint}
               accessibilityLabel="Not"
               onFocus={() => revealField(noteRef.current)}
               multiline
@@ -349,7 +370,7 @@ export default function WorkoutDayScreen() {
             className="bg-accent p-4 rounded-button items-center mt-6 flex-row justify-center gap-2"
           >
             {saveMutation.isPending ? (
-              <ActivityIndicator color="#0B0D0A" />
+              <ActivityIndicator color={theme.colors.bg} />
             ) : (
               <Text className="text-bg text-base font-bold">Kaydet</Text>
             )}
@@ -395,7 +416,9 @@ function DayTypeOption({
       }`}
     >
       <Feather name={icon} size={16} color={active ? "#8CE05A" : "#8B8A82"} />
-      <Text className={`text-base font-semibold ${active ? "text-accent" : "text-textMuted"}`}>{label}</Text>
+      <Text className={`text-base font-semibold ${active ? "text-accent" : "text-textMuted"}`}>
+        {label}
+      </Text>
     </PressableFade>
   );
 }

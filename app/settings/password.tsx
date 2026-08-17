@@ -1,3 +1,4 @@
+import { theme } from "@/lib/theme";
 import { useState } from "react";
 import { View, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
 import { PressableFade } from "@/components/PressableFade";
@@ -81,9 +82,7 @@ export default function ChangePasswordScreen() {
       // diyor ama bu ekranda e-posta zaten sorgulanmıyor, kullanıcı boşuna
       // e-postasını kontrol etmeye kalkardı.
       setErrorMsg(
-        isInvalidCredentials(signInError)
-          ? "Mevcut şifren hatalı."
-          : authErrorMessage(signInError)
+        isInvalidCredentials(signInError) ? "Mevcut şifren hatalı." : authErrorMessage(signInError),
       );
       captureError(signInError, { where: "password.reauth" });
       return;
@@ -122,7 +121,7 @@ export default function ChangePasswordScreen() {
             accessibilityLabel="Geri dön"
             dim={0.7}
           >
-            <Feather name="chevron-left" size={22} color="#F5F3EC" />
+            <Feather name="chevron-left" size={22} color={theme.colors.text} />
           </PressableFade>
           <Text className="text-text text-xl font-bold">Şifre değiştir</Text>
         </View>
@@ -138,7 +137,7 @@ export default function ChangePasswordScreen() {
           secureTextEntry
           autoCapitalize="none"
           placeholder="••••••••"
-          placeholderTextColor="#8B8A82"
+          placeholderTextColor={theme.colors.textFaint}
           accessibilityLabel="Mevcut şifre"
           style={{ height: 52, textAlignVertical: "center" }}
           className="bg-surface border border-border rounded-button px-4 text-text text-base mb-4"
@@ -153,7 +152,7 @@ export default function ChangePasswordScreen() {
           secureTextEntry
           autoCapitalize="none"
           placeholder="••••••••"
-          placeholderTextColor="#8B8A82"
+          placeholderTextColor={theme.colors.textFaint}
           accessibilityLabel="Yeni şifre"
           style={{ height: 52, textAlignVertical: "center" }}
           className="bg-surface border border-border rounded-button px-4 text-text text-base mb-4"
@@ -166,7 +165,7 @@ export default function ChangePasswordScreen() {
           secureTextEntry
           autoCapitalize="none"
           placeholder="••••••••"
-          placeholderTextColor="#8B8A82"
+          placeholderTextColor={theme.colors.textFaint}
           accessibilityLabel="Yeni şifre tekrar"
           style={{ height: 52, textAlignVertical: "center" }}
           className="bg-surface border border-border rounded-button px-4 text-text text-base mb-2"
@@ -188,7 +187,7 @@ export default function ChangePasswordScreen() {
           className="bg-accent rounded-button py-4 items-center mt-4"
         >
           {loading ? (
-            <ActivityIndicator color="#0B0D0A" />
+            <ActivityIndicator color={theme.colors.bg} />
           ) : (
             <Text className="text-bg text-base font-semibold">Şifreyi güncelle</Text>
           )}

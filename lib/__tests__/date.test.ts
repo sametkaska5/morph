@@ -129,9 +129,7 @@ describe("parseLocalDate", () => {
     if (local.getTimezoneOffset() !== 0) {
       // Eski kalıp (`new Date("2026-08-03")`) farklı bir ana işaret ediyor;
       // negatif offset'te bu fark günü geriye kaydıran hatanın kaynağı.
-      expect(parseLocalDate("2026-08-03").getTime()).not.toBe(
-        new Date("2026-08-03").getTime()
-      );
+      expect(parseLocalDate("2026-08-03").getTime()).not.toBe(new Date("2026-08-03").getTime());
     }
   });
 });
@@ -139,7 +137,7 @@ describe("parseLocalDate", () => {
 describe("formatDateKey", () => {
   it("tarih anahtarını Türkçe biçimde yazar", () => {
     expect(formatDateKey("2026-08-03", { day: "numeric", month: "long", year: "numeric" })).toBe(
-      "3 Ağustos 2026"
+      "3 Ağustos 2026",
     );
   });
 
@@ -173,7 +171,18 @@ describe("parseReminderTime", () => {
   });
 
   it("geçersiz girdide null döner — NaN üretmez", () => {
-    for (const bad of ["", "   ", "abc", "21", "21:", ":30", "24:00", "21:60", "-1:30", "21:30:xx"]) {
+    for (const bad of [
+      "",
+      "   ",
+      "abc",
+      "21",
+      "21:",
+      ":30",
+      "24:00",
+      "21:60",
+      "-1:30",
+      "21:30:xx",
+    ]) {
       expect(parseReminderTime(bad)).toBeNull();
     }
   });

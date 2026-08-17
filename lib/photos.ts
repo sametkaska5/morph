@@ -24,7 +24,7 @@ type PhotoRow = { id: string; storage_path: string; order_index: number };
  */
 export function orderEntryPhotos<T extends PhotoRow>(
   rows: T[],
-  coverPhotoId: string | null | undefined
+  coverPhotoId: string | null | undefined,
 ): T[] {
   const rest = rows
     .filter((p) => p.id !== coverPhotoId)
@@ -45,13 +45,16 @@ export function nextOrderIndex(rows: Pick<PhotoRow, "order_index">[]): number {
  */
 export function nextCoverAfterDelete<T extends { id: string }>(
   ordered: T[],
-  deletedId: string
+  deletedId: string,
 ): string | null {
   const remaining = ordered.filter((p) => p.id !== deletedId);
   return remaining[0]?.id ?? null;
 }
 
-async function invalidateEntryViews(queryClient: ReturnType<typeof useQueryClient>, entryId: string) {
+async function invalidateEntryViews(
+  queryClient: ReturnType<typeof useQueryClient>,
+  entryId: string,
+) {
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: queryKeys.entry.detail(entryId) }),
     // Kapak değişmiş olabilir: ızgara, anı akışı, arama ve karşılaştırma
@@ -104,7 +107,7 @@ export async function addPhotosToEntry({ userId, entryId, uris }: AddPhotosPaylo
       }
 
       return { storagePath, thumbPath, order_index: baseOrder + i };
-    })
+    }),
   );
 
   // Tüm fotoğrafları TEK toplu INSERT ile kaydet.
@@ -117,7 +120,6 @@ export async function addPhotosToEntry({ userId, entryId, uris }: AddPhotosPaylo
   const { error: insertError } = await supabase.from("photos").insert(rows);
   if (insertError) throw insertError;
 }
-
 
 export function useAddEntryPhotos(entryId: string) {
   const queryClient = useQueryClient();

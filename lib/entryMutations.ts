@@ -49,7 +49,7 @@ export async function saveEntry(payload: SaveEntryPayload) {
     .from("entries")
     .upsert(
       { user_id: userId, date, type: "log", note: note ?? existingEntry?.note ?? null },
-      { onConflict: "user_id,date" }
+      { onConflict: "user_id,date" },
     )
     .select()
     .single();

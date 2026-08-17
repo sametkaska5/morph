@@ -29,7 +29,8 @@ const mockClearPhoto = jest.fn();
 const mockReplace = jest.fn();
 const mockShowAlert = jest.fn();
 const mockBack = jest.fn();
-let mockPhoto: { uri: string; base64?: string; thumbBase64?: string; takenAt?: string } | null = null;
+let mockPhoto: { uri: string; base64?: string; thumbBase64?: string; takenAt?: string } | null =
+  null;
 
 jest.mock("../useAuth", () => ({ useAuth: () => mockUseAuth() }));
 jest.mock("../measurementTypes", () => ({
@@ -76,8 +77,22 @@ const measureField = (unit: string) => screen.getByLabelText(new RegExp(`, ${uni
 const measureValue = (unit: string) => measureField(unit).props.value;
 
 const TYPES: MeasurementType[] = [
-  { id: "kilo", name: "kilo", unit: "kg", target_direction: "decrease_is_good", is_default: true, sort_order: 1 },
-  { id: "bel", name: "bel", unit: "cm", target_direction: "decrease_is_good", is_default: true, sort_order: 2 },
+  {
+    id: "kilo",
+    name: "kilo",
+    unit: "kg",
+    target_direction: "decrease_is_good",
+    is_default: true,
+    sort_order: 1,
+  },
+  {
+    id: "bel",
+    name: "bel",
+    unit: "cm",
+    target_direction: "decrease_is_good",
+    is_default: true,
+    sort_order: 2,
+  },
 ];
 
 /** Hazır fotoğraf: küçültme bitmiş, base64 üretilmiş. */
@@ -149,9 +164,7 @@ describe("yeni kayıt — ölçüm doğrulama", () => {
     await fireEvent.changeText(measureField("kg"), "80");
     await fireEvent.press(screen.getByLabelText("Kaydı kaydet"));
 
-    expect(mockMutate).toHaveBeenCalledWith(
-      expect.objectContaining({ values: { kilo: "80" } })
-    );
+    expect(mockMutate).toHaveBeenCalledWith(expect.objectContaining({ values: { kilo: "80" } }));
   });
 });
 
@@ -170,7 +183,7 @@ describe("yeni kayıt — kaydetme", () => {
         photoBase64: "PHOTO",
         thumbBase64: "THUMB",
         values: { kilo: "80" },
-      })
+      }),
     );
   });
 
@@ -185,9 +198,7 @@ describe("yeni kayıt — kaydetme", () => {
 
     // 176.4 lb = 80.01 kg. Asıl mesele sayının 176.4 OLMAMASI — çevrim
     // atlanırsa girdi olduğu gibi kg olarak yazılır.
-    expect(mockMutate).toHaveBeenCalledWith(
-      expect.objectContaining({ values: { kilo: "80.01" } })
-    );
+    expect(mockMutate).toHaveBeenCalledWith(expect.objectContaining({ values: { kilo: "80.01" } }));
   });
 
   it("kaydettikten sonra fotoğrafı temizler ve ana ekrana döner", async () => {
@@ -220,9 +231,7 @@ describe("yeni kayıt — tarih", () => {
 
     await fireEvent.press(screen.getByLabelText("Kaydı kaydet"));
 
-    expect(mockMutate).toHaveBeenCalledWith(
-      expect.objectContaining({ date: "2026-03-15" })
-    );
+    expect(mockMutate).toHaveBeenCalledWith(expect.objectContaining({ date: "2026-03-15" }));
   });
 
   it("EXIF tarihi yoksa bugünü kullanır", async () => {

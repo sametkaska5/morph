@@ -1,3 +1,4 @@
+import { theme } from "@/lib/theme";
 import { View, Linking, ScrollView } from "react-native";
 import { PressableFade } from "@/components/PressableFade";
 import { Text } from "@/components/Typography";
@@ -33,7 +34,9 @@ export default function HelpScreen() {
   const version = Constants.expoConfig?.version ?? "—";
 
   function sendFeedback() {
-    Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("Remory Geri Bildirim")}`);
+    Linking.openURL(
+      `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("Remory Geri Bildirim")}`,
+    );
   }
 
   return (
@@ -50,7 +53,7 @@ export default function HelpScreen() {
           accessibilityLabel="Geri dön"
           dim={0.7}
         >
-          <Feather name="chevron-left" size={22} color="#F5F3EC" />
+          <Feather name="chevron-left" size={22} color={theme.colors.text} />
         </PressableFade>
         <Text className="text-text text-xl font-bold">Yardım & Destek</Text>
       </View>
@@ -79,7 +82,7 @@ export default function HelpScreen() {
       >
         <Feather name="mail" size={16} color={ACCENT} />
         <Text className="text-text text-base flex-1">Geri bildirim gönder</Text>
-        <Feather name="chevron-right" size={15} color="#8B8A82" />
+        <Feather name="chevron-right" size={15} color={theme.colors.textFaint} />
       </PressableFade>
 
       <View className="bg-surface border border-border rounded-card overflow-hidden mb-5">
@@ -91,7 +94,7 @@ export default function HelpScreen() {
         >
           <Feather name="shield" size={16} color={ACCENT} />
           <Text className="flex-1 text-text text-base">Gizlilik Politikası</Text>
-          <Feather name="chevron-right" size={15} color="#8B8A82" />
+          <Feather name="chevron-right" size={15} color={theme.colors.textFaint} />
         </PressableFade>
         <PressableFade
           onPress={() => router.push("/terms")}
@@ -101,7 +104,7 @@ export default function HelpScreen() {
         >
           <Feather name="file-text" size={16} color={ACCENT} />
           <Text className="flex-1 text-text text-base">Kullanım Şartları</Text>
-          <Feather name="chevron-right" size={15} color="#8B8A82" />
+          <Feather name="chevron-right" size={15} color={theme.colors.textFaint} />
         </PressableFade>
       </View>
 

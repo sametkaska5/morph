@@ -80,7 +80,7 @@ describe("şifre değiştirme — kimlik doğrulaması", () => {
       expect(mockSignIn).toHaveBeenCalledWith({
         email: "sen@ornek.com",
         password: "dogrusifre",
-      })
+      }),
     );
     expect(mockUpdateUser).toHaveBeenCalledWith({ password: "yenisifre123" });
   });
@@ -149,7 +149,7 @@ describe("şifre değiştirme — ağa çıkmadan doğrulamalar", () => {
       expect(mockSignIn).toHaveBeenCalledWith({
         email: "sen@ornek.com",
         password: "  bosluklu  ",
-      })
+      }),
     );
     expect(mockUpdateUser).toHaveBeenCalledWith({ password: "yeni sifre " });
   });

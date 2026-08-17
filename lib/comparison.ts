@@ -56,9 +56,26 @@ export async function fetchDefaultComparison(userId: string): Promise<Comparison
   // yerine tek seferde paralel çekiyoruz (is_default filtresi yok; RLS zaten
   // sistem varsayılanları + kullanıcının özel tiplerini döndürüyor).
   const [{ data: firstEntry }, { data: lastEntry }, { data: types }] = await Promise.all([
-    supabase.from("entries").select(selectStr).eq("user_id", userId).eq("type", "log").order("date", { ascending: true }).limit(1).maybeSingle(),
-    supabase.from("entries").select(selectStr).eq("user_id", userId).eq("type", "log").order("date", { ascending: false }).limit(1).maybeSingle(),
-    supabase.from("measurement_types").select("id, name, unit, target_direction").order("sort_order"),
+    supabase
+      .from("entries")
+      .select(selectStr)
+      .eq("user_id", userId)
+      .eq("type", "log")
+      .order("date", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("entries")
+      .select(selectStr)
+      .eq("user_id", userId)
+      .eq("type", "log")
+      .order("date", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("measurement_types")
+      .select("id, name, unit, target_direction")
+      .order("sort_order"),
   ]);
 
   if (!firstEntry || !lastEntry || firstEntry.id === lastEntry.id) return null;
@@ -67,18 +84,26 @@ export async function fetchDefaultComparison(userId: string): Promise<Comparison
   const [start, end] = await Promise.all([loadSide(firstEntry), loadSide(lastEntry)]);
 
   const daysBetween = Math.round(
-    (parseLocalDate(end.date).getTime() - parseLocalDate(start.date).getTime()) / 86400000
+    (parseLocalDate(end.date).getTime() - parseLocalDate(start.date).getTime()) / 86400000,
   );
 
   return {
     start,
     end,
     daysBetween,
-    types: (types ?? []).map((t) => ({ id: t.id, name: t.name, unit: t.unit, targetDirection: t.target_direction })),
+    types: (types ?? []).map((t) => ({
+      id: t.id,
+      name: t.name,
+      unit: t.unit,
+      targetDirection: t.target_direction,
+    })),
   };
 }
 
-export async function fetchComparisonBetween(entryIdA: string, entryIdB: string): Promise<ComparisonData | null> {
+export async function fetchComparisonBetween(
+  entryIdA: string,
+  entryIdB: string,
+): Promise<ComparisonData | null> {
   const selectStr =
     "id, date, photos!cover_photo_id(storage_path, thumb_path), measurement_values(measurement_type_id, value)";
 
@@ -87,7 +112,10 @@ export async function fetchComparisonBetween(entryIdA: string, entryIdB: string)
   const [{ data: a }, { data: b }, { data: types }] = await Promise.all([
     supabase.from("entries").select(selectStr).eq("id", entryIdA).maybeSingle(),
     supabase.from("entries").select(selectStr).eq("id", entryIdB).maybeSingle(),
-    supabase.from("measurement_types").select("id, name, unit, target_direction").order("sort_order"),
+    supabase
+      .from("measurement_types")
+      .select("id, name, unit, target_direction")
+      .order("sort_order"),
   ]);
   if (!a || !b) return null;
 
@@ -96,14 +124,19 @@ export async function fetchComparisonBetween(entryIdA: string, entryIdB: string)
   // İki tarafın fotoğrafını da paralel imzalıyoruz.
   const [start, end] = await Promise.all([loadSide(firstEntry), loadSide(lastEntry)]);
   const daysBetween = Math.round(
-    (parseLocalDate(end.date).getTime() - parseLocalDate(start.date).getTime()) / 86400000
+    (parseLocalDate(end.date).getTime() - parseLocalDate(start.date).getTime()) / 86400000,
   );
 
   return {
     start,
     end,
     daysBetween,
-    types: (types ?? []).map((t) => ({ id: t.id, name: t.name, unit: t.unit, targetDirection: t.target_direction })),
+    types: (types ?? []).map((t) => ({
+      id: t.id,
+      name: t.name,
+      unit: t.unit,
+      targetDirection: t.target_direction,
+    })),
   };
 }
 

@@ -1,3 +1,4 @@
+import { theme } from "@/lib/theme";
 import { memo, useCallback, useMemo, useRef, useState } from "react";
 import {
   View,
@@ -100,58 +101,58 @@ const PosterThumb = memo(function PosterThumb({
         reduceMotion={reduceMotion}
         staggerIndex={staggerIndex}
       >
-      <View
-        style={{
-          width: thumbW,
-          height: thumbH,
-          opacity: pressed ? 0.85 : 1,
-          transform: [{ scale: pressed ? 0.97 : 1 }],
-        }}
-        className="rounded-[10px] overflow-hidden bg-surface border border-border"
-      >
-        {entry.cover_photo_url ? (
-          <Image
-            // cacheKey'i değişmeyen storage yoluna sabitliyoruz — imzalı URL'nin
-            // token'ı her yeniden fetch'te değiştiğinden URL bazlı disk cache
-            // aksi halde aynı fotoğrafı tekrar tekrar indiriyor (bkz. zaman-kapsulu).
-            // Pending kayıtların henüz path'i yok; onlarda cacheKey vermiyoruz.
-            source={{
-              uri: entry.cover_photo_url,
-              cacheKey:
-                entry.pending || !entry.cover_photo_path
-                  ? undefined
-                  : photoCacheKey(entry.cover_photo_path, "thumb"),
-            }}
-            style={{ width: "100%", height: "100%" }}
-            contentFit="cover"
-            cachePolicy={entry.pending ? "none" : "memory-disk"}
-            recyclingKey={entry.cover_photo_path ?? undefined}
-            transition={150}
-          />
-        ) : null}
-        {/* Tarih fotoğrafın ALTINDA ayrı bir metin olarak durunca, ızgarada bir
+        <View
+          style={{
+            width: thumbW,
+            height: thumbH,
+            opacity: pressed ? 0.85 : 1,
+            transform: [{ scale: pressed ? 0.97 : 1 }],
+          }}
+          className="rounded-[10px] overflow-hidden bg-surface border border-border"
+        >
+          {entry.cover_photo_url ? (
+            <Image
+              // cacheKey'i değişmeyen storage yoluna sabitliyoruz — imzalı URL'nin
+              // token'ı her yeniden fetch'te değiştiğinden URL bazlı disk cache
+              // aksi halde aynı fotoğrafı tekrar tekrar indiriyor (bkz. zaman-kapsulu).
+              // Pending kayıtların henüz path'i yok; onlarda cacheKey vermiyoruz.
+              source={{
+                uri: entry.cover_photo_url,
+                cacheKey:
+                  entry.pending || !entry.cover_photo_path
+                    ? undefined
+                    : photoCacheKey(entry.cover_photo_path, "thumb"),
+              }}
+              style={{ width: "100%", height: "100%" }}
+              contentFit="cover"
+              cachePolicy={entry.pending ? "none" : "memory-disk"}
+              recyclingKey={entry.cover_photo_path ?? undefined}
+              transition={150}
+            />
+          ) : null}
+          {/* Tarih fotoğrafın ALTINDA ayrı bir metin olarak durunca, ızgarada bir
             üstteki/bir alttaki fotoğrafa mı ait olduğu karışıyordu — tarihi
             doğrudan fotoğrafın kendi köşesine (üzerine) bindirip bu belirsizliği
             yapısal olarak ortadan kaldırıyoruz. */}
-        <View className="absolute bottom-1.5 left-1.5 bg-black/70 rounded-md px-2 py-1">
-          <Text className="text-text text-xs font-semibold">
-            {formatDateKey(entry.date, { day: "numeric", month: "short" })}
-          </Text>
+          <View className="absolute bottom-1.5 left-1.5 bg-black/70 rounded-md px-2 py-1">
+            <Text className="text-text text-xs font-semibold">
+              {formatDateKey(entry.date, { day: "numeric", month: "short" })}
+            </Text>
+          </View>
+          {entry.pending ? (
+            <View className="absolute top-1.5 right-1.5 bg-black/60 rounded-full px-1.5 py-0.5 flex-row items-center gap-1">
+              <Feather name="clock" size={11} color={theme.colors.text} />
+              <Text className="text-text text-xs font-semibold">Bekliyor</Text>
+            </View>
+          ) : entry.photo_count > 1 ? (
+            // Sayı rozeti, yaprak kenarlarının söylediğini kesinleştiriyor:
+            // "birden fazla var" ile "kaç tane var" ayrı bilgiler.
+            <View className="absolute top-1.5 right-1.5 bg-black/70 rounded-full px-1.5 py-0.5 flex-row items-center gap-1">
+              <Feather name="layers" size={10} color={theme.colors.text} />
+              <Text className="text-text text-xs font-semibold">{entry.photo_count}</Text>
+            </View>
+          ) : null}
         </View>
-        {entry.pending ? (
-          <View className="absolute top-1.5 right-1.5 bg-black/60 rounded-full px-1.5 py-0.5 flex-row items-center gap-1">
-            <Feather name="clock" size={11} color="#F5F3EC" />
-            <Text className="text-text text-xs font-semibold">Bekliyor</Text>
-          </View>
-        ) : entry.photo_count > 1 ? (
-          // Sayı rozeti, yaprak kenarlarının söylediğini kesinleştiriyor:
-          // "birden fazla var" ile "kaç tane var" ayrı bilgiler.
-          <View className="absolute top-1.5 right-1.5 bg-black/70 rounded-full px-1.5 py-0.5 flex-row items-center gap-1">
-            <Feather name="layers" size={10} color="#F5F3EC" />
-            <Text className="text-text text-xs font-semibold">{entry.photo_count}</Text>
-          </View>
-        ) : null}
-      </View>
       </PhotoStack>
     </Pressable>
   );
@@ -161,7 +162,7 @@ function EmptyState() {
   return (
     <View className="flex-1 items-center justify-center px-8" style={{ marginTop: -40 }}>
       <View className="w-16 h-16 rounded-full bg-accentSoft border border-accent items-center justify-center mb-4">
-        <Feather name="camera" size={26} color="#8CE05A" />
+        <Feather name="camera" size={26} color={theme.colors.accent} />
       </View>
       <Text className="text-text text-xl font-semibold mb-2 text-center">Henüz bir kaydın yok</Text>
       <Text className="text-textMuted text-base text-center leading-6 mb-5 max-w-[260px]">
@@ -173,7 +174,7 @@ function EmptyState() {
         dim={0.85}
         className="bg-accent rounded-button px-5 py-4 flex-row items-center gap-2"
       >
-        <Feather name="plus" size={18} color="#0B0D0A" />
+        <Feather name="plus" size={18} color={theme.colors.bg} />
         <Text className="text-bg text-base font-semibold">İlk anını ekle</Text>
       </PressableFade>
     </View>
@@ -227,7 +228,7 @@ export default function AnaEkran() {
   const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: { item?: EntryRow; index: number | null }[] }) => {
       const firstTime = viewableItems.filter(
-        (v) => v.item && v.item.back_photos.length > 0 && !seenRef.current.has(v.item.id)
+        (v) => v.item && v.item.back_photos.length > 0 && !seenRef.current.has(v.item.id),
       );
       if (firstTime.length === 0) return;
 
@@ -240,7 +241,7 @@ export default function AnaEkran() {
         return next;
       });
     },
-    []
+    [],
   );
 
   const renderPoster = useCallback(
@@ -258,7 +259,7 @@ export default function AnaEkran() {
         thumbH={thumbH}
       />
     ),
-    [peekTokens, reduceMotion, bumpPeek, prefetchDetail, thumbW, thumbH]
+    [peekTokens, reduceMotion, bumpPeek, prefetchDetail, thumbW, thumbH],
   );
 
   const todayLabel = new Date().toLocaleDateString("tr-TR", {
@@ -274,7 +275,10 @@ export default function AnaEkran() {
         style={{ paddingTop: screen.top }}
       >
         <View>
-          <Text className="text-text text-3xl font-bold tracking-wide uppercase" accessibilityRole="header">
+          <Text
+            className="text-text text-3xl font-bold tracking-wide uppercase"
+            accessibilityRole="header"
+          >
             remory
           </Text>
           <Text className="text-textMuted text-sm mt-1 capitalize">{todayLabel}</Text>
@@ -290,7 +294,7 @@ export default function AnaEkran() {
             dim={0.7}
             className="w-11 h-11 rounded-full bg-accentSoft border border-accent items-center justify-center"
           >
-            <Feather name="clipboard" size={20} color="#8CE05A" />
+            <Feather name="clipboard" size={20} color={theme.colors.accent} />
           </PressableFade>
           <PressableFade
             onPress={() => router.push("/search")}
@@ -299,7 +303,7 @@ export default function AnaEkran() {
             dim={0.7}
             className="w-11 h-11 rounded-full bg-surface border border-border items-center justify-center"
           >
-            <Feather name="search" size={20} color="#8B8A82" />
+            <Feather name="search" size={20} color={theme.colors.textFaint} />
           </PressableFade>
           <PressableFade
             onPress={() => router.push("/compare/pick")}
@@ -308,7 +312,7 @@ export default function AnaEkran() {
             dim={0.7}
             className="w-11 h-11 rounded-full bg-surface border border-border items-center justify-center"
           >
-            <Feather name="repeat" size={20} color="#8B8A82" />
+            <Feather name="repeat" size={20} color={theme.colors.textFaint} />
           </PressableFade>
         </View>
       </View>
@@ -321,14 +325,16 @@ export default function AnaEkran() {
           bakmak hem niyeti hem davranışı aynı yere getiriyor. */}
       {entries?.length ? (
         <View className="flex-row items-center justify-between px-4 mb-3">
-          <Text className="text-textMuted text-sm font-semibold uppercase tracking-wide">Son Kayıtlar</Text>
+          <Text className="text-textMuted text-sm font-semibold uppercase tracking-wide">
+            Son Kayıtlar
+          </Text>
           <Text className="text-textMuted text-sm font-medium">{entries.length} kayıt</Text>
         </View>
       ) : null}
 
       {isLoading ? (
         <View className="flex-1 items-center justify-center" style={{ marginTop: -40 }}>
-          <ActivityIndicator color="#8CE05A" />
+          <ActivityIndicator color={theme.colors.accent} />
         </View>
       ) : error ? (
         <View className="flex-1 items-center justify-center" style={{ marginTop: -40 }}>
@@ -348,8 +354,8 @@ export default function AnaEkran() {
             <RefreshControl
               refreshing={isRefetching}
               onRefresh={() => refetch()}
-              tintColor="#8CE05A"
-              colors={["#8CE05A"]}
+              tintColor={theme.colors.accent}
+              colors={[theme.colors.accent]}
             />
           }
           contentContainerStyle={{ paddingHorizontal: H_PADDING, paddingBottom: 24 }}
@@ -371,7 +377,7 @@ export default function AnaEkran() {
                 accessibilityRole="progressbar"
                 accessibilityLabel="Daha fazla anı yükleniyor"
               >
-                <ActivityIndicator color="#8CE05A" />
+                <ActivityIndicator color={theme.colors.accent} />
               </View>
             ) : null
           }

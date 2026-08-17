@@ -37,9 +37,9 @@ describe("describeError", () => {
 
   it("RLS/izin hatasını tanır", () => {
     expect(describeError({ code: "42501", message: "..." }).kind).toBe("permission");
-    expect(
-      describeError({ message: 'new row violates row-level security policy' }).kind
-    ).toBe("permission");
+    expect(describeError({ message: "new row violates row-level security policy" }).kind).toBe(
+      "permission",
+    );
   });
 
   it("silinmiş kaydı (PGRST116) tanır", () => {
@@ -97,7 +97,7 @@ describe("isInvalidCredentials", () => {
 describe("authErrorMessage", () => {
   it("hatalı giriş bilgisini Türkçeleştirir", () => {
     expect(authErrorMessage({ message: "Invalid login credentials" })).toBe(
-      "E-posta veya şifre hatalı."
+      "E-posta veya şifre hatalı.",
     );
   });
 
@@ -110,9 +110,9 @@ describe("authErrorMessage", () => {
   });
 
   it("kısa şifre uyarısını çevirir", () => {
-    expect(
-      authErrorMessage({ message: "Password should be at least 6 characters" })
-    ).toBe("Şifre en az 6 karakter olmalı.");
+    expect(authErrorMessage({ message: "Password should be at least 6 characters" })).toBe(
+      "Şifre en az 6 karakter olmalı.",
+    );
   });
 
   it("süresi dolmuş / hatalı OTP kodunu ayırt eder", () => {
@@ -122,13 +122,15 @@ describe("authErrorMessage", () => {
 
   it("hız sınırında beklemeyi söyler", () => {
     expect(
-      authErrorMessage({ message: "For security purposes, you can only request this after 51 seconds" })
+      authErrorMessage({
+        message: "For security purposes, you can only request this after 51 seconds",
+      }),
     ).toContain("bekleyip");
   });
 
   it("ağ hatasını auth hatası sanmaz", () => {
     expect(authErrorMessage(new TypeError("Network request failed"))).toContain(
-      "İnternet bağlantısı"
+      "İnternet bağlantısı",
     );
   });
 

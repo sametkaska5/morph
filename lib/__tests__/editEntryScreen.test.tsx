@@ -54,8 +54,22 @@ jest.mock("@tanstack/react-query", () => ({
 import EditEntry from "@/app/entry/edit/[id]";
 
 const TYPES: MeasurementType[] = [
-  { id: "kilo", name: "kilo", unit: "kg", target_direction: "decrease_is_good", is_default: true, sort_order: 1 },
-  { id: "bel", name: "bel", unit: "cm", target_direction: "decrease_is_good", is_default: true, sort_order: 2 },
+  {
+    id: "kilo",
+    name: "kilo",
+    unit: "kg",
+    target_direction: "decrease_is_good",
+    is_default: true,
+    sort_order: 1,
+  },
+  {
+    id: "bel",
+    name: "bel",
+    unit: "cm",
+    target_direction: "decrease_is_good",
+    is_default: true,
+    sort_order: 2,
+  },
 ];
 
 const ENTRY = {
@@ -67,7 +81,12 @@ const ENTRY = {
   thumbUrl: null,
   thumbPath: null,
   measurement_values: [
-    { id: "mv1", value: 80, measurement_type_id: "kilo", measurement_types: { name: "kilo", unit: "kg" } },
+    {
+      id: "mv1",
+      value: 80,
+      measurement_type_id: "kilo",
+      measurement_types: { name: "kilo", unit: "kg" },
+    },
   ],
 };
 

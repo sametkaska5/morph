@@ -36,9 +36,30 @@ jest.mock("expo-router", () => ({ router: { back: jest.fn() } }));
 import MeasurementSettingsScreen from "@/app/settings/measurements";
 
 const TYPES: MeasurementType[] = [
-  { id: "kilo", name: "kilo", unit: "kg", target_direction: "decrease_is_good", is_default: true, sort_order: 1 },
-  { id: "bel", name: "bel", unit: "cm", target_direction: "decrease_is_good", is_default: true, sort_order: 2 },
-  { id: "kol", name: "kol", unit: "cm", target_direction: "increase_is_good", is_default: false, sort_order: 3 },
+  {
+    id: "kilo",
+    name: "kilo",
+    unit: "kg",
+    target_direction: "decrease_is_good",
+    is_default: true,
+    sort_order: 1,
+  },
+  {
+    id: "bel",
+    name: "bel",
+    unit: "cm",
+    target_direction: "decrease_is_good",
+    is_default: true,
+    sort_order: 2,
+  },
+  {
+    id: "kol",
+    name: "kol",
+    unit: "cm",
+    target_direction: "increase_is_good",
+    is_default: false,
+    sort_order: 3,
+  },
 ];
 
 beforeEach(() => {
@@ -176,7 +197,7 @@ describe("ölçüm ayarları — ekleme", () => {
 
     expect(mockAddMutate).toHaveBeenCalledWith(
       { name: "omuz", unit: "cm", target_direction: "increase_is_good" },
-      expect.anything()
+      expect.anything(),
     );
   });
 
@@ -191,7 +212,7 @@ describe("ölçüm ayarları — ekleme", () => {
 
     expect(mockAddMutate).toHaveBeenCalledWith(
       expect.objectContaining({ target_direction: "decrease_is_good" }),
-      expect.anything()
+      expect.anything(),
     );
   });
 });

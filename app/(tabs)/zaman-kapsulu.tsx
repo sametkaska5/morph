@@ -1,3 +1,4 @@
+import { theme } from "@/lib/theme";
 import { memo, useState } from "react";
 import {
   View,
@@ -212,7 +213,7 @@ const CapsulePage = memo(function CapsulePage({
                 <Text className="text-textFaint text-sm font-semibold tracking-wide">
                   ANTRENMAN PROGRAMI
                 </Text>
-                <Feather name="chevron-right" size={16} color="#8B8A82" />
+                <Feather name="chevron-right" size={16} color={theme.colors.textFaint} />
               </View>
               {(entry.program ?? []).slice(0, 4).map((p, i) => (
                 <View key={p.name + i} className="flex-row items-center justify-between py-1">
@@ -252,7 +253,7 @@ const CapsulePage = memo(function CapsulePage({
           }}
           className="w-14 h-14 rounded-full bg-surface border border-border items-center justify-center"
         >
-          <Feather name="edit-2" size={24} color="#8CE05A" />
+          <Feather name="edit-2" size={24} color={theme.colors.accent} />
         </Pressable>
       </Animated.View>
 
@@ -320,7 +321,7 @@ export default function ZamanKapsulu() {
     return (
       <View className="flex-1 bg-bg items-center justify-center px-8">
         <View className="w-16 h-16 rounded-full bg-accentSoft border border-accent items-center justify-center mb-4">
-          <Feather name="calendar" size={26} color="#8CE05A" />
+          <Feather name="calendar" size={26} color={theme.colors.accent} />
         </View>
         <Text className="text-text text-xl font-semibold mb-2 text-center">
           Henüz bir kaydın yok
@@ -334,7 +335,7 @@ export default function ZamanKapsulu() {
           dim={0.85}
           className="bg-accent rounded-button px-5 py-4 flex-row items-center gap-2"
         >
-          <Feather name="plus" size={18} color="#0B0D0A" />
+          <Feather name="plus" size={18} color={theme.colors.bg} />
           <Text className="text-bg text-base font-semibold">İlk anını ekle</Text>
         </PressableFade>
       </View>
@@ -357,8 +358,8 @@ export default function ZamanKapsulu() {
           <RefreshControl
             refreshing={isRefetching}
             onRefresh={() => refetch()}
-            tintColor="#8CE05A"
-            colors={["#8CE05A"]}
+            tintColor={theme.colors.accent}
+            colors={[theme.colors.accent]}
           />
         }
         initialNumToRender={1}
@@ -386,7 +387,7 @@ export default function ZamanKapsulu() {
               style={{ height: pageHeight, alignItems: "center", justifyContent: "center" }}
               className="bg-bg"
             >
-              <ActivityIndicator color="#8CE05A" />
+              <ActivityIndicator color={theme.colors.accent} />
             </View>
           ) : null
         }

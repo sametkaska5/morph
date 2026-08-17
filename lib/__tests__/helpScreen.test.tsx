@@ -125,7 +125,7 @@ describe("Geri bildirim düğmesi", () => {
     await render(<HelpScreen />);
 
     expect(screen.getByLabelText("Geri bildirim gönder").props.accessibilityHint).toBe(
-      "E-posta uygulamanı açar"
+      "E-posta uygulamanı açar",
     );
   });
 });

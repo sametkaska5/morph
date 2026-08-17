@@ -95,4 +95,3 @@ function toError(error: unknown): Error {
 
   return new Error(String(error));
 }
-

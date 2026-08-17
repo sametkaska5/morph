@@ -96,9 +96,7 @@ describe("karşılama ekranı", () => {
 
     await fireEvent.press(screen.getByLabelText("Devam et"));
 
-    await waitFor(async () =>
-      expect(await AsyncStorage.getItem(ONBOARDING_SEEN_KEY)).toBe("1")
-    );
+    await waitFor(async () => expect(await AsyncStorage.getItem(ONBOARDING_SEEN_KEY)).toBe("1"));
     expect(mockReplace).toHaveBeenCalledWith("/(auth)");
   });
 

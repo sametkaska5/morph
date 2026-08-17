@@ -1,3 +1,4 @@
+import { theme } from "@/lib/theme";
 import { useRef, useState, useEffect } from "react";
 import { View, Platform, ScrollView, ActivityIndicator } from "react-native";
 import { PressableFade } from "@/components/PressableFade";
@@ -9,7 +10,13 @@ import Feather from "@expo/vector-icons/Feather";
 import { useAuth } from "@/lib/useAuth";
 import { toLocalDateKey, parseLocalDate } from "@/lib/date";
 import { useKeyboardFocus } from "@/lib/useKeyboardFocus";
-import { useProgramDay, saveProgram, type WorkoutItemDraft, type WorkoutSetDraft, SAVE_PROGRAM_MUTATION_KEY } from "@/lib/workout";
+import {
+  useProgramDay,
+  saveProgram,
+  type WorkoutItemDraft,
+  type WorkoutSetDraft,
+  SAVE_PROGRAM_MUTATION_KEY,
+} from "@/lib/workout";
 import { invalidateAfterDayWrite } from "@/lib/entries";
 import { alertError } from "@/lib/alerts";
 import { ErrorState } from "@/components/ErrorState";
@@ -73,7 +80,7 @@ export default function ProgramScreen() {
       }
     }
     restoreDraft();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // yalnızca mount’ta
 
   // Taslak kaydetme: items her değiştiğinde 800ms debounce ile yaz.
@@ -119,7 +126,7 @@ export default function ProgramScreen() {
                   weight: s.weight != null ? String(s.weight) : "",
                 }))
               : [{ ...EMPTY_SET }],
-        }))
+        })),
       );
     }
   }
@@ -148,8 +155,8 @@ export default function ProgramScreen() {
       prev.map((it, i) =>
         i === exIndex
           ? { ...it, sets: it.sets.map((s, j) => (j === setIndex ? { ...s, ...patch } : s)) }
-          : it
-      )
+          : it,
+      ),
     );
   }
   function addSet(exIndex: number) {
@@ -159,11 +166,11 @@ export default function ProgramScreen() {
     if (recovered) {
       delete lastDeletedSets.current[exIndex];
       setItems((prev) =>
-        prev.map((it, i) => (i === exIndex ? { ...it, sets: [...it.sets, { ...recovered }] } : it))
+        prev.map((it, i) => (i === exIndex ? { ...it, sets: [...it.sets, { ...recovered }] } : it)),
       );
     } else {
       setItems((prev) =>
-        prev.map((it, i) => (i === exIndex ? { ...it, sets: [...it.sets, { ...EMPTY_SET }] } : it))
+        prev.map((it, i) => (i === exIndex ? { ...it, sets: [...it.sets, { ...EMPTY_SET }] } : it)),
       );
     }
   }
@@ -176,7 +183,7 @@ export default function ProgramScreen() {
         lastDeletedSets.current[exIndex] = { ...exercise.sets[setIndex] };
       }
       return prev.map((it, i) =>
-        i === exIndex ? { ...it, sets: it.sets.filter((_, j) => j !== setIndex) } : it
+        i === exIndex ? { ...it, sets: it.sets.filter((_, j) => j !== setIndex) } : it,
       );
     });
   }
@@ -202,7 +209,11 @@ export default function ProgramScreen() {
       onScroll={onScroll}
       scrollEventThrottle={16}
       className="flex-1 bg-bg"
-      contentContainerStyle={{ padding: 20, paddingTop: screen.top, paddingBottom: screen.bottom + keyboardPadding }}
+      contentContainerStyle={{
+        padding: 20,
+        paddingTop: screen.top,
+        paddingBottom: screen.bottom + keyboardPadding,
+      }}
       keyboardShouldPersistTaps="handled"
     >
       <View className="flex-row justify-between items-center mb-4">
@@ -213,7 +224,7 @@ export default function ProgramScreen() {
           accessibilityLabel="Geri dön"
           dim={0.7}
         >
-          <Feather name="chevron-left" size={22} color="#F5F3EC" />
+          <Feather name="chevron-left" size={22} color={theme.colors.text} />
         </PressableFade>
         <Text className="text-text text-xl font-bold">Antrenman programı</Text>
         <View style={{ width: 22 }} />
@@ -249,7 +260,7 @@ export default function ProgramScreen() {
       )}
 
       {isLoading ? (
-        <ActivityIndicator color="#8CE05A" className="my-8" />
+        <ActivityIndicator color={theme.colors.accent} className="my-8" />
       ) : error ? (
         // Formu hiç göstermiyoruz: boş formun üzerine basılan "Kaydet" o günün
         // programını silerdi.
@@ -259,7 +270,8 @@ export default function ProgramScreen() {
           {items.length === 0 ? (
             <View className="bg-surface border border-border rounded-card p-4 mb-3">
               <Text className="text-textMuted text-base">
-                Bu günün antrenmanını hareket hareket, set set ekle. Her set kendi tekrar ve ağırlığını tutar.
+                Bu günün antrenmanını hareket hareket, set set ekle. Her set kendi tekrar ve
+                ağırlığını tutar.
               </Text>
             </View>
           ) : null}
@@ -274,7 +286,7 @@ export default function ProgramScreen() {
                   value={exercise.name}
                   onChangeText={(val) => updateExercise(exIndex, { name: val })}
                   placeholder="Hareket (örn. Bench Press)"
-                  placeholderTextColor="#8B8A82"
+                  placeholderTextColor={theme.colors.textFaint}
                   onFocus={() => revealField(nameRefs.current[exIndex])}
                   className="flex-1 text-text text-base font-semibold"
                   maxLength={60}
@@ -286,7 +298,7 @@ export default function ProgramScreen() {
                   accessibilityLabel="Hareketi sil"
                   className="w-8 h-8 items-center justify-center"
                 >
-                  <Feather name="trash-2" size={16} color="#8B8A82" />
+                  <Feather name="trash-2" size={16} color={theme.colors.textFaint} />
                 </PressableFade>
               </View>
 
@@ -309,11 +321,9 @@ export default function ProgramScreen() {
                     onFocus={() => revealField(nameRefs.current[exIndex])}
                     keyboardType="decimal-pad"
                     returnKeyType="next"
-                    onSubmitEditing={() =>
-                      repsRefs.current[`${exIndex}-${setIndex}`]?.focus()
-                    }
+                    onSubmitEditing={() => repsRefs.current[`${exIndex}-${setIndex}`]?.focus()}
                     placeholder="—"
-                    placeholderTextColor="#8B8A82"
+                    placeholderTextColor={theme.colors.textFaint}
                     className="flex-1 bg-bg border border-border rounded-button px-3 py-2 text-text text-base text-center"
                   />
                   <TextInput
@@ -325,7 +335,7 @@ export default function ProgramScreen() {
                     onFocus={() => revealField(nameRefs.current[exIndex])}
                     keyboardType="number-pad"
                     placeholder="—"
-                    placeholderTextColor="#8B8A82"
+                    placeholderTextColor={theme.colors.textFaint}
                     className="flex-1 bg-bg border border-border rounded-button px-3 py-2 text-text text-base text-center"
                   />
                   <PressableFade
@@ -338,7 +348,7 @@ export default function ProgramScreen() {
                     baseOpacity={exercise.sets.length === 1 ? 0.25 : 1}
                     className="w-7 h-9 items-center justify-center"
                   >
-                    <Feather name="x" size={16} color="#8B8A82" />
+                    <Feather name="x" size={16} color={theme.colors.textFaint} />
                   </PressableFade>
                 </View>
               ))}
@@ -350,20 +360,23 @@ export default function ProgramScreen() {
                 accessibilityLabel="Set ekle"
                 className="flex-row items-center justify-center gap-2 border border-dashed border-accent/50 rounded-button py-2 mt-1"
               >
-                <Feather name="plus" size={15} color="#8CE05A" />
+                <Feather name="plus" size={15} color={theme.colors.accent} />
                 <Text className="text-accent text-sm font-semibold">Set ekle</Text>
               </PressableFade>
             </View>
           ))}
 
           <PressableFade
-            onPress={() => { isDirty.current = true; setItems((prev) => [...prev, newExercise()]); }}
+            onPress={() => {
+              isDirty.current = true;
+              setItems((prev) => [...prev, newExercise()]);
+            }}
             dim={0.85}
             accessibilityRole="button"
             accessibilityLabel="Hareket ekle"
             className="flex-row items-center justify-center gap-2 bg-surface border border-border rounded-button py-4 mb-3"
           >
-            <Feather name="plus" size={18} color="#8CE05A" />
+            <Feather name="plus" size={18} color={theme.colors.accent} />
             <Text className="text-accent text-base font-semibold">Hareket ekle</Text>
           </PressableFade>
 
@@ -377,7 +390,7 @@ export default function ProgramScreen() {
             className="bg-accent p-4 rounded-button items-center mt-3 flex-row justify-center gap-2"
           >
             {saveMutation.isPending ? (
-              <ActivityIndicator color="#0B0D0A" />
+              <ActivityIndicator color={theme.colors.bg} />
             ) : (
               <Text className="text-bg text-base font-bold">Kaydet</Text>
             )}

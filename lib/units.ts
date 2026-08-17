@@ -12,7 +12,11 @@ export function useUnitPreference(userId: string | undefined) {
     queryKey: queryKeys.profile.unitPref(userId),
     enabled: !!userId,
     queryFn: async (): Promise<UnitPref> => {
-      const { data, error } = await supabase.from("profiles").select("unit_pref").eq("id", userId!).single();
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("unit_pref")
+        .eq("id", userId!)
+        .single();
       if (error) throw error;
       return (data?.unit_pref as UnitPref) ?? "metric";
     },
@@ -24,7 +28,10 @@ export function useSetUnitPreference(userId: string | undefined) {
   return useMutation({
     mutationFn: async (pref: UnitPref) => {
       if (!userId) throw new Error("Giriş yapılmamış");
-      const { error } = await supabase.from("profiles").update({ unit_pref: pref }).eq("id", userId);
+      const { error } = await supabase
+        .from("profiles")
+        .update({ unit_pref: pref })
+        .eq("id", userId);
       if (error) throw error;
     },
     onSuccess: () => {

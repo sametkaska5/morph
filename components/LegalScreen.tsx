@@ -1,3 +1,4 @@
+import { theme } from "@/lib/theme";
 import { View, ScrollView } from "react-native";
 import { PressableFade } from "./PressableFade";
 import { Text } from "./Typography";
@@ -30,7 +31,7 @@ export function LegalScreen({
           accessibilityLabel="Geri dön"
           dim={0.7}
         >
-          <Feather name="chevron-left" size={22} color="#F5F3EC" />
+          <Feather name="chevron-left" size={22} color={theme.colors.text} />
         </PressableFade>
         <Text className="text-text text-xl font-bold">{title}</Text>
       </View>

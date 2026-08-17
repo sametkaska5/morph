@@ -45,8 +45,22 @@ jest.mock("@tanstack/react-query", () => ({
 import WorkoutDayScreen from "@/app/entry/workout";
 
 const TYPES: MeasurementType[] = [
-  { id: "kilo", name: "kilo", unit: "kg", target_direction: "decrease_is_good", is_default: true, sort_order: 1 },
-  { id: "bel", name: "bel", unit: "cm", target_direction: "decrease_is_good", is_default: true, sort_order: 2 },
+  {
+    id: "kilo",
+    name: "kilo",
+    unit: "kg",
+    target_direction: "decrease_is_good",
+    is_default: true,
+    sort_order: 1,
+  },
+  {
+    id: "bel",
+    name: "bel",
+    unit: "cm",
+    target_direction: "decrease_is_good",
+    is_default: true,
+    sort_order: 2,
+  },
 ];
 
 const DAY: WorkoutDayData = {

@@ -1,3 +1,4 @@
+import { theme } from "@/lib/theme";
 import { useState } from "react";
 import { View, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
 import { PressableFade } from "@/components/PressableFade";
@@ -163,7 +164,7 @@ export default function AuthScreen() {
         <View className="flex-1 px-6">
           <View className="flex-1 justify-center">
             <View className="w-14 h-14 rounded-full bg-accentSoft border border-accent items-center justify-center mb-5">
-              <Feather name="mail" size={24} color="#8CE05A" />
+              <Feather name="mail" size={24} color={theme.colors.accent} />
             </View>
 
             <Text className="text-text text-3xl font-bold mb-1">E-postanı doğrula</Text>
@@ -174,7 +175,12 @@ export default function AuthScreen() {
 
             {infoMsg ? (
               <View className="bg-accentSoft border border-accent rounded-button px-4 py-3 mb-4 flex-row items-start gap-3">
-                <Feather name="info" size={15} color="#8CE05A" style={{ marginTop: 1 }} />
+                <Feather
+                  name="info"
+                  size={15}
+                  color={theme.colors.accent}
+                  style={{ marginTop: 1 }}
+                />
                 <Text className="text-text text-sm flex-1 leading-5" accessibilityRole="alert">
                   {infoMsg}
                 </Text>
@@ -187,7 +193,7 @@ export default function AuthScreen() {
               onChangeText={setCode}
               keyboardType="number-pad"
               placeholder="123456"
-              placeholderTextColor="#8B8A82"
+              placeholderTextColor={theme.colors.textFaint}
               accessibilityLabel="Doğrulama kodu"
               maxLength={10}
               style={{ height: 52, textAlignVertical: "center" }}
@@ -210,7 +216,7 @@ export default function AuthScreen() {
               className="bg-accent rounded-button py-4 items-center mt-4"
             >
               {loading ? (
-                <ActivityIndicator color="#0B0D0A" />
+                <ActivityIndicator color={theme.colors.bg} />
               ) : (
                 <Text className="text-bg text-base font-semibold">Doğrula</Text>
               )}
@@ -265,133 +271,133 @@ export default function AuthScreen() {
           formdan ayrılmış. Sekmeli düzenden vazgeçildi — bu ekrana oturmadı. */}
       <View className="flex-1 px-6">
         <View className="flex-1 justify-center">
-        <Text className="text-text text-3xl font-bold mb-1">
-          {mode === "login" ? "Tekrar hoş geldin" : "Hesap oluştur"}
-        </Text>
-        <Text className="text-textMuted text-base mb-8">
-          {mode === "login" ? "Anılarına devam et." : "Anılarını kaydetmeye başla."}
-        </Text>
+          <Text className="text-text text-3xl font-bold mb-1">
+            {mode === "login" ? "Tekrar hoş geldin" : "Hesap oluştur"}
+          </Text>
+          <Text className="text-textMuted text-base mb-8">
+            {mode === "login" ? "Anılarına devam et." : "Anılarını kaydetmeye başla."}
+          </Text>
 
-        {infoMsg ? (
-          <View className="bg-accentSoft border border-accent rounded-button px-4 py-3 mb-4 flex-row items-start gap-3">
-            <Feather name="info" size={15} color="#8CE05A" style={{ marginTop: 1 }} />
-            <Text className="text-text text-sm flex-1 leading-5" accessibilityRole="alert">
-              {infoMsg}
-            </Text>
-          </View>
-        ) : null}
+          {infoMsg ? (
+            <View className="bg-accentSoft border border-accent rounded-button px-4 py-3 mb-4 flex-row items-start gap-3">
+              <Feather name="info" size={15} color={theme.colors.accent} style={{ marginTop: 1 }} />
+              <Text className="text-text text-sm flex-1 leading-5" accessibilityRole="alert">
+                {infoMsg}
+              </Text>
+            </View>
+          ) : null}
 
-        <Text className="text-textMuted text-sm mb-2">E-posta</Text>
-        <TextInput
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          placeholder="sen@ornek.com"
-          placeholderTextColor="#8B8A82"
-          accessibilityLabel="E-posta"
-          style={{ height: 52, textAlignVertical: "center" }}
-          className="bg-surface border border-border rounded-button px-4 text-text text-base mb-4"
-        />
+          <Text className="text-textMuted text-sm mb-2">E-posta</Text>
+          <TextInput
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            placeholder="sen@ornek.com"
+            placeholderTextColor={theme.colors.textFaint}
+            accessibilityLabel="E-posta"
+            style={{ height: 52, textAlignVertical: "center" }}
+            className="bg-surface border border-border rounded-button px-4 text-text text-base mb-4"
+          />
 
-        <Text className="text-textMuted text-sm mb-2">
-          {mode === "login" ? "Şifre" : "Şifre belirle (en az 6 karakter)"}
-        </Text>
-        <TextInput
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          placeholder="••••••••"
-          placeholderTextColor="#8B8A82"
-          accessibilityLabel="Şifre"
-          style={{ height: 52, textAlignVertical: "center" }}
-          className="bg-surface border border-border rounded-button px-4 text-text text-base mb-2"
-        />
+          <Text className="text-textMuted text-sm mb-2">
+            {mode === "login" ? "Şifre" : "Şifre belirle (en az 6 karakter)"}
+          </Text>
+          <TextInput
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            placeholder="••••••••"
+            placeholderTextColor={theme.colors.textFaint}
+            accessibilityLabel="Şifre"
+            style={{ height: 52, textAlignVertical: "center" }}
+            className="bg-surface border border-border rounded-button px-4 text-text text-base mb-2"
+          />
 
-        {mode === "login" ? (
-          <PressableFade
-            onPress={() => router.push("/forgot-password")}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            accessibilityRole="button"
-            dim={0.7}
-            className="items-end mb-2 py-1"
-          >
-            <Text className="text-accent text-sm font-medium">Şifremi unuttum</Text>
-          </PressableFade>
-        ) : null}
+          {mode === "login" ? (
+            <PressableFade
+              onPress={() => router.push("/forgot-password")}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              accessibilityRole="button"
+              dim={0.7}
+              className="items-end mb-2 py-1"
+            >
+              <Text className="text-accent text-sm font-medium">Şifremi unuttum</Text>
+            </PressableFade>
+          ) : null}
 
-        {errorMsg ? (
-          <View className="mb-2">
-            <Text className="text-danger text-base" accessibilityRole="alert">
-              {errorMsg}
-            </Text>
-            {/* Giriş "geçersiz kimlik" ile döndüğünde hesabın olmaması da,
+          {errorMsg ? (
+            <View className="mb-2">
+              <Text className="text-danger text-base" accessibilityRole="alert">
+                {errorMsg}
+              </Text>
+              {/* Giriş "geçersiz kimlik" ile döndüğünde hesabın olmaması da,
                 şifrenin yanlış olması da aynı hatayı üretiyor — Supabase
                 hangisi olduğunu BİLEREK söylemiyor (aksi halde bu ekran
                 "bu e-posta kayıtlı mı" taraması için kullanılabilirdi).
                 Hangisi olduğunu uyduramayacağımıza göre, kullanıcıyı iki
                 çıkış yoluna da tek dokunuşla götürüyoruz. */}
-            {showAccountHint ? (
-              <View className="mt-2">
-                <Text className="text-textMuted text-sm leading-5">
-                  E-postayı yanlış yazmış olabilirsin — kontrol et, ya da bu adresle yeni bir hesap
-                  oluştur.
-                </Text>
-                <PressableFade
-                  onPress={() => {
-                    // E-posta korunuyor: kullanıcı yeniden yazmak zorunda kalmasın.
-                    setMode("signup");
-                    setErrorMsg(null);
-                  }}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  accessibilityRole="button"
-                  accessibilityLabel="Bu e-postayla hesap oluştur"
-                  dim={0.7}
-                  className="mt-2 py-1"
-                >
-                  <Text className="text-accent text-sm font-medium">
-                    Bu e-postayla hesap oluştur
+              {showAccountHint ? (
+                <View className="mt-2">
+                  <Text className="text-textMuted text-sm leading-5">
+                    E-postayı yanlış yazmış olabilirsin — kontrol et, ya da bu adresle yeni bir
+                    hesap oluştur.
                   </Text>
-                </PressableFade>
-              </View>
-            ) : null}
-          </View>
-        ) : null}
+                  <PressableFade
+                    onPress={() => {
+                      // E-posta korunuyor: kullanıcı yeniden yazmak zorunda kalmasın.
+                      setMode("signup");
+                      setErrorMsg(null);
+                    }}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    accessibilityRole="button"
+                    accessibilityLabel="Bu e-postayla hesap oluştur"
+                    dim={0.7}
+                    className="mt-2 py-1"
+                  >
+                    <Text className="text-accent text-sm font-medium">
+                      Bu e-postayla hesap oluştur
+                    </Text>
+                  </PressableFade>
+                </View>
+              ) : null}
+            </View>
+          ) : null}
 
-        {/* Etiket sabit: yüklenirken metin ActivityIndicator'a dönüşüyor ve
+          {/* Etiket sabit: yüklenirken metin ActivityIndicator'a dönüşüyor ve
             düğmenin erişilebilir adı kayboluyordu. */}
-        <PressableFade
-          onPress={handleSubmit}
-          disabled={loading}
-          accessibilityRole="button"
-          accessibilityLabel={mode === "login" ? "Giriş yap" : "Hesabı oluştur"}
-          accessibilityState={{ disabled: loading, busy: loading }}
-          dim={0.85}
-          baseOpacity={loading ? 0.7 : 1}
-          className="bg-accent rounded-button py-4 items-center mt-4"
-        >
-          {loading ? (
-            <ActivityIndicator color="#0B0D0A" />
-          ) : (
-            <Text className="text-bg text-base font-semibold">
-              {mode === "login" ? "Giriş yap" : "Hesabı oluştur"}
-            </Text>
-          )}
-        </PressableFade>
+          <PressableFade
+            onPress={handleSubmit}
+            disabled={loading}
+            accessibilityRole="button"
+            accessibilityLabel={mode === "login" ? "Giriş yap" : "Hesabı oluştur"}
+            accessibilityState={{ disabled: loading, busy: loading }}
+            dim={0.85}
+            baseOpacity={loading ? 0.7 : 1}
+            className="bg-accent rounded-button py-4 items-center mt-4"
+          >
+            {loading ? (
+              <ActivityIndicator color={theme.colors.bg} />
+            ) : (
+              <Text className="text-bg text-base font-semibold">
+                {mode === "login" ? "Giriş yap" : "Hesabı oluştur"}
+              </Text>
+            )}
+          </PressableFade>
 
-        {mode === "signup" ? (
-          <Text className="text-textFaint text-xs text-center mt-5 leading-5">
-            Kayıt olarak{" "}
-            <Text className="text-accent" onPress={() => router.push("/terms")}>
-              Kullanım Şartları
-            </Text>{" "}
-            ve{" "}
-            <Text className="text-accent" onPress={() => router.push("/privacy-policy")}>
-              Gizlilik Politikası
+          {mode === "signup" ? (
+            <Text className="text-textFaint text-xs text-center mt-5 leading-5">
+              Kayıt olarak{" "}
+              <Text className="text-accent" onPress={() => router.push("/terms")}>
+                Kullanım Şartları
+              </Text>{" "}
+              ve{" "}
+              <Text className="text-accent" onPress={() => router.push("/privacy-policy")}>
+                Gizlilik Politikası
+              </Text>
+              'nı kabul etmiş olursun.
             </Text>
-            'nı kabul etmiş olursun.
-          </Text>
-        ) : null}
+          ) : null}
         </View>
 
         {/* Ekranın en altına sabit kip değiştirici. Üstündeki ayraç onu

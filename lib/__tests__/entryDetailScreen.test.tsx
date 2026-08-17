@@ -77,7 +77,12 @@ const DETAIL = {
 beforeEach(() => {
   jest.clearAllMocks();
   mockParams = { id: "e2" };
-  mockUseEntryDetail.mockReturnValue({ data: DETAIL, isLoading: false, error: null, refetch: jest.fn() });
+  mockUseEntryDetail.mockReturnValue({
+    data: DETAIL,
+    isLoading: false,
+    error: null,
+    refetch: jest.fn(),
+  });
   mockUseEntryOrder.mockReturnValue({ data: ["e1", "e2", "e3"], isLoading: false });
   mockPickPhotos.mockResolvedValue([]);
 });
@@ -103,7 +108,12 @@ describe("kayıt detayı — çoklu fotoğraf", () => {
   });
 
   it("çoklu günde fotoğraf sayısını ve şeridi gösterir", async () => {
-    mockUseEntryDetail.mockReturnValue({ data: MULTI, isLoading: false, error: null, refetch: jest.fn() });
+    mockUseEntryDetail.mockReturnValue({
+      data: MULTI,
+      isLoading: false,
+      error: null,
+      refetch: jest.fn(),
+    });
     await render(<EntryDetail />);
 
     expect(screen.getByText("3 FOTOĞRAF")).toBeTruthy();
@@ -114,7 +124,12 @@ describe("kayıt detayı — çoklu fotoğraf", () => {
   it("açılışta kapak seçili gelir", async () => {
     // Kapak seçili gelmezse detay, ızgarada dokunulan fotoğraftan başka bir
     // fotoğrafla açılır ve kullanıcı yanlış günü açtığını sanar.
-    mockUseEntryDetail.mockReturnValue({ data: MULTI, isLoading: false, error: null, refetch: jest.fn() });
+    mockUseEntryDetail.mockReturnValue({
+      data: MULTI,
+      isLoading: false,
+      error: null,
+      refetch: jest.fn(),
+    });
     await render(<EntryDetail />);
 
     expect(screen.getByLabelText("1. fotoğraf, kapak")).toBeSelected();
@@ -122,7 +137,12 @@ describe("kayıt detayı — çoklu fotoğraf", () => {
   });
 
   it("şeritten seçim yapınca o fotoğraf aktif olur", async () => {
-    mockUseEntryDetail.mockReturnValue({ data: MULTI, isLoading: false, error: null, refetch: jest.fn() });
+    mockUseEntryDetail.mockReturnValue({
+      data: MULTI,
+      isLoading: false,
+      error: null,
+      refetch: jest.fn(),
+    });
     await render(<EntryDetail />);
 
     await fireEvent.press(screen.getByLabelText("2. fotoğraf"));
@@ -132,7 +152,12 @@ describe("kayıt detayı — çoklu fotoğraf", () => {
   });
 
   it("kapak olmayan fotoğraf seçiliyken 'Kapak yap' çıkar ve o fotoğrafı gönderir", async () => {
-    mockUseEntryDetail.mockReturnValue({ data: MULTI, isLoading: false, error: null, refetch: jest.fn() });
+    mockUseEntryDetail.mockReturnValue({
+      data: MULTI,
+      isLoading: false,
+      error: null,
+      refetch: jest.fn(),
+    });
     await render(<EntryDetail />);
 
     expect(screen.queryByLabelText("Bu fotoğrafı kapak yap")).toBeNull(); // kapak seçiliyken gereksiz
@@ -147,7 +172,12 @@ describe("kayıt detayı — çoklu fotoğraf", () => {
     // Native Alert yerine temalı ConfirmDialog: Alert bir sistem penceresi,
     // koyu temanın ortasında beyaz kutu olarak beliriyordu. Testte de bunun
     // karşılığı var — Alert olsaydı ekranda hiçbir metin görünmezdi.
-    mockUseEntryDetail.mockReturnValue({ data: MULTI, isLoading: false, error: null, refetch: jest.fn() });
+    mockUseEntryDetail.mockReturnValue({
+      data: MULTI,
+      isLoading: false,
+      error: null,
+      refetch: jest.fn(),
+    });
     await render(<EntryDetail />);
 
     await fireEvent.press(screen.getByLabelText("Seçili fotoğrafı sil"));
@@ -159,7 +189,12 @@ describe("kayıt detayı — çoklu fotoğraf", () => {
   it("onay verilince kapağı silerken devredilecek fotoğrafı da gönderir", async () => {
     // Kapak devredilmezse FK "on delete set null" ile boşalır ve o gün
     // ızgarada fotoğrafsız görünür.
-    mockUseEntryDetail.mockReturnValue({ data: MULTI, isLoading: false, error: null, refetch: jest.fn() });
+    mockUseEntryDetail.mockReturnValue({
+      data: MULTI,
+      isLoading: false,
+      error: null,
+      refetch: jest.fn(),
+    });
     await render(<EntryDetail />);
 
     await fireEvent.press(screen.getByLabelText("Seçili fotoğrafı sil"));
@@ -167,12 +202,17 @@ describe("kayıt detayı — çoklu fotoğraf", () => {
 
     expect(mockDeletePhoto).toHaveBeenCalledWith(
       { photoId: "p1", nextCoverId: "p2" },
-      expect.anything()
+      expect.anything(),
     );
   });
 
   it("kapak OLMAYAN fotoğraf silinirken kapak devri istenmez", async () => {
-    mockUseEntryDetail.mockReturnValue({ data: MULTI, isLoading: false, error: null, refetch: jest.fn() });
+    mockUseEntryDetail.mockReturnValue({
+      data: MULTI,
+      isLoading: false,
+      error: null,
+      refetch: jest.fn(),
+    });
     await render(<EntryDetail />);
 
     await fireEvent.press(screen.getByLabelText("2. fotoğraf"));
@@ -181,12 +221,17 @@ describe("kayıt detayı — çoklu fotoğraf", () => {
 
     expect(mockDeletePhoto).toHaveBeenCalledWith(
       { photoId: "p2", nextCoverId: null },
-      expect.anything()
+      expect.anything(),
     );
   });
 
   it("vazgeçilince fotoğrafı silmez", async () => {
-    mockUseEntryDetail.mockReturnValue({ data: MULTI, isLoading: false, error: null, refetch: jest.fn() });
+    mockUseEntryDetail.mockReturnValue({
+      data: MULTI,
+      isLoading: false,
+      error: null,
+      refetch: jest.fn(),
+    });
     await render(<EntryDetail />);
 
     await fireEvent.press(screen.getByLabelText("Seçili fotoğrafı sil"));
@@ -220,7 +265,7 @@ describe("kayıt detayı — çoklu fotoğraf", () => {
 
     expect(mockAddPhotos).toHaveBeenCalledWith(
       { userId: "u1", uris: ["file://a.jpg", "file://b.jpg"] },
-      expect.anything()
+      expect.anything(),
     );
   });
 });

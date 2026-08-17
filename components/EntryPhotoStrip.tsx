@@ -1,3 +1,4 @@
+import { theme } from "@/lib/theme";
 import { useState } from "react";
 import { View, Pressable, ScrollView, ActivityIndicator } from "react-native";
 import { Image } from "expo-image";
@@ -95,10 +96,10 @@ export function EntryPhotoStrip({
           className="flex-row items-center justify-center gap-2 rounded-button border border-border bg-surface py-3"
         >
           {busy ? (
-            <ActivityIndicator color="#8CE05A" />
+            <ActivityIndicator color={theme.colors.accent} />
           ) : (
             <>
-              <Feather name="plus" size={16} color="#8CE05A" />
+              <Feather name="plus" size={16} color={theme.colors.accent} />
               <Text className="text-base font-semibold text-accent">Bu güne fotoğraf ekle</Text>
             </>
           )}
@@ -125,7 +126,7 @@ export function EntryPhotoStrip({
               style={{ opacity: busy ? 0.6 : 1 }}
               className="flex-row items-center gap-1.5"
             >
-              <Feather name="star" size={14} color="#8CE05A" />
+              <Feather name="star" size={14} color={theme.colors.accent} />
               <Text className="text-accent text-sm font-medium">Kapak yap</Text>
             </Pressable>
           ) : null}
@@ -137,12 +138,16 @@ export function EntryPhotoStrip({
             accessibilityLabel="Seçili fotoğrafı sil"
             style={{ opacity: busy ? 0.6 : 1 }}
           >
-            <Feather name="trash-2" size={15} color="#D9705A" />
+            <Feather name="trash-2" size={15} color={theme.colors.danger} />
           </Pressable>
         </View>
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ gap: 8 }}
+      >
         {photos.map((photo, index) => {
           const isActive = photo.id === active?.id;
           return (
@@ -172,7 +177,7 @@ export function EntryPhotoStrip({
               )}
               {photo.isCover ? (
                 <View className="absolute right-0.5 top-0.5 rounded-full bg-black/70 p-1">
-                  <Feather name="star" size={9} color="#8CE05A" />
+                  <Feather name="star" size={9} color={theme.colors.accent} />
                 </View>
               ) : null}
             </Pressable>
@@ -187,7 +192,11 @@ export function EntryPhotoStrip({
           style={{ width: THUMB, height: THUMB, opacity: busy ? 0.6 : 1 }}
           className="items-center justify-center rounded-[8px] border-2 border-dashed border-border bg-surface"
         >
-          {busy ? <ActivityIndicator color="#8CE05A" /> : <Feather name="plus" size={18} color="#8CE05A" />}
+          {busy ? (
+            <ActivityIndicator color={theme.colors.accent} />
+          ) : (
+            <Feather name="plus" size={18} color={theme.colors.accent} />
+          )}
         </Pressable>
       </ScrollView>
     </View>

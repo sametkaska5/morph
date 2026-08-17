@@ -1,3 +1,4 @@
+import { theme } from "@/lib/theme";
 import { Tabs, Redirect } from "expo-router";
 import { View, Pressable, ActivityIndicator } from "react-native";
 import { useIsMutating } from "@tanstack/react-query";
@@ -58,7 +59,7 @@ function CaptureButton() {
         shadowOffset: { width: 0, height: 4 },
       }}
     >
-      <Feather name="plus" size={24} color="#0B0D0A" />
+      <Feather name="plus" size={24} color={theme.colors.bg} />
     </Pressable>
   );
 }
@@ -109,7 +110,7 @@ export default function TabsLayout() {
   if (loading) {
     return (
       <View className="flex-1 bg-bg items-center justify-center">
-        <ActivityIndicator color="#8CE05A" />
+        <ActivityIndicator color={theme.colors.accent} />
       </View>
     );
   }

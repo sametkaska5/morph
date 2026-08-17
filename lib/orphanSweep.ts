@@ -173,7 +173,18 @@ export async function maybeSweepOrphans(userId: string): Promise<void> {
         scanned,
       });
     }
-  } catch (err) {
+  } catch (err: any) {
+    // Ağ bağlantısı yokken arka planda çalışmaya çalışırsa (fetch failed / UnknownHostException)
+    // Sentry'ye hata atmaması için sessizce yutuyoruz.
+    const msg = err?.message || String(err);
+    if (
+      msg.includes("fetch failed") ||
+      msg.includes("Network request failed") ||
+      msg.includes("UnknownHostException") ||
+      msg.includes("Failed to fetch")
+    ) {
+      return;
+    }
     captureError(err, { where: "orphanSweep" });
   }
 }

@@ -1,4 +1,4 @@
-import { describeError, authErrorMessage, isNetworkError, isInvalidCredentials } from "../errors";
+import { describeError, authErrorMessage, isNetworkError } from "../errors";
 
 describe("isNetworkError", () => {
   it("React Native'in fetch hatasını tanır", () => {
@@ -67,32 +67,7 @@ describe("describeError", () => {
   });
 });
 
-/**
- * Bu hata İKİ durumu birden kapsıyor: hesap yok, ya da şifre yanlış. Supabase
- * hangisi olduğunu bilerek söylemiyor (kullanıcı sayımını engellemek için).
- * Giriş ekranı bunu "hesabın yoksa oluştur" kısayolunu göstermek için
- * kullanıyor — "böyle bir hesap yok" DEMEK için değil, çünkü bilmiyoruz.
- */
-describe("isInvalidCredentials", () => {
-  it("geçersiz kimlik hatasını tanır", () => {
-    expect(isInvalidCredentials({ message: "Invalid login credentials" })).toBe(true);
-  });
 
-  it("büyük/küçük harften etkilenmez", () => {
-    expect(isInvalidCredentials({ message: "INVALID LOGIN CREDENTIALS" })).toBe(true);
-  });
-
-  it("başka auth hatalarını bununla karıştırmaz", () => {
-    // Karıştırsaydı "hesap oluştur" kısayolu, hesabı ZATEN olan kullanıcıya
-    // (örn. e-postası doğrulanmamış) gösterilirdi.
-    expect(isInvalidCredentials({ message: "Email not confirmed" })).toBe(false);
-    expect(isInvalidCredentials({ message: "User already registered" })).toBe(false);
-  });
-
-  it("ağ hatasını geçersiz kimlik sanmaz", () => {
-    expect(isInvalidCredentials(new TypeError("Network request failed"))).toBe(false);
-  });
-});
 
 describe("authErrorMessage", () => {
   it("hatalı giriş bilgisini Türkçeleştirir", () => {

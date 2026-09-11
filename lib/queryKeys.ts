@@ -78,6 +78,11 @@ export const queryKeys = {
     byDate: (userId: string | undefined, date: string) => ["programDay", userId, date] as const,
   },
 
+  workoutsList: {
+    all: ["workoutsList"] as const,
+    byUser: (userId: string | undefined) => ["workoutsList", userId] as const,
+  },
+
   comparison: (a: string | undefined, b: string | undefined) => ["comparison", a, b] as const,
 
   notificationSettings: (userId: string | undefined) => ["notification_settings", userId] as const,

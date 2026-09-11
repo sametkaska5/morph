@@ -330,6 +330,19 @@ export type Database = {
     Functions: {
       delete_own_account: { Args: never; Returns: undefined };
       email_exists: { Args: { check_email: string }; Returns: boolean };
+      search_entries: {
+        Args: { search_term: string };
+        Returns: {
+          cover_photo_id: string | null;
+          created_at: string;
+          date: string;
+          id: string;
+          note: string | null;
+          type: string;
+          updated_at: string;
+          user_id: string;
+        }[];
+      };
     };
     Enums: {
       [_ in never]: never;

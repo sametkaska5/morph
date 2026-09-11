@@ -202,19 +202,3 @@ export function authErrorMessage(error: unknown): string {
   return "İşlem tamamlanamadı. Lütfen tekrar dene.";
 }
 
-/**
- * Giriş "geçersiz kimlik bilgileri" ile mi reddedildi?
- *
- * DİKKAT — bu hata İKİ ayrı durumu birden kapsıyor: hesap hiç yok, ya da şifre
- * yanlış. Supabase hangisi olduğunu BİLEREK söylemiyor; söyleseydi giriş ekranı
- * "bu e-posta bu uygulamada kayıtlı mı" taraması için kullanılabilirdi
- * (kullanıcı sayımı / user enumeration). Bu yüzden ekranda "böyle bir hesap
- * yok" DEMİYORUZ — bilmiyoruz. Bunun yerine kullanıcıya iki çıkış yolunu da
- * (şifre sıfırlama / kayıt) gösteriyoruz.
- *
- * Ham metin eşleştirmesi bilerek burada, ekranda değil: hata metinleri bu
- * modülün sorumluluğu.
- */
-export function isInvalidCredentials(error: unknown): boolean {
-  return messageOf(error).includes("invalid login credentials");
-}

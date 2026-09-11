@@ -1,5 +1,5 @@
 import { theme } from "@/lib/theme";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { View, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
 import { PressableFade } from "@/components/PressableFade";
 import { Text, TextInput } from "@/components/Typography";
@@ -7,30 +7,34 @@ import Feather from "@expo/vector-icons/Feather";
 import { Redirect, router } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
-import { authErrorMessage, isInvalidCredentials } from "@/lib/errors";
-import { checkAccountExists } from "@/lib/accountLookup";
+import { authErrorMessage } from "@/lib/errors";
 import { captureError } from "@/lib/monitoring";
 import { useScreenInsets } from "@/lib/useScreenInsets";
 
 export default function AuthScreen() {
   const screen = useScreenInsets();
   const { session, loading: authLoading } = useAuth();
-  const [mode, setMode] = useState<"login" | "signup">("login");
+  
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  /** Giriş "e-posta veya şifre hatalı" ile döndü mü — çıkış yollarını göstermek için. */
-  const [showAccountHint, setShowAccountHint] = useState(false);
-  /** Hata değil, yönlendirme bilgisi (örn. kayıt kipine alındın). */
   const [infoMsg, setInfoMsg] = useState<string | null>(null);
-  /**
-   * Kayıt yapıldı, e-posta doğrulaması bekleniyor — dolu olduğunda ekran kod
-   * adımına geçiyor. E-postanın gerçekten kullanıcıya ait olduğunu ancak
-   * adrese gönderilen kodu geri yazabilmesiyle anlayabiliyoruz.
-   */
+  
+  // Eğer doluysa, e-posta gönderilmiş ve doğrulama kodu bekleniyor demektir
   const [verifyEmail, setVerifyEmail] = useState<string | null>(null);
   const [code, setCode] = useState("");
+  const [resendTimer, setResendTimer] = useState(0);
+
+  // Geri sayım için effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resendTimer]);
 
   if (!authLoading && session) {
     return <Redirect href="/(tabs)" />;
@@ -38,82 +42,44 @@ export default function AuthScreen() {
 
   async function handleSubmit() {
     setErrorMsg(null);
-    setShowAccountHint(false);
     setInfoMsg(null);
 
-    // Telefon klavyeleri otomatik tamamlamadan sonra sona boşluk ekliyor,
-    // kopyala-yapıştır da öyle. Boşluklu e-posta Supabase'de BAŞKA bir kimlik:
-    // kullanıcı doğru adresi ve şifreyi yazdığı hâlde "e-posta veya şifre
-    // hatalı" alıyor ve neyin yanlış olduğunu anlaması imkânsız oluyor.
-    // Şifre BİLEREK trim edilmiyor — baştaki/sondaki boşluk şifrenin parçası olabilir.
     const cleanEmail = email.trim();
 
-    if (!cleanEmail || !password) {
-      setErrorMsg("E-posta ve şifre gerekli.");
+    // Basit e-posta doğrulaması
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!cleanEmail || !emailRegex.test(cleanEmail)) {
+      setErrorMsg("Lütfen geçerli bir e-posta adresi girin.");
       return;
     }
 
     setLoading(true);
 
-    const { data, error } =
-      mode === "login"
-        ? await supabase.auth.signInWithPassword({ email: cleanEmail, password })
-        : await supabase.auth.signUp({ email: cleanEmail, password });
+    // signInWithOtp, hem giriş hem de yeni kayıtlar için çalışır.
+    const { error } = await supabase.auth.signInWithOtp({ 
+      email: cleanEmail,
+      options: {
+        shouldCreateUser: true // (Zaten varsayılan budur) Yeni ise hesap oluşturur
+      }
+    });
 
     setLoading(false);
 
-    // Kayıt başarılı ama OTURUM YOK demek: Supabase e-posta doğrulaması
-    // bekliyor. Kullanıcıyı kod ekranına alıyoruz — e-postadaki linke
-    // tıklatmak onu uygulamadan çıkarır ve mobilde çoğu kişi geri dönmez.
-    // Doğrulama kapalıysa `session` doluyor ve bu adım hiç çalışmıyor.
-    if (!error && mode === "signup" && !data.session) {
-      setVerifyEmail(cleanEmail);
-      setInfoMsg(null);
+    if (error) {
+      captureError(error, { where: "auth.signInWithOtp" });
+      setErrorMsg(authErrorMessage(error));
       return;
     }
 
-    if (error) {
-      // Kullanıcı anlaşılır Türkçe metni görür; teknik ayrıntı Sentry'ye gider.
-      captureError(error, { where: mode === "login" ? "auth.signIn" : "auth.signUp" });
-
-      // "Geçersiz kimlik" hatası iki durumu birden kapsıyor: hesap yok, ya da
-      // şifre yanlış. Supabase hangisi olduğunu söylemediği için kendi
-      // kontrolümüzü soruyoruz (bkz. lib/accountLookup.ts) — kullanıcının
-      // "e-postamı mı yanlış yazdım, şifremi mi" diye takılmasını engelliyor.
-      if (mode === "login" && isInvalidCredentials(error)) {
-        const found = await checkAccountExists(cleanEmail);
-        if (found === "missing") {
-          // Kullanıcıyı bir bağlantıya tıklamaya bırakmıyoruz: hesabı olmadığı
-          // KESİN olduğuna göre doğrudan kayıt kipine alıyoruz. E-posta ve şifre
-          // yazdıkları yerde duruyor, tek yapması gereken "Kayıt ol"a basmak.
-          setMode("signup");
-          setInfoMsg("Bu e-postayla kayıtlı bir hesap yok — seni kayıt ekranına aldık.");
-          setShowAccountHint(false);
-          return;
-        }
-        if (found === "exists") {
-          setErrorMsg("Şifre hatalı. Şifreni unuttuysan sıfırlayabilirsin.");
-          setShowAccountHint(false);
-          return;
-        }
-        // "unknown": kontrol yapılamadı (ağ hatası ya da fonksiyon henüz
-        // migrate edilmemiş). Hangisi olduğunu UYDURMUYORUZ — genel mesajı
-        // gösterip iki çıkış yolunu da sunuyoruz. Kısayolun asıl yeri burası.
-        setErrorMsg(authErrorMessage(error));
-        setShowAccountHint(true);
-        return;
-      }
-
-      setErrorMsg(authErrorMessage(error));
-      setShowAccountHint(false);
-    }
-    // Başarılıysa useAuth hook'u session değişikliğini otomatik yakalayıp yönlendirir
+    // Hata yoksa e-posta başarıyla gönderilmiş demektir, kod ekranına geçiyoruz.
+    setVerifyEmail(cleanEmail);
+    setInfoMsg(null);
   }
 
   async function handleVerify() {
     setErrorMsg(null);
     setInfoMsg(null);
-    // Kod e-postadan kopyalanıyor ve yanında boşluk geliyor (bkz. forgot-password).
+    
     const cleanCode = code.trim();
     if (!cleanCode || !verifyEmail) {
       setErrorMsg("Doğrulama kodu gerekli.");
@@ -121,35 +87,41 @@ export default function AuthScreen() {
     }
 
     setLoading(true);
+    
+    // OTP girişleri için type "email" olmalıdır.
     const { error } = await supabase.auth.verifyOtp({
       email: verifyEmail,
       token: cleanCode,
-      type: "signup",
+      type: "email",
     });
+    
     setLoading(false);
 
     if (error) {
       setErrorMsg(authErrorMessage(error));
-      captureError(error, { where: "auth.verifySignup" });
+      captureError(error, { where: "auth.verifyOtpEmail" });
       return;
     }
-    // Doğrulama başarılıysa oturum açılıyor; useAuth bunu yakalayıp yönlendiriyor.
+    // Başarılıysa session oluşacak ve useAuth otomatik yönlendirecek.
   }
 
   async function handleResendCode() {
-    if (!verifyEmail) return;
+    if (!verifyEmail || resendTimer > 0) return;
     setErrorMsg(null);
     setInfoMsg(null);
     setLoading(true);
-    const { error } = await supabase.auth.resend({ type: "signup", email: verifyEmail });
+    
+    const { error: otpError } = await supabase.auth.signInWithOtp({ email: verifyEmail });
+    
     setLoading(false);
 
-    if (error) {
-      setErrorMsg(authErrorMessage(error));
-      captureError(error, { where: "auth.resendSignup" });
+    if (otpError) {
+      setErrorMsg(authErrorMessage(otpError));
+      captureError(otpError, { where: "auth.resendOtpEmail" });
       return;
     }
     setInfoMsg("Yeni bir kod gönderdik.");
+    setResendTimer(60); // 60 saniyelik limit başlat
   }
 
   /* ---------------- E-POSTA DOĞRULAMA ADIMI ---------------- */
@@ -167,10 +139,10 @@ export default function AuthScreen() {
               <Feather name="mail" size={24} color={theme.colors.accent} />
             </View>
 
-            <Text className="text-text text-3xl font-bold mb-1">E-postanı doğrula</Text>
+            <Text className="text-text text-3xl font-bold mb-1">E-postanı kontrol et</Text>
             <Text className="text-textMuted text-base mb-8 leading-6">
               <Text className="text-text font-semibold">{verifyEmail}</Text> adresine 6 haneli bir
-              kod gönderdik. Hesabın, kodu girdikten sonra açılacak.
+              kod gönderdik. Giriş yapmak için kodu gir.
             </Text>
 
             {infoMsg ? (
@@ -218,24 +190,25 @@ export default function AuthScreen() {
               {loading ? (
                 <ActivityIndicator color={theme.colors.bg} />
               ) : (
-                <Text className="text-bg text-base font-semibold">Doğrula</Text>
+                <Text className="text-bg text-base font-semibold">Giriş Yap</Text>
               )}
             </PressableFade>
 
             <PressableFade
               onPress={handleResendCode}
-              disabled={loading}
+              disabled={loading || resendTimer > 0}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               accessibilityRole="button"
               accessibilityLabel="Kodu tekrar gönder"
               dim={0.7}
               className="items-center py-3 mt-2"
             >
-              <Text className="text-accent text-sm font-medium">Kodu tekrar gönder</Text>
+              <Text className={`text-sm font-medium ${resendTimer > 0 ? "text-textFaint" : "text-accent"}`}>
+                {resendTimer > 0 ? `Tekrar göndermek için ${resendTimer}s` : "Kodu tekrar gönder"}
+              </Text>
             </PressableFade>
           </View>
 
-          {/* Yanlış adres yazılmış olabilir — dönüş yolu hep açık. */}
           <View className="border-t border-border pt-4 pb-6">
             <PressableFade
               onPress={() => {
@@ -260,22 +233,21 @@ export default function AuthScreen() {
     );
   }
 
+  /* ---------------- E-POSTA İSTEYEN ANA EKRAN ---------------- */
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       className="flex-1 bg-bg"
       style={{ paddingTop: screen.insets.top, paddingBottom: screen.insets.bottom }}
     >
-      {/* Instagram/Facebook deseni: form dikeyde ortalanmış, kip değiştirme
-          bağlantısı ekranın EN ALTINA sabit ve üstünde ince bir ayraçla
-          formdan ayrılmış. Sekmeli düzenden vazgeçildi — bu ekrana oturmadı. */}
       <View className="flex-1 px-6">
         <View className="flex-1 justify-center">
           <Text className="text-text text-3xl font-bold mb-1">
-            {mode === "login" ? "Tekrar hoş geldin" : "Hesap oluştur"}
+            Giriş Yap / Kayıt Ol
           </Text>
           <Text className="text-textMuted text-base mb-8">
-            {mode === "login" ? "Anılarına devam et." : "Anılarını kaydetmeye başla."}
+            Devam etmek için e-posta adresini gir. Sana şifre yerine geçecek tek seferlik bir kod göndereceğiz.
           </Text>
 
           {infoMsg ? (
@@ -297,80 +269,22 @@ export default function AuthScreen() {
             placeholderTextColor={theme.colors.textFaint}
             accessibilityLabel="E-posta"
             style={{ height: 52, textAlignVertical: "center" }}
-            className="bg-surface border border-border rounded-button px-4 text-text text-base mb-4"
-          />
-
-          <Text className="text-textMuted text-sm mb-2">
-            {mode === "login" ? "Şifre" : "Şifre belirle (en az 6 karakter)"}
-          </Text>
-          <TextInput
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            placeholder="••••••••"
-            placeholderTextColor={theme.colors.textFaint}
-            accessibilityLabel="Şifre"
-            style={{ height: 52, textAlignVertical: "center" }}
             className="bg-surface border border-border rounded-button px-4 text-text text-base mb-2"
           />
 
-          {mode === "login" ? (
-            <PressableFade
-              onPress={() => router.push("/forgot-password")}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              accessibilityRole="button"
-              dim={0.7}
-              className="items-end mb-2 py-1"
-            >
-              <Text className="text-accent text-sm font-medium">Şifremi unuttum</Text>
-            </PressableFade>
-          ) : null}
-
           {errorMsg ? (
-            <View className="mb-2">
+            <View className="mb-2 mt-2">
               <Text className="text-danger text-base" accessibilityRole="alert">
                 {errorMsg}
               </Text>
-              {/* Giriş "geçersiz kimlik" ile döndüğünde hesabın olmaması da,
-                şifrenin yanlış olması da aynı hatayı üretiyor — Supabase
-                hangisi olduğunu BİLEREK söylemiyor (aksi halde bu ekran
-                "bu e-posta kayıtlı mı" taraması için kullanılabilirdi).
-                Hangisi olduğunu uyduramayacağımıza göre, kullanıcıyı iki
-                çıkış yoluna da tek dokunuşla götürüyoruz. */}
-              {showAccountHint ? (
-                <View className="mt-2">
-                  <Text className="text-textMuted text-sm leading-5">
-                    E-postayı yanlış yazmış olabilirsin — kontrol et, ya da bu adresle yeni bir
-                    hesap oluştur.
-                  </Text>
-                  <PressableFade
-                    onPress={() => {
-                      // E-posta korunuyor: kullanıcı yeniden yazmak zorunda kalmasın.
-                      setMode("signup");
-                      setErrorMsg(null);
-                    }}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    accessibilityRole="button"
-                    accessibilityLabel="Bu e-postayla hesap oluştur"
-                    dim={0.7}
-                    className="mt-2 py-1"
-                  >
-                    <Text className="text-accent text-sm font-medium">
-                      Bu e-postayla hesap oluştur
-                    </Text>
-                  </PressableFade>
-                </View>
-              ) : null}
             </View>
           ) : null}
 
-          {/* Etiket sabit: yüklenirken metin ActivityIndicator'a dönüşüyor ve
-            düğmenin erişilebilir adı kayboluyordu. */}
           <PressableFade
             onPress={handleSubmit}
             disabled={loading}
             accessibilityRole="button"
-            accessibilityLabel={mode === "login" ? "Giriş yap" : "Hesabı oluştur"}
+            accessibilityLabel="Devam Et"
             accessibilityState={{ disabled: loading, busy: loading }}
             dim={0.85}
             baseOpacity={loading ? 0.7 : 1}
@@ -380,51 +294,22 @@ export default function AuthScreen() {
               <ActivityIndicator color={theme.colors.bg} />
             ) : (
               <Text className="text-bg text-base font-semibold">
-                {mode === "login" ? "Giriş yap" : "Hesabı oluştur"}
+                Devam Et
               </Text>
             )}
           </PressableFade>
-
-          {mode === "signup" ? (
-            <Text className="text-textFaint text-xs text-center mt-5 leading-5">
-              Kayıt olarak{" "}
-              <Text className="text-accent" onPress={() => router.push("/terms")}>
-                Kullanım Şartları
-              </Text>{" "}
-              ve{" "}
-              <Text className="text-accent" onPress={() => router.push("/privacy-policy")}>
-                Gizlilik Politikası
-              </Text>
-              'nı kabul etmiş olursun.
+          
+          <Text className="text-textFaint text-xs text-center mt-5 leading-5">
+            Devam ederek{" "}
+            <Text className="text-accent" onPress={() => router.push("/terms")}>
+              Kullanım Şartları
+            </Text>{" "}
+            ve{" "}
+            <Text className="text-accent" onPress={() => router.push("/privacy-policy")}>
+              Gizlilik Politikası
             </Text>
-          ) : null}
-        </View>
-
-        {/* Ekranın en altına sabit kip değiştirici. Üstündeki ayraç onu
-            formdan görsel olarak koparıyor: "asıl iş yukarıda, bu ayrı bir
-            yol" mesajı. Instagram/Facebook'ta da bu bant ekranın dibinde
-            durur ve formla karışmaz. */}
-        <View className="border-t border-border pt-4 pb-6">
-          <PressableFade
-            onPress={() => {
-              setMode(mode === "login" ? "signup" : "login");
-              setErrorMsg(null);
-              setInfoMsg(null);
-              setShowAccountHint(false);
-            }}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            accessibilityRole="button"
-            accessibilityLabel={mode === "login" ? "Kayıt ekranına geç" : "Giriş ekranına geç"}
-            dim={0.7}
-            className="items-center py-2"
-          >
-            <Text className="text-textMuted text-sm">
-              {mode === "login" ? "Hesabın yok mu? " : "Zaten hesabın var mı? "}
-              <Text className="text-accent font-semibold">
-                {mode === "login" ? "Kayıt ol" : "Giriş yap"}
-              </Text>
-            </Text>
-          </PressableFade>
+            'nı kabul etmiş olursun.
+          </Text>
         </View>
       </View>
     </KeyboardAvoidingView>

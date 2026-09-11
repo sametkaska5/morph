@@ -169,10 +169,7 @@ export function useProgramDay(userId: string | undefined, date: string) {
       if (error) throw error;
       if (!data) return null;
 
-      // Sıralamayı JS'te yapıyoruz: PostgREST iç içe gömülü ilişkilerde
-      // (workout_items → workout_sets) sıra garantisi vermiyor. sort yerinde
-      // çalışır ama önceki map zaten yeni bir dizi ürettiği için cache'teki
-      // veri mutasyona uğramıyor.
+      // Sıralamayı JS'te yapıyoruz
       const items = (data.workout_items ?? [])
         .map((it) => ({
           name: it.name,
@@ -188,6 +185,68 @@ export function useProgramDay(userId: string | undefined, date: string) {
         .sort((a, b) => a.order_index - b.order_index);
 
       return { entryId: data.id, items };
+    },
+  });
+}
+
+export type AllWorkoutsRow = {
+  id: string;
+  date: string;
+  note: string | null;
+  items: {
+    name: string;
+    sets: { reps: number | null; weight: number | null }[];
+  }[];
+};
+
+export function useAllWorkouts(userId: string | undefined) {
+  return useQuery<AllWorkoutsRow[]>({
+    queryKey: queryKeys.workoutsList.byUser(userId),
+    enabled: !!userId,
+    queryFn: async () => {
+      // BÜTÜN KAYITLARI ÇEK
+      const { data, error } = await supabase
+        .from("entries")
+        .select("id, date, note, type, workout_items(name, order_index, workout_sets(reps, weight, order_index))")
+        .eq("user_id", userId!)
+        .order("date", { ascending: false });
+
+      if (error) throw error;
+
+      // JAVASCRIPT İLE FİLTRELE: 
+      // Sadece "gerçekten bir program/not girilmiş" olan günleri göster.
+      // 1. Ya içinde özel hareket (workout_items) tablosu dolu olacak
+      // 2. Ya da tipi 'workout' (fotoğrafsız) olup içine en azından bir NOT yazılmış olacak.
+      // Tamamen boş (ne hareket ne not) olan günleri göstermez.
+      const filteredData = (data || []).filter(entry => {
+        const hasExercises = entry.workout_items && entry.workout_items.length > 0;
+        const hasNote = entry.note && entry.note.trim().length > 0;
+        
+        return hasExercises || (entry.type === 'workout' && hasNote);
+      });
+
+      console.log("FETCHED WORKOUTS:", JSON.stringify(filteredData.map(d => ({
+        date: d.date,
+        type: d.type,
+        itemsCount: d.workout_items ? d.workout_items.length : 0
+      })), null, 2));
+
+      return filteredData.map((entry) => ({
+        id: entry.id,
+        date: entry.date,
+        note: entry.note,
+        items: (entry.workout_items || [])
+          .sort((a: any, b: any) => a.order_index - b.order_index)
+          .map((item: any) => ({
+            name: item.name,
+            sets: (item.workout_sets || [])
+              .sort((a: any, b: any) => a.order_index - b.order_index)
+              .map((s: any) => ({
+                reps: s.reps,
+                weight: s.weight,
+              })),
+          })),
+      }));
     },
   });
 }

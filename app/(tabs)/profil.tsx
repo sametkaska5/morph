@@ -20,6 +20,7 @@ import { alertError } from "@/lib/alerts";
 import { showAlert } from "@/lib/appAlert";
 import { useScreenInsets } from "@/lib/useScreenInsets";
 import { formatDateKey } from "@/lib/date";
+import { exportUserData } from "@/lib/exportData";
 
 /** Feather ikon adları — yanlış yazılmış bir ad artık derlemede yakalanıyor. */
 type FeatherIcon = keyof typeof Feather.glyphMap;
@@ -119,6 +120,7 @@ export default function Profil() {
   const [showUnitSheet, setShowUnitSheet] = useState(false);
   const [showPhotoPreview, setShowPhotoPreview] = useState(false);
   const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const skipNextPress = useRef(false);
 
   const displayName = profile?.name || user?.email?.split("@")[0] || "Kullanıcı";
@@ -152,6 +154,18 @@ export default function Profil() {
       onError: (err) => alertError("Birim değiştirilemedi", err, "profile.setUnitPref"),
     });
     setShowUnitSheet(false);
+  }
+
+  async function handleExport() {
+    if (isExporting) return;
+    setIsExporting(true);
+    try {
+      await exportUserData();
+    } catch (error) {
+      alertError("Dışa aktarma başarısız", error, "profile.exportUserData");
+    } finally {
+      setIsExporting(false);
+    }
   }
 
   return (
@@ -261,20 +275,25 @@ export default function Profil() {
               onPress={() => router.push("/settings/measurements")}
             />
             <SettingsRow
+              icon="calendar"
+              label="Geçmiş Antrenmanlarım"
+              onPress={() => router.push("/workouts")}
+            />
+            <SettingsRow
               icon="sliders"
               label="Birimler"
               value={unitsLabel}
               onPress={() => setShowUnitSheet(true)}
             />
             <SettingsRow
-              icon="lock"
-              label="Şifre değiştir"
-              onPress={() => router.push("/settings/password")}
-            />
-            <SettingsRow
               icon="help-circle"
               label="Yardım & Destek"
               onPress={() => router.push("/settings/help")}
+            />
+            <SettingsRow
+              icon="download-cloud"
+              label={isExporting ? "Dışa aktarılıyor..." : "Verileri dışa aktar"}
+              onPress={handleExport}
             />
             <SettingsRow icon="log-out" label="Çıkış yap" danger onPress={handleSignOut} />
           </View>

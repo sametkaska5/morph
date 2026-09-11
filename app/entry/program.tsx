@@ -226,7 +226,7 @@ export default function ProgramScreen() {
         >
           <Feather name="chevron-left" size={22} color={theme.colors.text} />
         </PressableFade>
-        <Text className="text-text text-xl font-bold">Antrenman programı</Text>
+        <Text className="text-text text-2xl font-bold">Antrenman programı</Text>
         <View style={{ width: 22 }} />
       </View>
 
@@ -239,8 +239,8 @@ export default function ProgramScreen() {
         dim={0.7}
         className="bg-surface border border-border rounded-button px-4 py-4 mb-3 flex-row items-center justify-between"
       >
-        <Text className="text-textMuted text-base">Tarih</Text>
-        <Text className="text-text text-base font-semibold">
+        <Text className="text-textMuted text-lg">Tarih</Text>
+        <Text className="text-text text-lg font-semibold">
           {date.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
         </Text>
       </PressableFade>
@@ -269,7 +269,7 @@ export default function ProgramScreen() {
         <>
           {items.length === 0 ? (
             <View className="bg-surface border border-border rounded-card p-4 mb-3">
-              <Text className="text-textMuted text-base">
+              <Text className="text-textMuted text-lg">
                 Bu günün antrenmanını hareket hareket, set set ekle. Her set kendi tekrar ve
                 ağırlığını tutar.
               </Text>
@@ -288,7 +288,7 @@ export default function ProgramScreen() {
                   placeholder="Hareket (örn. Bench Press)"
                   placeholderTextColor={theme.colors.textFaint}
                   onFocus={() => revealField(nameRefs.current[exIndex])}
-                  className="flex-1 text-text text-base font-semibold"
+                  className="flex-1 text-text text-lg font-semibold"
                   maxLength={60}
                 />
                 <PressableFade
@@ -304,16 +304,16 @@ export default function ProgramScreen() {
 
               {/* Set tablosu başlığı */}
               <View className="flex-row items-center gap-2 mb-1 px-1">
-                <Text className="text-textFaint text-xs w-8">Set</Text>
-                <Text className="text-textFaint text-xs flex-1 text-center">Kg</Text>
-                <Text className="text-textFaint text-xs flex-1 text-center">Tekrar</Text>
+                <Text className="text-textFaint text-sm w-8">Set</Text>
+                <Text className="text-textFaint text-sm flex-1 text-center">Kg</Text>
+                <Text className="text-textFaint text-sm flex-1 text-center">Tekrar</Text>
                 <View className="w-7" />
               </View>
 
               {exercise.sets.map((set, setIndex) => (
                 <View key={setIndex} className="flex-row items-center gap-2 mb-2">
                   <View className="w-8 h-9 rounded-md bg-bg border border-border items-center justify-center">
-                    <Text className="text-textMuted text-sm font-semibold">{setIndex + 1}</Text>
+                    <Text className="text-textMuted text-base font-semibold">{setIndex + 1}</Text>
                   </View>
                   <TextInput
                     value={set.weight}
@@ -324,7 +324,7 @@ export default function ProgramScreen() {
                     onSubmitEditing={() => repsRefs.current[`${exIndex}-${setIndex}`]?.focus()}
                     placeholder="—"
                     placeholderTextColor={theme.colors.textFaint}
-                    className="flex-1 bg-bg border border-border rounded-button px-3 py-2 text-text text-base text-center"
+                    className="flex-1 bg-bg border border-border rounded-button px-3 py-2 text-text text-lg text-center"
                   />
                   <TextInput
                     ref={(el) => {
@@ -336,7 +336,7 @@ export default function ProgramScreen() {
                     keyboardType="number-pad"
                     placeholder="—"
                     placeholderTextColor={theme.colors.textFaint}
-                    className="flex-1 bg-bg border border-border rounded-button px-3 py-2 text-text text-base text-center"
+                    className="flex-1 bg-bg border border-border rounded-button px-3 py-2 text-text text-lg text-center"
                   />
                   <PressableFade
                     onPress={() => removeSet(exIndex, setIndex)}
@@ -361,7 +361,7 @@ export default function ProgramScreen() {
                 className="flex-row items-center justify-center gap-2 border border-dashed border-accent/50 rounded-button py-2 mt-1"
               >
                 <Feather name="plus" size={15} color={theme.colors.accent} />
-                <Text className="text-accent text-sm font-semibold">Set ekle</Text>
+                <Text className="text-accent text-base font-semibold">Set ekle</Text>
               </PressableFade>
             </View>
           ))}
@@ -377,7 +377,7 @@ export default function ProgramScreen() {
             className="flex-row items-center justify-center gap-2 bg-surface border border-border rounded-button py-4 mb-3"
           >
             <Feather name="plus" size={18} color={theme.colors.accent} />
-            <Text className="text-accent text-base font-semibold">Hareket ekle</Text>
+            <Text className="text-accent text-lg font-semibold">Hareket ekle</Text>
           </PressableFade>
 
           <PressableFade
@@ -392,7 +392,7 @@ export default function ProgramScreen() {
             {saveMutation.isPending ? (
               <ActivityIndicator color={theme.colors.bg} />
             ) : (
-              <Text className="text-bg text-base font-bold">Kaydet</Text>
+              <Text className="text-bg text-lg font-bold">Kaydet</Text>
             )}
           </PressableFade>
 
@@ -402,7 +402,7 @@ export default function ProgramScreen() {
             accessibilityRole="button"
             className="mt-4 items-center mb-8"
           >
-            <Text className="text-textMuted text-base">İptal</Text>
+            <Text className="text-textMuted text-lg">İptal</Text>
           </PressableFade>
         </>
       )}

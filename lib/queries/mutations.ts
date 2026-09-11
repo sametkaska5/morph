@@ -89,6 +89,8 @@ export function invalidateAfterDayWrite(queryClient: QueryClient) {
     queryClient.invalidateQueries({ queryKey: queryKeys.workoutDay.all }),
     // Antrenman programı ekranı: o tarihteki entry'yi kimliğiyle okuyor.
     queryClient.invalidateQueries({ queryKey: queryKeys.programDay.all }),
+    // Tüm antrenmanlar listesi.
+    queryClient.invalidateQueries({ queryKey: queryKeys.workoutsList.all }),
     // "Toplam Anı", seriler, kilo değişimi, kaç aydır.
     queryClient.invalidateQueries({ queryKey: queryKeys.profile.all }),
     // Ölçüm grafiği.

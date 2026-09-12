@@ -24,7 +24,6 @@ import { useNotificationSettings } from "@/lib/notificationSettings";
 import { useMeasurementTypes } from "@/lib/measurementTypes";
 import { useUnitPreference, displayUnit, toDisplayValue } from "@/lib/units";
 import { formatWeekRange, formatDateKey } from "@/lib/date";
-import { dayRoute, type DayRouteInput } from "@/lib/dayRoute";
 import { WeekTracker } from "@/components/Stats/WeekTracker";
 import { ErrorState } from "@/components/ErrorState";
 import {
@@ -38,7 +37,6 @@ import {
 import { alertError } from "@/lib/alerts";
 import { MeasurementChart, VISIBLE_POINTS } from "@/components/MeasurementChart";
 import { useScreenInsets } from "@/lib/useScreenInsets";
-import { hapticSelection } from "@/lib/haptics";
 
 let MediaLibrary: typeof MediaLibraryType | null = null;
 try {
@@ -83,36 +81,7 @@ export default function Istatistikler() {
     }
   }, [queryClient]);
 
-  function dayAccessibilityLabel(day: {
-    date: string;
-    type: string | null;
-    isFuture: boolean;
-    isToday: boolean;
-  }) {
-    const dateLabel = formatDateKey(day.date, { day: "numeric", month: "long", weekday: "long" });
-    if (day.isFuture) return `${dateLabel}, henüz gelmedi`;
-    const statusLabel =
-      day.type === "log"
-        ? "fotoğraflı kayıt var, açmak için dokun"
-        : day.type === "off_day"
-          ? "off day olarak işaretli, düzenlemek için dokun"
-          : day.type === "workout"
-            ? "antrenman günü, düzenlemek için dokun"
-            : "boş, ölçüm veya program eklemek için dokun";
-    return `${dateLabel}${day.isToday ? ", bugün" : ""}, ${statusLabel}`;
-  }
 
-  // Hangi güne dokununca nereye gidileceği lib/dayRoute.ts'te — yıllık takvim
-  // de aynı kuralı kullanıyor, ikisi ayrışmasın.
-  function handleDayPress(day: DayRouteInput) {
-    const route = dayRoute(day);
-    if (!route) return;
-    // Seçim deseni (başarı/uyarı değil): kullanıcı bir gün seçti, henüz bir şey
-    // tamamlamadı. Gidilecek yer yoksa titreşim de yok — aksi halde hiçbir şey
-    // olmayan dokunuşlar da onaylanmış gibi hissettirirdi.
-    hapticSelection();
-    router.push(route);
-  }
 
   const currentTypeId = activeTypeId ?? types?.[0]?.id;
   const activeType = types?.find((t) => t.id === currentTypeId);

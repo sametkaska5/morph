@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { View, ActivityIndicator } from "react-native";
 import { PressableFade } from "@/components/PressableFade";
 import { Text } from "@/components/Typography";
@@ -30,7 +31,6 @@ type Props = {
   onSharePress: () => void;
 };
 
-import { memo } from "react";
 
 export const WeekTracker = memo(function WeekTracker({
   currentStreak,

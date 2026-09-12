@@ -83,7 +83,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 // Expo Go'da setOptions desteklenmediği için uyarı atar, bunu engellemek adına try-catch kullanıyoruz.
 try {
   SplashScreen.setOptions({ duration: 300, fade: true });
-} catch (e) {}
+} catch {}
 
 const persister = createAsyncStoragePersister({
   storage: AsyncStorage,

@@ -100,36 +100,37 @@ export default function ProgramScreen() {
   const lastDeletedSets = useRef<Record<number, WorkoutSetDraft>>({});
   const { scrollRef, onScroll, revealField, keyboardPadding } = useKeyboardFocus();
 
-  // O tarihte program varsa bir kez doldur (düzenleme). Her (tarih, entry) için
-  // tek sefer — kullanıcının aktif düzenlemesini geç gelen veri ezmesin.
-  // Effect'te setState yerine render sırasında senkronizasyon: aynı "bir kez
-  // hydrate et" anahtarı state'te tutuluyor, veri hazır olur olmaz form tek
-  // geçişte doluyor (react.dev: you-might-not-need-an-effect).
+  // O tarihte program varsa bir kez doldur (düzenleme).
+  // Veri hazır olur olmaz form tek geçişte dolması hedeflenir.
   // `!error` şart: sorgu patladığında da isLoading false oluyor ve existing
   // undefined kalıyordu — form "bu günde hiç hareket yok" diye BOŞ doluyor,
   // kullanıcı kaydedince gerçekte var olan programın üstüne boş yazılıyordu.
   const [hydratedKey, setHydratedKey] = useState<string | null>(null);
   const hydrationKey = `${dateKey}:${existing?.entryId ?? "new"}`;
-  if (!isLoading && !error && hydratedKey !== hydrationKey && !draftRestored.current) {
-    setHydratedKey(hydrationKey);
-    isDirty.current = false; // yeni veri geldi, form temiz
-    if (!existing || existing.items.length === 0) {
-      setItems([]);
-    } else {
-      setItems(
-        existing.items.map((it) => ({
-          name: it.name,
-          sets:
-            it.sets.length > 0
-              ? it.sets.map((s) => ({
-                  reps: s.reps != null ? String(s.reps) : "",
-                  weight: s.weight != null ? String(s.weight) : "",
-                }))
-              : [{ ...EMPTY_SET }],
-        })),
-      );
+
+  useEffect(() => {
+    if (!isLoading && !error && hydratedKey !== hydrationKey && !draftRestored.current) {
+      setHydratedKey(hydrationKey);
+      isDirty.current = false; // yeni veri geldi, form temiz
+      if (!existing || existing.items.length === 0) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setItems([]);
+      } else {
+        setItems(
+          existing.items.map((it) => ({
+            name: it.name,
+            sets:
+              it.sets.length > 0
+                ? it.sets.map((s) => ({
+                    reps: s.reps != null ? String(s.reps) : "",
+                    weight: s.weight != null ? String(s.weight) : "",
+                  }))
+                : [{ ...EMPTY_SET }],
+          })),
+        );
+      }
     }
-  }
+  }, [isLoading, error, hydratedKey, hydrationKey, existing]);
 
   const saveMutation = useMutation({
     mutationKey: SAVE_PROGRAM_MUTATION_KEY,

@@ -175,11 +175,11 @@ const AUTH_MESSAGES: { match: string; text: string }[] = [
   { match: "otp_expired", text: "Kodun süresi dolmuş. Yeni bir kod iste." },
   {
     match: "for security purposes",
-    text: "Çok sık denedin. Kısa bir süre bekleyip tekrar dene.",
+    text: "Güvenliğiniz için işlem durduruldu. Lütfen 5 dakika bekleyip tekrar deneyin.",
   },
   {
     match: "email rate limit exceeded",
-    text: "Çok fazla e-posta gönderildi. Kısa bir süre bekleyip tekrar dene.",
+    text: "Çok fazla e-posta gönderildi. Lütfen yaklaşık 1 saat bekleyip tekrar deneyin.",
   },
 ];
 

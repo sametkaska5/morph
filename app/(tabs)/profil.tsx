@@ -309,7 +309,8 @@ export default function Profil() {
             />
           </View>
         </View>
-      </ScrollView>
+
+        </ScrollView>
 
       <DraggableSheet visible={showUnitSheet} onClose={() => setShowUnitSheet(false)}>
         <Text className="text-text text-xl font-bold mb-1">Birimler</Text>

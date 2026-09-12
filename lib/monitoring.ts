@@ -47,15 +47,25 @@ export function initMonitoring() {
  * yerlerinde eski log'ların yerine güvenle geçebilir.
  */
 export function captureError(error: unknown, context?: Record<string, unknown>) {
+  // Kullanıcının destek ekibine söyleyebileceği rastgele 6 haneli hata referans kodu
+  const refCode = Math.random().toString(36).slice(2, 8).toUpperCase();
+  if (error && typeof error === "object") {
+    (error as any)._refCode = refCode;
+  }
+
   if (enabled) {
     try {
-      Sentry.captureException(toError(error), context ? { extra: context } : undefined);
+      Sentry.captureException(toError(error), {
+        extra: context,
+        tags: { refCode }
+      });
     } catch {
       // Bildirim başarısız olursa yut — bir hatayı raporlarken yeni hata üretmeyelim.
     }
   }
-  if (context) console.error("[monitoring]", error, context);
-  else console.error("[monitoring]", error);
+  
+  if (context) console.error(`[monitoring] [Ref: ${refCode}]`, error, context);
+  else console.error(`[monitoring] [Ref: ${refCode}]`, error);
 }
 
 /**

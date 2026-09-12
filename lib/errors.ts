@@ -18,6 +18,7 @@ export type FriendlyError = {
   kind: ErrorKind;
   title: string;
   message: string;
+  refCode?: string;
 };
 
 /**
@@ -87,12 +88,17 @@ function isNotFoundError(error: unknown): boolean {
  * getirir. Her sınıf, kullanıcının NE YAPABİLECEĞİNİ söyleyen bir mesaj alır.
  */
 export function describeError(error: unknown): FriendlyError {
+  const refCode = (error && typeof error === "object" && "_refCode" in error)
+    ? String((error as Record<string, unknown>)._refCode)
+    : undefined;
+
   if (isNetworkError(error)) {
     return {
       kind: "offline",
       title: "Bağlantı kurulamadı",
       message:
         "İnternet bağlantını kontrol edip tekrar dene. Kayıtların cihazında güvende — bağlantı gelince kaldığın yerden devam edersin.",
+      refCode
     };
   }
 
@@ -101,6 +107,7 @@ export function describeError(error: unknown): FriendlyError {
       kind: "auth",
       title: "Oturumun sona ermiş",
       message: "Güvenlik için oturumun kapandı. Tekrar giriş yaptığında her şey yerinde olacak.",
+      refCode
     };
   }
 
@@ -109,6 +116,7 @@ export function describeError(error: unknown): FriendlyError {
       kind: "permission",
       title: "Bu içeriğe erişemedik",
       message: "Bu kayda erişim iznin yok gibi görünüyor. Doğru hesapla giriş yaptığından emin ol.",
+      refCode
     };
   }
 
@@ -117,6 +125,7 @@ export function describeError(error: unknown): FriendlyError {
       kind: "notFound",
       title: "Kayıt bulunamadı",
       message: "Bu kayıt silinmiş ya da taşınmış olabilir.",
+      refCode
     };
   }
 
@@ -124,6 +133,7 @@ export function describeError(error: unknown): FriendlyError {
     kind: "unknown",
     title: "Bir şeyler ters gitti",
     message: "Beklenmedik bir hata oluştu. Tekrar denemek genellikle sorunu çözer.",
+    refCode
   };
 }
 

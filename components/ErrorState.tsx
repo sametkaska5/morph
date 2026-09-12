@@ -31,7 +31,7 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
   // özelliklerinin sessizce uygulanmadığı defalarca doğrulandı) — basılma
   // geri bildirimi manuel onPressIn/onPressOut state'iyle.
   const [pressed, setPressed] = useState(false);
-  const { kind, title, message } = describeError(error);
+  const { kind, title, message, refCode } = describeError(error);
 
   return (
     <View className="items-center px-8 py-6">
@@ -39,12 +39,6 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
         <Feather name={ICON[kind]} size={26} color={theme.colors.textFaint} />
       </View>
 
-      {/* Başlık ve açıklama TEK bir erişilebilirlik düğümü: ekran okuyucu ikisini
-          bir arada, tek bir duyuru olarak okur. `accessible` olmadan
-          accessibilityRole tek başına sorgulanabilir/duyurulabilir olmuyor;
-          liveRegion ise Android tarafında "bu metin değişti, oku" sinyali.
-          Sarmalayıcı bilerek yalnızca metinleri kapsıyor — "Tekrar dene"
-          düğmesi dışarıda kalmalı ki ayrı bir odak hedefi olarak erişilebilsin. */}
       <View
         accessible
         accessibilityRole="alert"

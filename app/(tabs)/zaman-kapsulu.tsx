@@ -97,7 +97,7 @@ const CapsulePage = memo(function CapsulePage({
     <Pressable
       onPress={toggleFlip}
       accessibilityRole="button"
-      accessibilityLabel={`${formattedDate} tarihli anı, ${flipped ? "fotoğrafı göstermek için dokun" : "değerleri görmek için dokun"}`}
+      accessibilityLabel={`${formattedDate} tarihli antrenman, ${flipped ? "fotoğrafı göstermek için dokun" : "değerleri görmek için dokun"}`}
       style={{ height: pageHeight, width: "100%" }}
       className="bg-surface"
     >
@@ -245,7 +245,7 @@ const CapsulePage = memo(function CapsulePage({
             router.push(`/entry/edit/${entry.id}`);
           }}
           accessibilityRole="button"
-          accessibilityLabel="Anıyı düzenle"
+          accessibilityLabel="Antrenmanı düzenle"
           style={{
             position: "absolute",
             bottom: 24,
@@ -327,7 +327,7 @@ export default function ZamanKapsulu() {
           Henüz bir kaydın yok
         </Text>
         <Text className="text-textMuted text-base text-center leading-6 mb-5 max-w-[260px]">
-          İlk anını ekledikçe burada zaman içinde kayıp gidebileceksin.
+          Geçmiş antrenmanların burada birikecek. İlerlemeni buradan takip edebilirsin.
         </Text>
         <PressableFade
           onPress={openCapturePicker}
@@ -336,7 +336,7 @@ export default function ZamanKapsulu() {
           className="bg-accent rounded-button px-5 py-4 flex-row items-center gap-2"
         >
           <Feather name="plus" size={18} color={theme.colors.bg} />
-          <Text className="text-bg text-base font-semibold">İlk anını ekle</Text>
+          <Text className="text-bg text-base font-semibold">İlk antrenmanını ekle</Text>
         </PressableFade>
       </View>
     );

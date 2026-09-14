@@ -529,12 +529,12 @@ export default function EditEntry() {
           onPress={() => setConfirmDelete(true)}
           disabled={updateMutation.isPending || deleteMutation.isPending}
           accessibilityRole="button"
-          accessibilityLabel="Bu anıyı sil"
+          accessibilityLabel="Bu antrenmanı sil"
           dim={0.85}
           className="mt-2 flex-row items-center justify-center gap-2 py-4 rounded-button bg-danger"
         >
           <Feather name="trash-2" size={16} color={theme.colors.bg} />
-          <Text className="text-bg text-base font-semibold">Bu anıyı sil</Text>
+          <Text className="text-bg text-base font-semibold">Bu antrenmanı sil</Text>
         </PressableFade>
       </ScrollView>
 
@@ -548,7 +548,7 @@ export default function EditEntry() {
         visible={confirmDelete}
         icon="trash-2"
         danger
-        title="Bu anıyı sil?"
+        title="Bu antrenmanı sil?"
         message="Bu işlem geri alınamaz, fotoğraf ve ölçümler kalıcı olarak silinir."
         confirmLabel="Sil"
         onConfirm={() => {

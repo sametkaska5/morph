@@ -31,7 +31,7 @@ export default function Welcome() {
         </View>
         <Text className="text-text text-4xl font-bold uppercase tracking-wide">Remory</Text>
         <Text className="text-textMuted text-base text-center mt-3">
-          Anılarını kaydet.{"\n"}Gelecekteki kendinle buluştur.
+          Antrenmanlarını kaydet.{"\n"}Gelişimini takip et.
         </Text>
       </View>
 

@@ -235,7 +235,7 @@ export default function Profil() {
               />
               <StatChip
                 icon="camera"
-                label="Toplam Anı"
+                label="Toplam Antrenman"
                 value={String(stats?.totalMemories ?? 0)}
               />
               <StatChip icon="zap" label="En Uzun Seri" value={`${stats?.longest ?? 0} gün`} />

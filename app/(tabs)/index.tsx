@@ -90,7 +90,7 @@ const PosterThumb = memo(function PosterThumb({
       }}
       onPressOut={() => setPressed(false)}
       accessibilityRole="button"
-      accessibilityLabel={`${formatDateKey(entry.date, { day: "numeric", month: "long", year: "numeric" })} tarihli anı${
+      accessibilityLabel={`${formatDateKey(entry.date, { day: "numeric", month: "long", year: "numeric" })} tarihli antrenman${
         entry.photo_count > 1 ? `, ${entry.photo_count} fotoğraf` : ""
       }${entry.pending ? ", senkronize edilmeyi bekliyor" : ""}`}
       style={{ width: thumbW, marginBottom: 16 }}
@@ -164,9 +164,9 @@ function EmptyState() {
       <View className="w-16 h-16 rounded-full bg-accentSoft border border-accent items-center justify-center mb-4">
         <Feather name="camera" size={26} color={theme.colors.accent} />
       </View>
-      <Text className="text-text text-xl font-semibold mb-2 text-center">Henüz bir kaydın yok</Text>
+      <Text className="text-text text-xl font-semibold mb-2 text-center">Henüz bir antrenmanın yok</Text>
       <Text className="text-textMuted text-base text-center leading-6 mb-5 max-w-[260px]">
-        İlk anını ekle, gelecekteki kendin bugüne baktığında sana teşekkür edecek.
+        İlk antrenmanını ekle ve gelişimini takip etmeye başla.
       </Text>
       <PressableFade
         onPress={openCapturePicker}
@@ -175,7 +175,7 @@ function EmptyState() {
         className="bg-accent rounded-button px-5 py-4 flex-row items-center gap-2"
       >
         <Feather name="plus" size={18} color={theme.colors.bg} />
-        <Text className="text-bg text-base font-semibold">İlk anını ekle</Text>
+        <Text className="text-bg text-base font-semibold">İlk antrenmanını ekle</Text>
       </PressableFade>
     </View>
   );
@@ -299,7 +299,7 @@ export default function AnaEkran() {
           <PressableFade
             onPress={() => router.push("/search")}
             accessibilityRole="button"
-            accessibilityLabel="Anılarında ara"
+            accessibilityLabel="Antrenmanlarında ara"
             dim={0.7}
             className="w-11 h-11 rounded-full bg-surface border border-border items-center justify-center"
           >
@@ -375,7 +375,7 @@ export default function AnaEkran() {
               <View
                 className="py-6 items-center"
                 accessibilityRole="progressbar"
-                accessibilityLabel="Daha fazla anı yükleniyor"
+                accessibilityLabel="Daha fazla antrenman yükleniyor"
               >
                 <ActivityIndicator color={theme.colors.accent} />
               </View>

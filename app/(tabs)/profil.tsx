@@ -252,7 +252,7 @@ export default function Profil() {
                   </Text>
                 </View>
                 <Text className="text-accent text-base font-semibold leading-6">
-                  gelecekteki kendin için anılar biriktiriyorsun.
+                  antrenmanlarını kaydediyor ve gelişimini sürdürüyorsun.
                 </Text>
               </View>
             ) : null}

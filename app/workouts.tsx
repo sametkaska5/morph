@@ -19,10 +19,15 @@ function WorkoutCard({ workout }: { workout: AllWorkoutsRow }) {
     <View style={{ width: COLUMN_WIDTH, marginBottom: 24 }}>
       <Pressable
         onPress={() => router.push(`/entry/${workout.id}`)}
-        className="bg-surface border border-border rounded-xl p-3 mb-2 min-h-[160px]"
+        className="bg-surface border border-border rounded-xl p-3 mb-2 h-[160px] overflow-hidden"
       >
         {workout.note ? (
-          <Text className="text-text text-sm mb-3 leading-relaxed">{workout.note}</Text>
+          <Text 
+            className="text-text text-sm mb-3 leading-relaxed"
+            numberOfLines={workout.items && workout.items.length > 0 ? 2 : 6}
+          >
+            {workout.note}
+          </Text>
         ) : null}
 
         {workout.items && workout.items.length > 0 ? (
@@ -152,7 +157,7 @@ export default function WorkoutsScreen() {
                 <Feather name="edit-2" size={24} color={theme.colors.textFaint} />
               </View>
               <Text className="text-text text-lg font-semibold text-center mb-2">
-                Henüz notun yok
+                Henüz kayıtlı antrenmanın yok
               </Text>
             </View>
           }

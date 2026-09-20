@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "Remory",
+    "name": "Morph",
     "slug": "remory",
     "scheme": "remory",
-    "//version": "runtimeVersion politikası appVersion — bu alan aynı zamanda GÜNCELLEME UYUMLULUĞUNU belirliyor. Native tarafı değiştiren her değişiklikte ELLE artırılmalı (bkz. README). 0.2.0: Android izin listesi daraltıldı; READ_MEDIA_VIDEO/AUDIO ve SYSTEM_ALERT_WINDOW blockedPermissions ile manifest'ten söküldü. 0.3.0: adaptive-icon.png güvenli alana çekildi — ikon mipmap kaynağı olarak derleniyor, kablosuz güncellemeyle gidemez.",
-    "version": "0.3.0",
+    "//version": "runtimeVersion politikası appVersion — bu alan aynı zamanda GÜNCELLEME UYUMLULUĞUNU belirliyor. Native tarafı değiştiren her değişiklikte ELLE artırılmalı (bkz. README). 0.2.0: Android izin listesi daraltıldı; READ_MEDIA_VIDEO/AUDIO ve SYSTEM_ALERT_WINDOW blockedPermissions ile manifest'ten söküldü. 0.3.0: adaptive-icon.png güvenli alana çekildi — ikon mipmap kaynağı olarak derleniyor, kablosuz güncellemeyle gidemez. 0.4.0: Uygulama logosu yeşil temalı soyut kum saati ile değiştirildi. 0.5.0: Uygulama adı Morph olarak değiştirildi.",
+    "version": "0.5.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0A0A08",

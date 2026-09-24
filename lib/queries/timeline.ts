@@ -35,7 +35,7 @@ export type EntryRow = {
 };
 
 /** Yaprak efektinde kapağın arkasında gösterilecek en fazla fotoğraf sayısı. */
-export const MAX_BACK_PHOTOS = 2;
+const MAX_BACK_PHOTOS = 2;
 
 /**
  * Izgara sayfa boyutu.
@@ -49,7 +49,7 @@ export const MAX_BACK_PHOTOS = 2;
  * İlk sayfa küçüldüğü için ilk çizim de hızlandı: 60 kaydın kapak + yaprak
  * fotoğrafları tek seferde 180'e yakın imzalı link demekti, artık yarısı.
  */
-export const TIMELINE_PAGE_SIZE = 30;
+const TIMELINE_PAGE_SIZE = 30;
 
 export function useTimelineEntries() {
   return useInfiniteQuery({

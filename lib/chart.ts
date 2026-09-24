@@ -9,7 +9,7 @@
 export type ChartPoint = { x: number; y: number };
 
 /** Çizgi yumuşatma gücü. Fazlası veriyi çarpıtan taşmalara yol açıyor. */
-export const SMOOTHING = 0.18;
+const SMOOTHING = 0.18;
 
 /** Grafiğin yatay iç boşluğu. İlk/son nokta eskiden x=0 ve x=width'te, yani tam
  *  kenarda kalıyordu — hem basılması zordu hem ekran kenarı hareketleriyle

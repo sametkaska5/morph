@@ -1,8 +1,9 @@
-import { memo } from "react";
-import { View, ActivityIndicator } from "react-native";
+import { memo, useEffect, useRef } from "react";
+import { View, ActivityIndicator, Animated } from "react-native";
 import { PressableFade } from "@/components/PressableFade";
 import { Text } from "@/components/Typography";
 import Feather from "@expo/vector-icons/Feather";
+import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 import { router } from "expo-router";
 import { theme } from "@/lib/theme";
 import { ErrorState } from "@/components/ErrorState";
@@ -31,7 +32,6 @@ type Props = {
   onSharePress: () => void;
 };
 
-
 export const WeekTracker = memo(function WeekTracker({
   currentStreak,
   weekRangeLabel,
@@ -43,6 +43,25 @@ export const WeekTracker = memo(function WeekTracker({
   refetchWeek,
   onSharePress,
 }: Props) {
+  const flameAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(flameAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(flameAnim, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [flameAnim]);
+
   function dayAccessibilityLabel(day: WeekDay) {
     const dateLabel = formatDateKey(day.date, { day: "numeric", month: "long", weekday: "long" });
     if (day.isFuture) return `${dateLabel}, henüz gelmedi`;
@@ -68,11 +87,22 @@ export const WeekTracker = memo(function WeekTracker({
     <View className="mx-4 bg-surface border border-border rounded-card p-4">
       <View className="flex-row items-center justify-between mb-3 gap-2">
         <View className="flex-row items-center gap-3 flex-1 min-w-0">
-          <View className="w-9 h-9 rounded-lg bg-stamp/15 items-center justify-center">
-            <Feather name="zap" size={18} color={theme.colors.stamp} />
-          </View>
+          <Animated.View 
+            className="w-11 h-11 rounded-[14px] bg-[#3A1810] items-center justify-center border border-orange-500/20"
+            style={{ 
+               transform: [{ scale: flameAnim.interpolate({ inputRange: [0, 1], outputRange: [0.95, 1.05] }) }],
+               opacity: flameAnim.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }),
+               shadowColor: "#F97316",
+               shadowOffset: { width: 0, height: 0 },
+               shadowOpacity: flameAnim.interpolate({ inputRange: [0, 1], outputRange: [0.3, 0.8] }),
+               shadowRadius: 10,
+               elevation: 8,
+            }}
+          >
+            <FontAwesome5 name="fire" size={20} color="#FF6B00" />
+          </Animated.View>
           <View className="flex-1 min-w-0">
-            <Text className="text-text text-base font-semibold" numberOfLines={1}>
+            <Text className="text-white text-base font-bold" numberOfLines={1}>
               {currentStreak} gün üst üste
             </Text>
             <Text className="text-textFaint text-xs capitalize">bu hafta</Text>

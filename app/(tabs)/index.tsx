@@ -164,7 +164,9 @@ function EmptyState() {
       <View className="w-16 h-16 rounded-full bg-accentSoft border border-accent items-center justify-center mb-4">
         <Feather name="camera" size={26} color={theme.colors.accent} />
       </View>
-      <Text className="text-text text-xl font-semibold mb-2 text-center">Henüz bir antrenmanın yok</Text>
+      <Text className="text-text text-xl font-semibold mb-2 text-center">
+        Henüz bir antrenmanın yok
+      </Text>
       <Text className="text-textMuted text-base text-center leading-6 mb-5 max-w-[260px]">
         İlk antrenmanını ekle ve gelişimini takip etmeye başla.
       </Text>

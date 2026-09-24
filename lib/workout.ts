@@ -207,29 +207,38 @@ export function useAllWorkouts(userId: string | undefined) {
       // BÜTÜN KAYITLARI ÇEK
       const { data, error } = await supabase
         .from("entries")
-        .select("id, date, note, type, workout_items(name, order_index, workout_sets(reps, weight, order_index))")
+        .select(
+          "id, date, note, type, workout_items(name, order_index, workout_sets(reps, weight, order_index))",
+        )
         .eq("user_id", userId!)
         .order("date", { ascending: false });
 
       if (error) throw error;
 
-      // JAVASCRIPT İLE FİLTRELE: 
+      // JAVASCRIPT İLE FİLTRELE:
       // Sadece "gerçekten bir program/not girilmiş" olan günleri göster.
       // 1. Ya içinde özel hareket (workout_items) tablosu dolu olacak
       // 2. Ya da tipi 'workout' (fotoğrafsız) olup içine en azından bir NOT yazılmış olacak.
       // Tamamen boş (ne hareket ne not) olan günleri göstermez.
-      const filteredData = (data || []).filter(entry => {
+      const filteredData = (data || []).filter((entry) => {
         const hasExercises = entry.workout_items && entry.workout_items.length > 0;
         const hasNote = entry.note && entry.note.trim().length > 0;
-        
-        return hasExercises || (entry.type === 'workout' && hasNote);
+
+        return hasExercises || (entry.type === "workout" && hasNote);
       });
 
-      console.log("FETCHED WORKOUTS:", JSON.stringify(filteredData.map(d => ({
-        date: d.date,
-        type: d.type,
-        itemsCount: d.workout_items ? d.workout_items.length : 0
-      })), null, 2));
+      console.log(
+        "FETCHED WORKOUTS:",
+        JSON.stringify(
+          filteredData.map((d) => ({
+            date: d.date,
+            type: d.type,
+            itemsCount: d.workout_items ? d.workout_items.length : 0,
+          })),
+          null,
+          2,
+        ),
+      );
 
       return filteredData.map((entry) => ({
         id: entry.id,

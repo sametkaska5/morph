@@ -30,7 +30,7 @@ export function parseMeasurementInput(raw: string): number | null {
  * seçilir — kilo 1000, boy 400 gibi. Bilinmeyen/özel birimlerde yalnızca bariz
  * çöpü (yazım hatası) eleyen çok yüksek bir genel sınır uygulanır.
  */
-export const MEASUREMENT_MAX_BY_UNIT: Record<string, number> = {
+const MEASUREMENT_MAX_BY_UNIT: Record<string, number> = {
   kg: 1000,
   lb: 2200,
   cm: 400,

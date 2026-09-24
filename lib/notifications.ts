@@ -48,7 +48,7 @@ export async function requestNotificationPermission() {
  * tetikliyordu. İzin isteme yalnızca kullanıcının bir anahtarı açtığı yerde
  * (Bildirimler ayarları) olmalı; zamanlama tarafı sadece mevcut durumu okur.
  */
-export async function hasNotificationPermission() {
+async function hasNotificationPermission() {
   if (!Notifications) return false;
   const { status } = await Notifications.getPermissionsAsync();
   return status === "granted";

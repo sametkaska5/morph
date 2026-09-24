@@ -14,7 +14,7 @@ const COLUMN_WIDTH = (width - 48) / 2; // 16px padding on sides + 16px gap = 48
 function WorkoutCard({ workout }: { workout: AllWorkoutsRow }) {
   // Notu veya hareketleri düz metin formunda (not defteri gibi) gösterelim.
   // Kullanıcının attığı SS'te "Smith machine incline press \n 1. 50 kilo 8 tekrar..." şeklinde görünüyor.
-  
+
   return (
     <View style={{ width: COLUMN_WIDTH, marginBottom: 24 }}>
       <Pressable
@@ -22,7 +22,7 @@ function WorkoutCard({ workout }: { workout: AllWorkoutsRow }) {
         className="bg-surface border border-border rounded-xl p-3 mb-2 h-[160px] overflow-hidden"
       >
         {workout.note ? (
-          <Text 
+          <Text
             className="text-text text-sm mb-3 leading-relaxed"
             numberOfLines={workout.items && workout.items.length > 0 ? 2 : 6}
           >
@@ -41,7 +41,7 @@ function WorkoutCard({ workout }: { workout: AllWorkoutsRow }) {
                   if (set.weight) setStr += `${set.weight} kilo `;
                   if (set.reps) setStr += `${set.reps} tekrar`;
                   if (!set.weight && !set.reps) setStr += "-";
-                  
+
                   return (
                     <Text key={sIdx} className="text-textMuted text-xs ml-1 mb-0.5">
                       {setStr.trim()}
@@ -53,7 +53,7 @@ function WorkoutCard({ workout }: { workout: AllWorkoutsRow }) {
           </View>
         ) : null}
       </Pressable>
-      
+
       {/* Kartın altında dosya adı gibi görünen tarih (SS'teki "Metin notu 15/08" gibi) */}
       <View className="items-center">
         <Text className="text-text font-medium text-sm">
@@ -68,35 +68,35 @@ function WorkoutCard({ workout }: { workout: AllWorkoutsRow }) {
 }
 
 // Ay bazlı gruplama ve 2 kolonlu yapı için FlatList verisini hazırlıyoruz.
-type ListItem = 
-  | { type: 'header'; id: string; title: string }
-  | { type: 'row'; id: string; workouts: AllWorkoutsRow[] };
+type ListItem =
+  | { type: "header"; id: string; title: string }
+  | { type: "row"; id: string; workouts: AllWorkoutsRow[] };
 
 function prepareData(workouts: AllWorkoutsRow[]): ListItem[] {
   const groups: Record<string, AllWorkoutsRow[]> = {};
-  
+
   // Önce aylara göre grupla
-  workouts.forEach(w => {
+  workouts.forEach((w) => {
     const month = formatDateKey(w.date, { month: "long", year: "numeric" });
     if (!groups[month]) groups[month] = [];
     groups[month].push(w);
   });
 
   const result: ListItem[] = [];
-  
+
   // Grupları dolaş ve 2'li satırlara böl
   Object.entries(groups).forEach(([month, items]) => {
-    result.push({ type: 'header', id: `header-${month}`, title: month });
-    
+    result.push({ type: "header", id: `header-${month}`, title: month });
+
     for (let i = 0; i < items.length; i += 2) {
       result.push({
-        type: 'row',
+        type: "row",
         id: `row-${month}-${i}`,
-        workouts: items.slice(i, i + 2)
+        workouts: items.slice(i, i + 2),
       });
     }
   });
-  
+
   return result;
 }
 
@@ -108,15 +108,15 @@ export default function WorkoutsScreen() {
 
   return (
     <View className="flex-1 bg-bg">
-      <Stack.Screen 
-        options={{ 
-          title: "Notlar", 
+      <Stack.Screen
+        options={{
+          title: "Notlar",
           headerShown: true,
           headerStyle: { backgroundColor: theme.colors.bg },
           headerTintColor: theme.colors.text,
           headerShadowVisible: false,
-          headerBackTitle: "Geri"
-        }} 
+          headerBackTitle: "Geri",
+        }}
       />
 
       {isLoading ? (
@@ -131,23 +131,21 @@ export default function WorkoutsScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
           renderItem={({ item }) => {
-            if (item.type === 'header') {
+            if (item.type === "header") {
               return (
                 <Text className="text-text font-bold text-lg mt-4 mb-4 capitalize">
                   {item.title}
                 </Text>
               );
             }
-            
+
             return (
               <View className="flex-row justify-between w-full">
-                {item.workouts.map(w => (
+                {item.workouts.map((w) => (
                   <WorkoutCard key={w.id} workout={w} />
                 ))}
                 {/* Eğer tek bir kart kaldıysa, 2. kolon boş kalıp yerleşimi bozmasın diye görünmez bir view ekliyoruz */}
-                {item.workouts.length === 1 && (
-                  <View style={{ width: COLUMN_WIDTH }} />
-                )}
+                {item.workouts.length === 1 && <View style={{ width: COLUMN_WIDTH }} />}
               </View>
             );
           }}

@@ -57,13 +57,13 @@ export function captureError(error: unknown, context?: Record<string, unknown>) 
     try {
       Sentry.captureException(toError(error), {
         extra: context,
-        tags: { refCode }
+        tags: { refCode },
       });
     } catch {
       // Bildirim başarısız olursa yut — bir hatayı raporlarken yeni hata üretmeyelim.
     }
   }
-  
+
   if (context) console.error(`[monitoring] [Ref: ${refCode}]`, error, context);
   else console.error(`[monitoring] [Ref: ${refCode}]`, error);
 }

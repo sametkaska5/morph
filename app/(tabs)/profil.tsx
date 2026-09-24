@@ -120,6 +120,7 @@ export default function Profil() {
   const [showUnitSheet, setShowUnitSheet] = useState(false);
   const [showPhotoPreview, setShowPhotoPreview] = useState(false);
   const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false);
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const skipNextPress = useRef(false);
 
@@ -139,6 +140,7 @@ export default function Profil() {
   });
 
   async function handleSignOut() {
+    console.log("LOGOUT AKISI: handleSignOut cagirildi!");
     // signOut, AĞ hatasında oturumu YERELDE de temizlemiyor: supabase-js yalnızca
     // 401/403/404'ü yutup devam ediyor, diğer hatalarda `_removeSession()`a hiç
     // gelmeden erken dönüyor. Yani kullanıcı "Çıkış yap"a basıyor, oturum yerinde
@@ -295,7 +297,15 @@ export default function Profil() {
               label={isExporting ? "Dışa aktarılıyor..." : "Verileri dışa aktar"}
               onPress={handleExport}
             />
-            <SettingsRow icon="log-out" label="Çıkış yap" danger onPress={handleSignOut} />
+            <SettingsRow
+              icon="log-out"
+              label="Çıkış yap"
+              danger
+              onPress={() => {
+                console.log("LOGOUT AKISI: Butona basildi, onay penceresi acilmali");
+                setShowSignOutConfirm(true);
+              }}
+            />
           </View>
         </View>
 
@@ -309,8 +319,7 @@ export default function Profil() {
             />
           </View>
         </View>
-
-        </ScrollView>
+      </ScrollView>
 
       <DraggableSheet visible={showUnitSheet} onClose={() => setShowUnitSheet(false)}>
         <Text className="text-text text-xl font-bold mb-1">Birimler</Text>
@@ -367,6 +376,20 @@ export default function Profil() {
         pending={deleteAccountMutation.isPending}
         onConfirm={() => deleteAccountMutation.mutate()}
         onClose={() => setShowDeleteAccountConfirm(false)}
+      />
+
+      <ConfirmDialog
+        visible={showSignOutConfirm}
+        icon="log-out"
+        danger
+        title="Çıkış yap?"
+        message="Uygulamadan çıkış yapmak istediğinize emin misiniz?"
+        confirmLabel="Çıkış yap"
+        onConfirm={() => {
+          setShowSignOutConfirm(false);
+          handleSignOut();
+        }}
+        onClose={() => setShowSignOutConfirm(false)}
       />
     </>
   );

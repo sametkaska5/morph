@@ -81,8 +81,6 @@ export default function Istatistikler() {
     }
   }, [queryClient]);
 
-
-
   const currentTypeId = activeTypeId ?? types?.[0]?.id;
   const activeType = types?.find((t) => t.id === currentTypeId);
 

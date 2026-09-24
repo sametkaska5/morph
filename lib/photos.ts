@@ -68,7 +68,7 @@ async function invalidateEntryViews(
 
 export type AddPhotosPayload = { userId: string; entryId: string; uris: string[] };
 
-export async function addPhotosToEntry({ userId, entryId, uris }: AddPhotosPayload) {
+async function addPhotosToEntry({ userId, entryId, uris }: AddPhotosPayload) {
   const { data: existing, error: readError } = await supabase
     .from("photos")
     .select("id, storage_path, order_index")
@@ -132,7 +132,7 @@ export function useAddEntryPhotos(entryId: string) {
 
 /* ─────────────────────────── Silme ─────────────────────────── */
 
-export async function deleteEntryPhoto(photoId: string, nextCoverId: string | null) {
+async function deleteEntryPhoto(photoId: string, nextCoverId: string | null) {
   const { data: photo, error: readError } = await supabase
     .from("photos")
     .select("id, entry_id, storage_path, thumb_path")

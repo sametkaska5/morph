@@ -28,7 +28,7 @@ export type CapsuleEntry = {
   program: ProgramItem[];
 };
 
-export const CAPSULE_PAGE_SIZE = 20;
+const CAPSULE_PAGE_SIZE = 20;
 
 export function useCapsuleEntries() {
   return useInfiniteQuery({

@@ -4,19 +4,19 @@ import { useAuth } from "@/lib/useAuth";
 import { hasSeenOnboarding } from "@/lib/onboarding";
 
 /**
- * Açılış yönlendirmesi.
+ * Acilis yonlendirmesi.
  *
- * Üç yol var ve sırası önemli:
- *  1. Oturum varsa → karşılama HİÇ gösterilmez. Uygulamayı daha önce kullanmış
- *     birine "hoş geldin, işte Remory" demek anlamsız; üstelik uygulamayı
- *     silip yeniden kuran kullanıcıda cihazdaki bayrak sıfırlanmış olsa bile
- *     oturum geri geldiği için doğru davranış korunuyor.
- *  2. Karşılama görülmemişse → karşılama ekranı.
- *  3. Diğer her durumda → giriş ekranı.
+ * Uc yol var ve sirasi onemli:
+ *  1. Oturum varsa -> karsilama HIC gosterilmez. Uygulamayi daha once kullanmis
+ *     birine "hos geldin, iste Remory" demek anlamsiz; ustelik uygulamayi
+ *     silip yeniden kuran kullanicida cihazdaki bayrak sifirlanmis olsa bile
+ *     oturum geri geldigi icin dogru davranis korunuyor.
+ *  2. Karsilama gorulmemisse -> karsilama ekrani.
+ *  3. Diger her durumda -> giris ekrani.
  *
- * Karar verilene kadar `null` render ediliyor: AsyncStorage okuması birkaç
- * milisaniye sürüyor ve bu sürede bir ekran gösterip sonra başkasına atlamak
- * göz kırpması yaratırdı.
+ * Karar verilene kadar null render ediliyor: AsyncStorage okumasi birkac
+ * milisaniye suruyor ve bu surede bir ekran gosterip sonra baskasina atlamak
+ * goz kirpmasi yaratirdi.
  */
 export default function Index() {
   const { session, loading } = useAuth();
@@ -28,9 +28,13 @@ export default function Index() {
 
   if (loading || seenOnboarding === null) return null;
 
-  if (!session && !seenOnboarding) {
-    return <Redirect href="/(onboarding)/welcome" />;
-  }
-
-  return <Redirect href="/(auth)" />;
+  // TEST ICIN: Her zaman onboarding ekranini goster.
+  // Gosterimi gercek haline dondurmek icin asagidaki satirlari aktif et.
+  
+  // if (!session && !seenOnboarding) {
+  //   return <Redirect href="/(onboarding)/welcome" />;
+  // }
+  // return <Redirect href="/(auth)" />;
+  
+  return <Redirect href="/(onboarding)/welcome" />;
 }

@@ -88,9 +88,10 @@ function isNotFoundError(error: unknown): boolean {
  * getirir. Her sınıf, kullanıcının NE YAPABİLECEĞİNİ söyleyen bir mesaj alır.
  */
 export function describeError(error: unknown): FriendlyError {
-  const refCode = (error && typeof error === "object" && "_refCode" in error)
-    ? String((error as Record<string, unknown>)._refCode)
-    : undefined;
+  const refCode =
+    error && typeof error === "object" && "_refCode" in error
+      ? String((error as Record<string, unknown>)._refCode)
+      : undefined;
 
   if (isNetworkError(error)) {
     return {
@@ -98,7 +99,7 @@ export function describeError(error: unknown): FriendlyError {
       title: "Bağlantı kurulamadı",
       message:
         "İnternet bağlantını kontrol edip tekrar dene. Kayıtların cihazında güvende — bağlantı gelince kaldığın yerden devam edersin.",
-      refCode
+      refCode,
     };
   }
 
@@ -107,7 +108,7 @@ export function describeError(error: unknown): FriendlyError {
       kind: "auth",
       title: "Oturumun sona ermiş",
       message: "Güvenlik için oturumun kapandı. Tekrar giriş yaptığında her şey yerinde olacak.",
-      refCode
+      refCode,
     };
   }
 
@@ -116,7 +117,7 @@ export function describeError(error: unknown): FriendlyError {
       kind: "permission",
       title: "Bu içeriğe erişemedik",
       message: "Bu kayda erişim iznin yok gibi görünüyor. Doğru hesapla giriş yaptığından emin ol.",
-      refCode
+      refCode,
     };
   }
 
@@ -125,7 +126,7 @@ export function describeError(error: unknown): FriendlyError {
       kind: "notFound",
       title: "Kayıt bulunamadı",
       message: "Bu kayıt silinmiş ya da taşınmış olabilir.",
-      refCode
+      refCode,
     };
   }
 
@@ -133,7 +134,7 @@ export function describeError(error: unknown): FriendlyError {
     kind: "unknown",
     title: "Bir şeyler ters gitti",
     message: "Beklenmedik bir hata oluştu. Tekrar denemek genellikle sorunu çözer.",
-    refCode
+    refCode,
   };
 }
 
@@ -211,4 +212,3 @@ export function authErrorMessage(error: unknown): string {
 
   return "İşlem tamamlanamadı. Lütfen tekrar dene.";
 }
-

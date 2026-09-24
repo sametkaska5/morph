@@ -4,7 +4,9 @@ import * as Sharing from "expo-sharing";
 
 export async function exportUserData() {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) throw new Error("Oturum açık değil.");
 
     // Tüm verileri aynı anda çekiyoruz
@@ -16,7 +18,7 @@ export async function exportUserData() {
       { data: photos },
       { data: measurement_values },
       { data: workout_items },
-      { data: workout_sets }
+      { data: workout_sets },
     ] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", user.id).single(),
       supabase.from("notification_settings").select("*").eq("user_id", user.id).maybeSingle(),
@@ -27,7 +29,7 @@ export async function exportUserData() {
       supabase.from("photos").select("*"),
       supabase.from("measurement_values").select("*"),
       supabase.from("workout_items").select("*"),
-      supabase.from("workout_sets").select("*")
+      supabase.from("workout_sets").select("*"),
     ]);
 
     // İnsanların okuyabileceği ve renkli, sayfa yapısına sahip bir HTML dosyası oluşturuyoruz
@@ -63,26 +65,31 @@ export async function exportUserData() {
 <div class="header">
   <h1>Remory Yedeği</h1>
   <p>Dışa Aktarılma Tarihi: ${new Date().toLocaleDateString("tr-TR")} ${new Date().toLocaleTimeString("tr-TR")}</p>
-  ${profile?.name ? `<p style="margin-top: 5px; font-weight: 600; color: #4A5568;">Kullanıcı: ${profile.name}</p>` : ''}
+  ${profile?.name ? `<p style="margin-top: 5px; font-weight: 600; color: #4A5568;">Kullanıcı: ${profile.name}</p>` : ""}
 </div>
 `;
 
     // Anıları tarihe göre sırala (en yeniden en eskiye)
-    const sortedEntries = (entries || []).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const sortedEntries = (entries || []).sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    );
 
     // Measurement tiplerini id'ye göre mapleyelim
-    const measurementTypesMap = (measurement_types || []).reduce((acc, curr) => {
-      acc[curr.id] = curr;
-      return acc;
-    }, {} as Record<string, any>);
+    const measurementTypesMap = (measurement_types || []).reduce(
+      (acc, curr) => {
+        acc[curr.id] = curr;
+        return acc;
+      },
+      {} as Record<string, any>,
+    );
 
     if (sortedEntries.length === 0) {
       htmlContent += `<div class="entry-page"><p style="text-align: center; color: #A0AEC0;">Henüz kaydedilmiş bir anı bulunmuyor.</p></div>\n`;
     } else {
       for (const entry of sortedEntries) {
         htmlContent += `<div class="entry-page">\n`;
-        htmlContent += `  <h2 class="entry-date">${new Date(entry.date).toLocaleDateString("tr-TR", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h2>\n`;
-        
+        htmlContent += `  <h2 class="entry-date">${new Date(entry.date).toLocaleDateString("tr-TR", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</h2>\n`;
+
         const typeLabel = entry.type === "workout" ? "Antrenman" : "Anı";
         htmlContent += `  <div class="entry-type">${typeLabel}</div>\n`;
 
@@ -91,7 +98,9 @@ export async function exportUserData() {
         }
 
         // Bu anıya ait ölçümler
-        const entryMeasurements = (measurement_values || []).filter((m: any) => m.entry_id === entry.id);
+        const entryMeasurements = (measurement_values || []).filter(
+          (m: any) => m.entry_id === entry.id,
+        );
         if (entryMeasurements.length > 0) {
           htmlContent += `  <div class="section-title">Ölçümler</div>\n`;
           htmlContent += `  <ul class="measurements">\n`;
@@ -119,7 +128,7 @@ export async function exportUserData() {
     const dateStr = new Date().toISOString().split("T")[0];
     const fileName = `remory-yedek-${dateStr}.html`;
     const fileUri = `${FileSystem.documentDirectory}${fileName}`;
-    
+
     await FileSystem.writeAsStringAsync(fileUri, htmlContent, {
       encoding: FileSystem.EncodingType.UTF8,
     });
@@ -129,7 +138,7 @@ export async function exportUserData() {
       await Sharing.shareAsync(fileUri, {
         mimeType: "text/html",
         dialogTitle: "Remory Verilerini Dışa Aktar",
-        UTI: "public.html"
+        UTI: "public.html",
       });
     } else {
       throw new Error("Cihazınızda dosya paylaşımı desteklenmiyor.");

@@ -3,7 +3,6 @@
     "name": "Morph",
     "slug": "remory",
     "scheme": "remory",
-    "//version": "runtimeVersion politikası appVersion — bu alan aynı zamanda GÜNCELLEME UYUMLULUĞUNU belirliyor. Native tarafı değiştiren her değişiklikte ELLE artırılmalı (bkz. README). 0.2.0: Android izin listesi daraltıldı; READ_MEDIA_VIDEO/AUDIO ve SYSTEM_ALERT_WINDOW blockedPermissions ile manifest'ten söküldü. 0.3.0: adaptive-icon.png güvenli alana çekildi — ikon mipmap kaynağı olarak derleniyor, kablosuz güncellemeyle gidemez. 0.4.0: Uygulama logosu yeşil temalı soyut kum saati ile değiştirildi. 0.5.0: Uygulama adı Morph olarak değiştirildi.",
     "version": "0.5.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
@@ -12,9 +11,7 @@
     "updates": {
       "url": "https://u.expo.dev/2131b708-cd8d-4e16-bce0-febe12619e10"
     },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+
     "plugins": [
       "expo-router",
       "expo-status-bar",
@@ -23,15 +20,15 @@
       [
         "expo-media-library",
         {
-          "photosPermission": "Karşılaştırma görsellerini galerine kaydedebilmek için fotoğraflarına erişim gerekiyor.",
-          "savePhotosPermission": "Karşılaştırma görsellerini galerine kaydedebilmek için fotoğraflarına erişim gerekiyor."
+          "photosPermission": "Karsilastirma gorsellerini galerine kaydedebilmek icin fotograflarina erisim gerekiyor.",
+          "savePhotosPermission": "Karsilastirma gorsellerini galerine kaydedebilmek icin fotograflarina erisim gerekiyor."
         }
       ],
       [
         "expo-image-picker",
         {
-          "cameraPermission": "Anılarını fotoğraflayabilmek için kameraya erişim gerekiyor.",
-          "photosPermission": "Galerinden fotoğraf seçebilmek için galeriye erişim gerekiyor.",
+          "cameraPermission": "Anilarini fotograflayabilmek icin kameraya erisim gerekiyor.",
+          "photosPermission": "Galerinden fotograf secebilmek icin galeriye erisim gerekiyor.",
           "microphonePermission": false
         }
       ],
@@ -54,13 +51,20 @@
         }
       ],
       [
-        "@sentry/react-native/expo",
+        "expo-build-properties",
         {
-          "//eklenti-adi": "'@sentry/react-native' ile BİREBİR aynı eklenti (app.plugin.js doğrudan ./expo'yu döndürüyor), ama adı bu biçimde yazılmak ZORUNDA: kablosuz güncellemelerin kaynak haritalarını yükleyen sentry-expo-upload-sourcemaps betiği eklentiyi ADINA göre arıyor ve '@sentry/react-native/expo' dışındaki bir adla org/proje ayarlarını bulamayıp ortam değişkenlerine düşüyor.",
-          "//": "org/proje slug'ları gizli değil — sentry.properties'e yazılıp kaynak haritalarının hangi projeye yükleneceğini belirliyorlar. authToken BİLEREK yok: kütüphanenin kendisi app.json'a yazılmasına karşı uyarıyor, token yerine EAS gizli değişkeni SENTRY_AUTH_TOKEN kullanılıyor (npx eas-cli env:set ... --visibility secret ile preview ve production ortamlarına eklendi).",
-          "//url": "BİLEREK YOK — bir kez eklenip build'i düşürdüğü için geri alındı. Org EU (Frankfurt) bölgesinde (DSN'deki 'ingest.de.sentry.io') ama API giriş adresi yine de https://sentry.io: Sentry kimlik/organizasyon katmanını orada, olay verisini de.sentry.io'da tutuyor ve sentry-cli bölgeye kendisi yönleniyor. url'i de.sentry.io'ya sabitlemek bu yönlendirmeyi kırıyor. Organizasyon token'ı (sntrys_) zaten içinde hem url hem region_url taşıyor ve buradaki ayarı eziyor — yani doğru token türüyle bu satırın tek etkisi uyarı üretmek.",
-          "organization": "samet-kaska",
-          "project": "remory"
+          "android": {
+            "newArchEnabled": false,
+            "extraParams": [
+              {
+                "key": "org.gradle.jvmargs",
+                "value": "-Xmx4096m -XX:MaxMetaspaceSize=1024m"
+              }
+            ]
+          },
+          "ios": {
+            "newArchEnabled": false
+          }
         }
       ]
     ],
@@ -82,7 +86,6 @@
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.VIBRATE"
       ],
-      "//blockedPermissions": "Hiçbiri uygulamanın kullandığı bir yeteneğe karşılık gelmiyor; üçü de bağımlılıkların manifest'lerinden geliyor, o yüzden `permissions` listesinden çıkarmak YETMEZ — blockedPermissions manifest merge sırasında tools:node=\"remove\" işaretliyor. READ_MEDIA_VIDEO/AUDIO: seçici mediaTypes vermeden çağrılıyor (varsayılan 'images') ve galeriye yazılan tek şey karşılaştırma kartı — ses/videoya hiç dokunmuyoruz, ama expo-image-picker ile expo-media-library ikisini de ekliyor. Play Console geniş medya erişimi için ayrı gerekçe formu istiyor, kullanılmayan izinler için o riski almanın anlamı yok. SYSTEM_ALERT_WINDOW: Expo prebuild şablonu bunu hem src/debug hem src/main manifest'ine yazıyor; main'dekiler release AAB'ye de giriyor. Kullananlar yalnızca debug'a özel (expo-dev-menu/android/src/debug/.../DevMenuDevToolsDelegate.kt ve RN devsupport/DebugOverlayController.kt), release'de o kodlar hiç çalışmıyor. src/debug manifest'i izni AYRICA tanımladığı ve build tipi manifest'i main'den yüksek öncelikli olduğu için development build etkilenmiyor — sökülen yalnızca release.",
       "blockedPermissions": [
         "android.permission.READ_MEDIA_VIDEO",
         "android.permission.READ_MEDIA_AUDIO",

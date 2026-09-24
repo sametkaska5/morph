@@ -67,8 +67,6 @@ describe("describeError", () => {
   });
 });
 
-
-
 describe("authErrorMessage", () => {
   it("hatalı giriş bilgisini Türkçeleştirir", () => {
     expect(authErrorMessage({ message: "Invalid login credentials" })).toBe(

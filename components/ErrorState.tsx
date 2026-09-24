@@ -31,7 +31,7 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
   // özelliklerinin sessizce uygulanmadığı defalarca doğrulandı) — basılma
   // geri bildirimi manuel onPressIn/onPressOut state'iyle.
   const [pressed, setPressed] = useState(false);
-  const { kind, title, message, refCode } = describeError(error);
+  const { kind, title, message } = describeError(error);
 
   return (
     <View className="items-center px-8 py-6">

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { View, Pressable, Animated, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import { theme } from "@/lib/theme";
@@ -13,7 +13,7 @@ import Svg, { Path, Defs, LinearGradient, Stop, Circle } from "react-native-svg"
 export default function Welcome() {
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState(0);
-  const progressAnim = useRef(new Animated.Value(0)).current;
+  const [progressAnim] = useState(() => new Animated.Value(0));
   const progressValue = useRef(0);
   const [isPaused, setIsPaused] = useState(false);
   const pressInTime = useRef(0);
@@ -30,24 +30,24 @@ export default function Welcome() {
     progressAnim.setValue(0);
   }, [step, progressAnim]);
 
-  async function handleSkipOrFinish() {
+  const handleSkipOrFinish = useCallback(async () => {
     await markOnboardingSeen();
     router.replace("/(auth)");
-  }
+  }, []);
 
-  function handleNext() {
+  const handleNext = useCallback(() => {
     if (step < 3) {
       setStep(step + 1);
     } else {
       handleSkipOrFinish();
     }
-  }
+  }, [step, handleSkipOrFinish]);
 
-  function handlePrev() {
+  const handlePrev = useCallback(() => {
     if (step > 1) {
       setStep(step - 1);
     }
-  }
+  }, [step]);
 
   useEffect(() => {
     if (step === 0) {
@@ -75,7 +75,7 @@ export default function Welcome() {
         progressAnim.stopAnimation();
       }
     }
-  }, [step, isPaused, progressAnim]); // dependencies eklendi
+  }, [step, isPaused, progressAnim, handleNext]); // dependencies eklendi
 
   if (step === 0) {
     return (
@@ -161,6 +161,7 @@ export default function Welcome() {
                 className="flex-1 h-1.5 bg-surface rounded-full overflow-hidden relative"
                 hitSlop={{ top: 15, bottom: 15 }}
               >
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 <Animated.View style={{ width: widthVal as any, height: '100%', backgroundColor: theme.colors.accent, position: 'absolute', left: 0 }} />
               </Pressable>
             );

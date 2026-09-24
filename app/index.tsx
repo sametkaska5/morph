@@ -19,7 +19,7 @@ import { hasSeenOnboarding } from "@/lib/onboarding";
  * goz kirpmasi yaratirdi.
  */
 export default function Index() {
-  const { session, loading } = useAuth();
+  const { loading } = useAuth();
   const [seenOnboarding, setSeenOnboarding] = useState<boolean | null>(null);
 
   useEffect(() => {

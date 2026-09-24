@@ -96,7 +96,7 @@ describe("alertError → temalı kutu", () => {
     await render(<AppAlert />);
 
     await fire(() =>
-      alertError("Kayıt başarısız", new TypeError("Network request failed"), "test.flow")
+      alertError("Kayıt başarısız", new TypeError("Network request failed"), "test.flow"),
     );
 
     expect(screen.getByText("Kayıt başarısız")).toBeTruthy();

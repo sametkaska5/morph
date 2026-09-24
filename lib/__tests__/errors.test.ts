@@ -1,4 +1,4 @@
-import { describeError, authErrorMessage, isNetworkError, isInvalidCredentials } from "../errors";
+import { describeError, authErrorMessage, isNetworkError } from "../errors";
 
 describe("isNetworkError", () => {
   it("React Native'in fetch hatasını tanır", () => {
@@ -37,9 +37,9 @@ describe("describeError", () => {
 
   it("RLS/izin hatasını tanır", () => {
     expect(describeError({ code: "42501", message: "..." }).kind).toBe("permission");
-    expect(
-      describeError({ message: 'new row violates row-level security policy' }).kind
-    ).toBe("permission");
+    expect(describeError({ message: "new row violates row-level security policy" }).kind).toBe(
+      "permission",
+    );
   });
 
   it("silinmiş kaydı (PGRST116) tanır", () => {
@@ -67,37 +67,10 @@ describe("describeError", () => {
   });
 });
 
-/**
- * Bu hata İKİ durumu birden kapsıyor: hesap yok, ya da şifre yanlış. Supabase
- * hangisi olduğunu bilerek söylemiyor (kullanıcı sayımını engellemek için).
- * Giriş ekranı bunu "hesabın yoksa oluştur" kısayolunu göstermek için
- * kullanıyor — "böyle bir hesap yok" DEMEK için değil, çünkü bilmiyoruz.
- */
-describe("isInvalidCredentials", () => {
-  it("geçersiz kimlik hatasını tanır", () => {
-    expect(isInvalidCredentials({ message: "Invalid login credentials" })).toBe(true);
-  });
-
-  it("büyük/küçük harften etkilenmez", () => {
-    expect(isInvalidCredentials({ message: "INVALID LOGIN CREDENTIALS" })).toBe(true);
-  });
-
-  it("başka auth hatalarını bununla karıştırmaz", () => {
-    // Karıştırsaydı "hesap oluştur" kısayolu, hesabı ZATEN olan kullanıcıya
-    // (örn. e-postası doğrulanmamış) gösterilirdi.
-    expect(isInvalidCredentials({ message: "Email not confirmed" })).toBe(false);
-    expect(isInvalidCredentials({ message: "User already registered" })).toBe(false);
-  });
-
-  it("ağ hatasını geçersiz kimlik sanmaz", () => {
-    expect(isInvalidCredentials(new TypeError("Network request failed"))).toBe(false);
-  });
-});
-
 describe("authErrorMessage", () => {
   it("hatalı giriş bilgisini Türkçeleştirir", () => {
     expect(authErrorMessage({ message: "Invalid login credentials" })).toBe(
-      "E-posta veya şifre hatalı."
+      "E-posta veya şifre hatalı.",
     );
   });
 
@@ -110,9 +83,9 @@ describe("authErrorMessage", () => {
   });
 
   it("kısa şifre uyarısını çevirir", () => {
-    expect(
-      authErrorMessage({ message: "Password should be at least 6 characters" })
-    ).toBe("Şifre en az 6 karakter olmalı.");
+    expect(authErrorMessage({ message: "Password should be at least 6 characters" })).toBe(
+      "Şifre en az 6 karakter olmalı.",
+    );
   });
 
   it("süresi dolmuş / hatalı OTP kodunu ayırt eder", () => {
@@ -122,13 +95,15 @@ describe("authErrorMessage", () => {
 
   it("hız sınırında beklemeyi söyler", () => {
     expect(
-      authErrorMessage({ message: "For security purposes, you can only request this after 51 seconds" })
+      authErrorMessage({
+        message: "For security purposes, you can only request this after 51 seconds",
+      }),
     ).toContain("bekleyip");
   });
 
   it("ağ hatasını auth hatası sanmaz", () => {
     expect(authErrorMessage(new TypeError("Network request failed"))).toContain(
-      "İnternet bağlantısı"
+      "İnternet bağlantısı",
     );
   });
 

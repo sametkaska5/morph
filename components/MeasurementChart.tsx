@@ -55,7 +55,7 @@ export function MeasurementChart({
   // values'un kimliği ekran tarafında useMemo ile sabitleniyor.
   const { line, area, points } = useMemo(
     () => buildChartPath(values, contentW, height),
-    [values, contentW, height]
+    [values, contentW, height],
   );
 
   const activeIndex = selectedIndex != null && selectedIndex < values.length ? selectedIndex : null;
@@ -77,7 +77,14 @@ export function MeasurementChart({
           </LinearGradient>
         </Defs>
         <Path d={area} fill="url(#areaGrad)" />
-        <Path d={line} fill="none" stroke="#8CE05A" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+        <Path
+          d={line}
+          fill="none"
+          stroke="#8CE05A"
+          strokeWidth={2.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
 
         {selectedPoint ? (
           <Line
@@ -108,18 +115,32 @@ export function MeasurementChart({
                   stroke="#0B0D0A"
                   strokeWidth={1.5}
                 />
-              )
+              ),
             )
           : null}
 
         {/* Son ve seçili nokta içi boş halka — dolu noktalardan ayrışıp
             hiyerarşiyi koruyor. */}
         {activeIndex == null && lastPoint ? (
-          <Circle cx={lastPoint.x} cy={lastPoint.y} r={5} fill="#0B0D0A" stroke="#8CE05A" strokeWidth={2.5} />
+          <Circle
+            cx={lastPoint.x}
+            cy={lastPoint.y}
+            r={5}
+            fill="#0B0D0A"
+            stroke="#8CE05A"
+            strokeWidth={2.5}
+          />
         ) : null}
 
         {selectedPoint ? (
-          <Circle cx={selectedPoint.x} cy={selectedPoint.y} r={6} fill="#0B0D0A" stroke="#8CE05A" strokeWidth={3} />
+          <Circle
+            cx={selectedPoint.x}
+            cy={selectedPoint.y}
+            r={6}
+            fill="#0B0D0A"
+            stroke="#8CE05A"
+            strokeWidth={3}
+          />
         ) : null}
       </Svg>
 
@@ -153,7 +174,10 @@ export function MeasurementChart({
             position: "absolute",
             width: TOOLTIP_W,
             // Baloncuk grafiğin dışına taşmasın diye yatayda sınırlanıyor.
-            left: Math.min(Math.max(selectedPoint.x - TOOLTIP_W / 2, 0), Math.max(contentW - TOOLTIP_W, 0)),
+            left: Math.min(
+              Math.max(selectedPoint.x - TOOLTIP_W / 2, 0),
+              Math.max(contentW - TOOLTIP_W, 0),
+            ),
             // Nokta tepedeyse baloncuk yukarı sığmıyor, altına alıyoruz.
             top: selectedPoint.y > 48 ? selectedPoint.y - 48 : selectedPoint.y + 14,
           }}

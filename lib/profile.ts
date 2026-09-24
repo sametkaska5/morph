@@ -23,7 +23,12 @@ export function useProfile(userId: string | undefined) {
       if (error) throw error;
 
       const avatarUrl = data.avatar_path ? await getPhotoUrl(data.avatar_path) : null;
-      return { name: data.name, avatarPath: data.avatar_path, avatarUrl, createdAt: data.created_at };
+      return {
+        name: data.name,
+        avatarPath: data.avatar_path,
+        avatarUrl,
+        createdAt: data.created_at,
+      };
     },
   });
 }

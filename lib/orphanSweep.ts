@@ -38,14 +38,16 @@ export function pickOrphans(
   candidates: CandidateFile[],
   referenced: Set<string>,
   now: number,
-  safetyWindowMs: number = SAFETY_WINDOW_MS
+  safetyWindowMs: number = SAFETY_WINDOW_MS,
 ): string[] {
   const cutoff = now - safetyWindowMs;
-  return candidates
-    .filter((c) => !referenced.has(c.path))
-    // createdAt null ise `now` varsayıyoruz -> now > cutoff -> korunur (silinmez).
-    .filter((c) => (c.createdAt ?? now) <= cutoff)
-    .map((c) => c.path);
+  return (
+    candidates
+      .filter((c) => !referenced.has(c.path))
+      // createdAt null ise `now` varsayıyoruz -> now > cutoff -> korunur (silinmez).
+      .filter((c) => (c.createdAt ?? now) <= cutoff)
+      .map((c) => c.path)
+  );
 }
 
 /**
@@ -136,7 +138,9 @@ async function collectCandidateFiles(userId: string): Promise<CandidateFile[]> {
  * eder (çağıran yutar). Referans kümesi güvenle çekilemezse (throw) hiçbir dosya
  * silinmez — false-delete'e karşı en önemli güvence budur.
  */
-export async function sweepOrphanPhotos(userId: string): Promise<{ scanned: number; deleted: number }> {
+export async function sweepOrphanPhotos(
+  userId: string,
+): Promise<{ scanned: number; deleted: number }> {
   const referenced = await collectReferencedPaths(userId);
   const candidates = await collectCandidateFiles(userId);
   const orphans = pickOrphans(candidates, referenced, Date.now());
@@ -167,9 +171,24 @@ export async function maybeSweepOrphans(userId: string): Promise<void> {
     await AsyncStorage.setItem(LAST_SWEEP_KEY, String(Date.now()));
 
     if (deleted > 0) {
-      console.log(`[orphanSweep] ${deleted}/${scanned} yetim dosya temizlendi`);
+      captureError(new Error(`[orphanSweep] ${deleted}/${scanned} yetim dosya temizlendi`), {
+        where: "orphanSweep.cleanup",
+        deleted,
+        scanned,
+      });
     }
-  } catch (err) {
+  } catch (err: any) {
+    // Ağ bağlantısı yokken arka planda çalışmaya çalışırsa (fetch failed / UnknownHostException)
+    // Sentry'ye hata atmaması için sessizce yutuyoruz.
+    const msg = err?.message || String(err);
+    if (
+      msg.includes("fetch failed") ||
+      msg.includes("Network request failed") ||
+      msg.includes("UnknownHostException") ||
+      msg.includes("Failed to fetch")
+    ) {
+      return;
+    }
     captureError(err, { where: "orphanSweep" });
   }
 }

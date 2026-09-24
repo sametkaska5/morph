@@ -1,3 +1,4 @@
+import { theme } from "@/lib/theme";
 import { memo, useCallback, useState } from "react";
 import { View, FlatList, Pressable, ActivityIndicator, useWindowDimensions } from "react-native";
 import { PressableFade } from "@/components/PressableFade";
@@ -134,7 +135,7 @@ export default function PickComparison() {
           accessibilityLabel="Geri dön"
           dim={0.7}
         >
-          <Feather name="chevron-left" size={22} color="#F5F3EC" />
+          <Feather name="chevron-left" size={22} color={theme.colors.text} />
         </PressableFade>
         <Text className="text-text text-xl font-bold">İki Fotoğraf Seç</Text>
         <View style={{ width: 22 }} />
@@ -144,7 +145,7 @@ export default function PickComparison() {
       </Text>
 
       {isLoading ? (
-        <ActivityIndicator color="#8CE05A" className="mt-10" />
+        <ActivityIndicator color={theme.colors.accent} className="mt-10" />
       ) : error ? (
         // Hatasız boş ızgara, "karşılaştıracak fotoğrafım yok" gibi okunuyordu.
         <View className="mt-6">
@@ -183,7 +184,9 @@ export default function PickComparison() {
           dim={selected.length === 2 ? 0.85 : 1}
           className={`rounded-button py-4 items-center ${selected.length === 2 ? "bg-accent" : "bg-surface"}`}
         >
-          <Text className={`text-base font-semibold ${selected.length === 2 ? "text-bg" : "text-textFaint"}`}>
+          <Text
+            className={`text-base font-semibold ${selected.length === 2 ? "text-bg" : "text-textFaint"}`}
+          >
             Karşılaştır
           </Text>
         </PressableFade>

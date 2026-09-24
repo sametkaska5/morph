@@ -1,3 +1,4 @@
+import { theme } from "@/lib/theme";
 import { View, ActivityIndicator, ScrollView } from "react-native";
 import { showAlert } from "@/lib/appAlert";
 import { PressableFade } from "@/components/PressableFade";
@@ -202,8 +203,7 @@ export default function EditEntry() {
         // hata vermiyor, sessizce sıralamayı bozuyor: orderEntryPhotos eşitlikte
         // id'ye göre sıralıyor, yani şeritteki dizilim rastgeleye dönüyordu.)
         // Kapağı olmayan eski kayıtlarda mevcutların ardına ekliyoruz.
-        const newOrderIndex =
-          existingPhotoRow?.order_index ?? nextOrderIndex(data?.photos ?? []);
+        const newOrderIndex = existingPhotoRow?.order_index ?? nextOrderIndex(data?.photos ?? []);
 
         const { data: newPhoto, error: photoError } = await supabase
           .from("photos")
@@ -318,7 +318,7 @@ export default function EditEntry() {
   if (isLoading) {
     return (
       <View className="flex-1 bg-bg items-center justify-center">
-        <ActivityIndicator color="#8CE05A" />
+        <ActivityIndicator color={theme.colors.accent} />
       </View>
     );
   }
@@ -356,7 +356,7 @@ export default function EditEntry() {
 
         {/* Etiket sabit: kaydederken metin ActivityIndicator'a dönüşüyor ve
             düğmenin erişilebilir adı kayboluyordu. */}
-<PressableFade
+        <PressableFade
           onPress={handleUpdate}
           disabled={saveBlocked}
           accessibilityRole="button"
@@ -367,7 +367,7 @@ export default function EditEntry() {
           className="bg-accent rounded-[12px] px-4 h-11 items-center justify-center"
         >
           {updateMutation.isPending || !formReady ? (
-            <ActivityIndicator color="#0B0D0A" size="small" />
+            <ActivityIndicator color={theme.colors.bg} size="small" />
           ) : (
             <Text className="text-bg text-base font-semibold">Kaydet</Text>
           )}
@@ -453,7 +453,7 @@ export default function EditEntry() {
                       // yalnızca "metin girişi" diyip geçiyordu. Birim de etikete
                       // giriyor, aksi halde neyin girildiği duyulmuyor.
                       accessibilityLabel={`${t.name}, ${displayUnit(t.unit, unitPref)}`}
-                      placeholderTextColor="#8B8A82"
+                      placeholderTextColor={theme.colors.textFaint}
                       returnKeyType="next"
                       blurOnSubmit={false}
                       // Klavye açıkken odak buraya geçtiğinde kendiliğinden kaydırma
@@ -472,10 +472,7 @@ export default function EditEntry() {
                         sabit 80px olduğu için uzun birimler ("kilogram", "santimetre")
                         placeholder'da da kırpılıyordu. max-w + numberOfLines: aşırı uzun
                         bir birim satırı bozmak yerine kendisi kısalıyor. */}
-                    <Text
-                      className="text-textFaint text-sm max-w-[72px]"
-                      numberOfLines={1}
-                    >
+                    <Text className="text-textFaint text-sm max-w-[72px]" numberOfLines={1}>
                       {displayUnit(t.unit, unitPref)}
                     </Text>
                     <PressableFade
@@ -488,7 +485,7 @@ export default function EditEntry() {
                         else noteRef.current?.focus();
                       }}
                     >
-                      <Feather name="chevron-right" size={16} color="#8B8A82" />
+                      <Feather name="chevron-right" size={16} color={theme.colors.textFaint} />
                     </PressableFade>
                   </View>
                 </View>
@@ -507,7 +504,7 @@ export default function EditEntry() {
           editable={formReady}
           accessibilityLabel="Not"
           placeholder="Not..."
-          placeholderTextColor="#8B8A82"
+          placeholderTextColor={theme.colors.textFaint}
           onFocus={() => revealField(noteRef.current)}
           className="bg-surface border border-border text-text text-base p-4 rounded-card h-28 mb-6"
           multiline
@@ -532,12 +529,12 @@ export default function EditEntry() {
           onPress={() => setConfirmDelete(true)}
           disabled={updateMutation.isPending || deleteMutation.isPending}
           accessibilityRole="button"
-          accessibilityLabel="Bu anıyı sil"
+          accessibilityLabel="Bu antrenmanı sil"
           dim={0.85}
           className="mt-2 flex-row items-center justify-center gap-2 py-4 rounded-button bg-danger"
         >
-          <Feather name="trash-2" size={16} color="#0B0D0A" />
-          <Text className="text-bg text-base font-semibold">Bu anıyı sil</Text>
+          <Feather name="trash-2" size={16} color={theme.colors.bg} />
+          <Text className="text-bg text-base font-semibold">Bu antrenmanı sil</Text>
         </PressableFade>
       </ScrollView>
 
@@ -551,7 +548,7 @@ export default function EditEntry() {
         visible={confirmDelete}
         icon="trash-2"
         danger
-        title="Bu anıyı sil?"
+        title="Bu antrenmanı sil?"
         message="Bu işlem geri alınamaz, fotoğraf ve ölçümler kalıcı olarak silinir."
         confirmLabel="Sil"
         onConfirm={() => {

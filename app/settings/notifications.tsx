@@ -1,3 +1,4 @@
+import { theme } from "@/lib/theme";
 import { useState } from "react";
 import { View, Switch, ActivityIndicator, Platform } from "react-native";
 import { showAlert } from "@/lib/appAlert";
@@ -78,7 +79,7 @@ export default function NotificationSettingsScreen() {
     if (!NOTIFICATIONS_AVAILABLE) {
       showAlert(
         "Bu özellik Expo Go'da desteklenmiyor",
-        "Yerel bildirimler için development build gerekiyor. Tercihini yine de kaydediyoruz, development build'e geçince otomatik devreye girecek."
+        "Yerel bildirimler için development build gerekiyor. Tercihini yine de kaydediyoruz, development build'e geçince otomatik devreye girecek.",
       );
       return true; // tercihi kaydetmeye devam et — zamanlama fonksiyonları modül yokken zaten no-op
     }
@@ -86,7 +87,7 @@ export default function NotificationSettingsScreen() {
     if (!granted) {
       showAlert(
         "Bildirim izni verilmedi",
-        "Bu özelliği kullanabilmek için cihaz ayarlarından Remory'e bildirim izni vermen gerekiyor."
+        "Bu özelliği kullanabilmek için cihaz ayarlarından Remory'e bildirim izni vermen gerekiyor.",
       );
     }
     return granted;
@@ -118,7 +119,7 @@ export default function NotificationSettingsScreen() {
         next && user
           ? scheduleMemoryNotifications(user.id, settings.reminder_time)
           : cancelMemoryNotifications(),
-      "notifications.togglePastMemory"
+      "notifications.togglePastMemory",
     );
   }
 
@@ -128,7 +129,7 @@ export default function NotificationSettingsScreen() {
     updateMutation.mutate({ daily_reminder_enabled: next });
     await applySchedule(
       () => (next ? scheduleDailyReminder(settings.reminder_time) : cancelDailyReminder()),
-      "notifications.toggleDailyReminder"
+      "notifications.toggleDailyReminder",
     );
   }
 
@@ -173,17 +174,17 @@ export default function NotificationSettingsScreen() {
           accessibilityLabel="Geri dön"
           dim={0.7}
         >
-          <Feather name="chevron-left" size={22} color="#F5F3EC" />
+          <Feather name="chevron-left" size={22} color={theme.colors.text} />
         </PressableFade>
         <Text className="text-text text-xl font-bold">Bildirimler</Text>
       </View>
 
       {!NOTIFICATIONS_AVAILABLE ? (
         <View className="bg-surface border border-border rounded-button px-4 py-3 mb-4 flex-row items-start gap-3">
-          <Feather name="info" size={15} color="#8B8A82" style={{ marginTop: 1 }} />
+          <Feather name="info" size={15} color={theme.colors.textFaint} style={{ marginTop: 1 }} />
           <Text className="text-textMuted text-sm flex-1 leading-5">
-            Expo Go'da yerel bildirimler desteklenmiyor. Tercihlerini kaydedebilirsin, ancak bildirimlerin
-            fiilen gelmesi için development build gerekiyor.
+            Expo Go'da yerel bildirimler desteklenmiyor. Tercihlerini kaydedebilirsin, ancak
+            bildirimlerin fiilen gelmesi için development build gerekiyor.
           </Text>
         </View>
       ) : null}

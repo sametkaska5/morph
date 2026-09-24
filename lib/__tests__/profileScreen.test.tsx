@@ -147,7 +147,7 @@ describe("profil — genel", () => {
     expect(alertError).toHaveBeenCalledWith(
       "Çıkış yapılamadı",
       { message: "Network request failed" },
-      "profile.signOut"
+      "profile.signOut",
     );
   });
 });

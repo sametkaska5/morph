@@ -1,3 +1,4 @@
+import { theme } from "@/lib/theme";
 import { useState } from "react";
 import { View, Pressable } from "react-native";
 import Feather from "@expo/vector-icons/Feather";
@@ -35,15 +36,9 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
   return (
     <View className="items-center px-8 py-6">
       <View className="mb-4 h-16 w-16 items-center justify-center rounded-full border border-border bg-surfaceMuted">
-        <Feather name={ICON[kind]} size={26} color="#8B8A82" />
+        <Feather name={ICON[kind]} size={26} color={theme.colors.textFaint} />
       </View>
 
-      {/* Başlık ve açıklama TEK bir erişilebilirlik düğümü: ekran okuyucu ikisini
-          bir arada, tek bir duyuru olarak okur. `accessible` olmadan
-          accessibilityRole tek başına sorgulanabilir/duyurulabilir olmuyor;
-          liveRegion ise Android tarafında "bu metin değişti, oku" sinyali.
-          Sarmalayıcı bilerek yalnızca metinleri kapsıyor — "Tekrar dene"
-          düğmesi dışarıda kalmalı ki ayrı bir odak hedefi olarak erişilebilsin. */}
       <View
         accessible
         accessibilityRole="alert"
@@ -68,7 +63,7 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
           className="h-12 flex-row items-center justify-center gap-2 rounded-[14px] bg-accent px-6"
           style={{ opacity: pressed ? 0.75 : 1 }}
         >
-          <Feather name="refresh-cw" size={16} color="#0B0D0A" />
+          <Feather name="refresh-cw" size={16} color={theme.colors.bg} />
           <Text className="text-base font-semibold text-bg">Tekrar dene</Text>
         </Pressable>
       ) : null}

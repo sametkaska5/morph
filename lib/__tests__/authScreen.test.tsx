@@ -222,9 +222,7 @@ describe("giriş ekranı — hesap var mı ayrımı", () => {
     mockSignIn.mockResolvedValue({ error: null });
     await fireEvent.press(screen.getByText("Giriş yap"));
 
-    await waitFor(() =>
-      expect(screen.queryByLabelText("Bu e-postayla hesap oluştur")).toBeNull()
-    );
+    await waitFor(() => expect(screen.queryByLabelText("Bu e-postayla hesap oluştur")).toBeNull());
   });
 });
 

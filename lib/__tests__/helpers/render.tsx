@@ -25,7 +25,7 @@ export function createTestQueryClient() {
 
 export function renderWithProviders(
   ui: ReactElement,
-  { client = createTestQueryClient() }: { client?: QueryClient } = {}
+  { client = createTestQueryClient() }: { client?: QueryClient } = {},
 ) {
   function Wrapper({ children }: { children: ReactNode }) {
     return <QueryClientProvider client={client}>{children}</QueryClientProvider>;

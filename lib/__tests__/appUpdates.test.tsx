@@ -31,11 +31,7 @@ jest.mock("../monitoring", () => ({ captureError: jest.fn() }));
 
 import { render, screen, fireEvent, waitFor } from "@testing-library/react-native";
 import { Text } from "react-native";
-import {
-  shouldCheckForUpdate,
-  useAppUpdate,
-  UPDATE_CHECK_INTERVAL_MS,
-} from "../appUpdates";
+import { shouldCheckForUpdate, useAppUpdate, UPDATE_CHECK_INTERVAL_MS } from "../appUpdates";
 import { UpdateBanner } from "@/components/UpdateBanner";
 
 /** Hook'u gözlemlemek için minik bir sarmalayıcı. */

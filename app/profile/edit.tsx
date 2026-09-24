@@ -1,3 +1,4 @@
+import { theme } from "@/lib/theme";
 import { useState } from "react";
 import { View, Pressable, ActivityIndicator, Image } from "react-native";
 import { Text, TextInput } from "@/components/Typography";
@@ -71,7 +72,7 @@ export default function EditProfileScreen() {
       const manipulated = await ImageManipulator.manipulateAsync(
         result.assets[0].uri,
         [{ resize: { width: 400 } }],
-        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG, base64: true },
       );
       const previousPath = avatarPath;
       const path = await uploadAvatar(user.id, manipulated.base64!);
@@ -98,19 +99,22 @@ export default function EditProfileScreen() {
           // yutuluyor: kayıt zaten başarılı, geride kalan dosya en kötü ihtimalle
           // yetim süpürmesinde toplanır — kullanıcıya hata göstermenin anlamı yok.
           if (staleAvatarPaths.length > 0) {
-            supabase.storage.from("photos").remove(staleAvatarPaths).catch(() => {});
+            supabase.storage
+              .from("photos")
+              .remove(staleAvatarPaths)
+              .catch(() => {});
           }
           router.back();
         },
         onError: (err) => alertError("Kaydedilemedi", err, "profile.update"),
-      }
+      },
     );
   }
 
   if (isLoading) {
     return (
       <View className="flex-1 bg-bg items-center justify-center">
-        <ActivityIndicator color="#8CE05A" />
+        <ActivityIndicator color={theme.colors.accent} />
       </View>
     );
   }
@@ -140,7 +144,7 @@ export default function EditProfileScreen() {
           accessibilityRole="button"
           accessibilityLabel="Geri dön"
         >
-          <Feather name="chevron-left" size={22} color="#F5F3EC" />
+          <Feather name="chevron-left" size={22} color={theme.colors.text} />
         </Pressable>
         <Text className="text-text text-xl font-bold">Profili Düzenle</Text>
       </View>
@@ -154,9 +158,13 @@ export default function EditProfileScreen() {
         >
           <View className="w-24 h-24 rounded-full bg-surface border-[1.5px] border-accent items-center justify-center overflow-hidden">
             {displayUri ? (
-              <Image source={{ uri: displayUri }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+              <Image
+                source={{ uri: displayUri }}
+                style={{ width: "100%", height: "100%" }}
+                resizeMode="cover"
+              />
             ) : (
-              <Feather name="user" size={36} color="#8CE05A" />
+              <Feather name="user" size={36} color={theme.colors.accent} />
             )}
           </View>
           <View
@@ -164,9 +172,9 @@ export default function EditProfileScreen() {
             className="w-8 h-8 rounded-full bg-accent border-2 border-bg items-center justify-center"
           >
             {uploading ? (
-              <ActivityIndicator size="small" color="#0B0D0A" />
+              <ActivityIndicator size="small" color={theme.colors.bg} />
             ) : (
-              <Feather name="camera" size={14} color="#0B0D0A" />
+              <Feather name="camera" size={14} color={theme.colors.bg} />
             )}
           </View>
         </Pressable>
@@ -178,7 +186,7 @@ export default function EditProfileScreen() {
         value={name}
         onChangeText={setName}
         placeholder="İsmini yaz"
-        placeholderTextColor="#8B8A82"
+        placeholderTextColor={theme.colors.textFaint}
         accessibilityLabel="İsim"
         style={{ height: 52, textAlignVertical: "center" }}
         className="bg-surface border border-border rounded-button px-4 text-text text-base mb-6"
@@ -198,7 +206,7 @@ export default function EditProfileScreen() {
         className="bg-accent rounded-button py-4 items-center mb-8"
       >
         {updateMutation.isPending ? (
-          <ActivityIndicator color="#0B0D0A" />
+          <ActivityIndicator color={theme.colors.bg} />
         ) : (
           <Text className="text-bg text-base font-semibold">Kaydet</Text>
         )}

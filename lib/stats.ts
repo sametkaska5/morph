@@ -24,7 +24,7 @@ const SERIES_STALE_TIME = 1000 * 60 * 30;
 
 async function fetchMeasurementSeries(
   userId: string,
-  typeId: string
+  typeId: string,
 ): Promise<MeasurementSeriesPoint[]> {
   const { data, error } = await supabase
     .from("measurement_values")
@@ -209,7 +209,7 @@ export type Trend = { delta: number | null; isGood: boolean };
 export function computeTrend(
   currentValue: number | undefined,
   previousValue: number | undefined,
-  targetDirection: "decrease_is_good" | "increase_is_good" | undefined
+  targetDirection: "decrease_is_good" | "increase_is_good" | undefined,
 ): Trend {
   const delta =
     currentValue != null && previousValue != null

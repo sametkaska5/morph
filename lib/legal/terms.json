@@ -1,11 +1,15 @@
 {
   "slug": "kullanim-sartlari",
   "title": "Kullanım Şartları",
-  "updatedAt": "20 Temmuz 2026",
+  "updatedAt": "15 Ağustos 2026",
   "sections": [
     {
       "heading": "Hizmet tanımı",
       "body": "Remory, kişisel gelişim/vücut dönüşüm sürecini fotoğraf ve ölçümlerle günlük olarak kaydetmene yardımcı olan kişisel bir günlük uygulamasıdır. Uygulamayı kullanarak bu şartları kabul etmiş olursun."
+    },
+    {
+      "heading": "Yaş sınırı",
+      "body": "Remory'yi kullanabilmek için en az 13 yaşında olman gerekmektedir. 13–17 yaş arasındaki kullanıcıların uygulamayı yasal vasi/ebeveyn izniyle kullanması gerekir."
     },
     {
       "heading": "Hesabın",
@@ -16,16 +20,28 @@
       "body": "Uygulamaya yüklediğin fotoğraflar, notlar ve ölçümler sana aittir; Remory bu içerikler üzerinde herhangi bir mülkiyet hakkı iddia etmez. İçeriklerin yalnızca uygulamanın işlevlerini (kayıt gösterme, karşılaştırma vb.) yerine getirmek için işlenir."
     },
     {
-      "heading": "Hizmetin sunumu",
-      "body": "Remory'yi olabildiğince kesintisiz sunmaya çalışıyoruz, ancak kesintisiz erişim veya veri kaybı yaşanmayacağı garanti edilmez. Önemli verilerini (özellikle fotoğraflarını) kendi cihazında da yedeklemeni öneririz."
+      "heading": "Ücret ve satın alma",
+      "body": "Remory şu an tamamen ücretsizdir ve uygulama içi satın alma içermemektedir. İleride ücretli özellikler veya abonelik seçenekleri eklenirse bu şartlar güncellenerek sana önceden bildirilecektir."
+    },
+    {
+      "heading": "Hizmetin sunumu ve sorumluluk reddi",
+      "body": "Remory'yi olabildiğince kesintisiz sunmaya çalışıyoruz, ancak kesintisiz erişim veya veri kaybı yaşanmayacağı garanti edilmez. Uygulama \"olduğu gibi\" sunulmakta olup sağlık, tıbbi veya beslenme tavsiyesi niteliği taşımaz. Herhangi bir sağlık programına başlamadan önce doktoruna danışmanı öneririz. Önemli verilerini (özellikle fotoğraflarını) kendi cihazında da yedeklemeni öneririz."
     },
     {
       "heading": "Hesap silme ve fesih",
-      "body": "Hesabını Profil > Hesabı Sil yolunu kullanarak istediğin zaman kalıcı olarak silebilirsin. Kullanım şartlarını ihlal eden (ör. başkasının hesabına yetkisiz erişim) kullanımlar tespit edilirse erişim kısıtlanabilir."
+      "body": "Hesabını Profil > Hesabı Sil yolunu kullanarak istediğin zaman kalıcı olarak silebilirsin. Silme işlemi geri alınamaz; tüm fotoğraf, not ve ölçüm verilerinin kalıcı olarak silineceğini kabul edersin. Kullanım şartlarını ihlal eden (ör. başkasının hesabına yetkisiz erişim) kullanımlar tespit edilirse erişim kısıtlanabilir."
+    },
+    {
+      "heading": "Fikri mülkiyet",
+      "body": "Remory adı, logosu ve uygulama tasarımı geliştiriciye aittir. Uygulamayı kopyalayamaz, dağıtamaz veya ticari amaçla kullanamazsın."
     },
     {
       "heading": "Değişiklikler",
-      "body": "Bu şartlar zaman zaman güncellenebilir. Önemli değişiklikler olduğunda uygulama içinden bilgilendirileceksin."
+      "body": "Bu şartlar zaman zaman güncellenebilir. Önemli değişiklikler olduğunda uygulama içinden bilgilendirileceksin. Değişikliklerin ardından uygulamayı kullanmaya devam etmen, güncel şartları kabul ettiğin anlamına gelir."
+    },
+    {
+      "heading": "Uygulanacak hukuk",
+      "body": "Bu şartlar Türkiye Cumhuriyeti yasalarına tabidir. Anlaşmazlık halinde İstanbul mahkemeleri yetkilidir."
     },
     {
       "heading": "İletişim",
@@ -33,3 +49,4 @@
     }
   ]
 }
+

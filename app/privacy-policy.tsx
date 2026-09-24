@@ -13,10 +13,6 @@ import privacy from "@/lib/legal/privacy.json";
  */
 export default function PrivacyPolicyScreen() {
   return (
-    <LegalScreen
-      title={privacy.title}
-      updatedAt={privacy.updatedAt}
-      sections={privacy.sections}
-    />
+    <LegalScreen title={privacy.title} updatedAt={privacy.updatedAt} sections={privacy.sections} />
   );
 }

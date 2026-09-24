@@ -105,7 +105,7 @@ describe("karşılaştırma seçimi", () => {
     await fireEvent.press(screen.getByText("Karşılaştır"));
 
     expect(mockPrefetchQuery).toHaveBeenCalledWith(
-      expect.objectContaining({ queryKey: ["comparison", "e1", "e2"] })
+      expect.objectContaining({ queryKey: ["comparison", "e1", "e2"] }),
     );
     expect(mockReplace).toHaveBeenCalledWith({
       pathname: "/compare",

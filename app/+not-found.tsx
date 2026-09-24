@@ -1,3 +1,4 @@
+import { theme } from "@/lib/theme";
 import { useState } from "react";
 import { View, Pressable } from "react-native";
 import { router, usePathname } from "expo-router";
@@ -28,7 +29,7 @@ export default function NotFound() {
   return (
     <View className="flex-1 items-center justify-center bg-bg px-8">
       <View className="mb-4 h-16 w-16 items-center justify-center rounded-full border border-border bg-surfaceMuted">
-        <Feather name="compass" size={26} color="#8B8A82" />
+        <Feather name="compass" size={26} color={theme.colors.textFaint} />
       </View>
 
       {/* Başlık + açıklama tek erişilebilirlik düğümü — ErrorState ile aynı desen. */}
@@ -49,7 +50,7 @@ export default function NotFound() {
         className="h-12 flex-row items-center justify-center gap-2 rounded-[14px] bg-accent px-6"
         style={{ opacity: pressed ? 0.75 : 1 }}
       >
-        <Feather name="home" size={16} color="#0B0D0A" />
+        <Feather name="home" size={16} color={theme.colors.bg} />
         <Text className="text-base font-semibold text-bg">Ana ekrana dön</Text>
       </Pressable>
 

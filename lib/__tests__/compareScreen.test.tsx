@@ -40,7 +40,12 @@ const DATA: ComparisonData = {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockUseComparison.mockReturnValue({ data: DATA, isLoading: false, error: null, refetch: jest.fn() });
+  mockUseComparison.mockReturnValue({
+    data: DATA,
+    isLoading: false,
+    error: null,
+    refetch: jest.fn(),
+  });
 });
 
 describe("karşılaştırma ekranı", () => {

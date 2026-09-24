@@ -11,7 +11,7 @@ import { parseReminderTime } from "./date";
 // import Babel tarafından her koşulda çalıştırıldığı için, modülü sadece Expo Go
 // DIŞINDAYKEN require ile yüklüyoruz — bu şekilde Expo Go'da hiç evaluate edilmiyor.
 const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
- 
+
 const Notifications: typeof NotificationsType | null = isExpoGo
   ? null
   : require("expo-notifications"); // eslint-disable-line @typescript-eslint/no-require-imports -- Expo Go'da native modül eksik; statik import her koşulda evaluate edilirdi
@@ -48,7 +48,7 @@ export async function requestNotificationPermission() {
  * tetikliyordu. İzin isteme yalnızca kullanıcının bir anahtarı açtığı yerde
  * (Bildirimler ayarları) olmalı; zamanlama tarafı sadece mevcut durumu okur.
  */
-export async function hasNotificationPermission() {
+async function hasNotificationPermission() {
   if (!Notifications) return false;
   const { status } = await Notifications.getPermissionsAsync();
   return status === "granted";
@@ -84,7 +84,7 @@ export function notificationTap(
   response:
     | { notification: { request: { identifier: string; content: { data?: unknown } } } }
     | null
-    | undefined
+    | undefined,
 ): NotificationTap | null {
   const request = response?.notification?.request;
   if (!request) return null;
@@ -174,7 +174,7 @@ async function cancelByPrefix(prefix: string) {
   await Promise.all(
     scheduled
       .filter((n) => n.identifier.startsWith(prefix))
-      .map((n) => Notifications!.cancelScheduledNotificationAsync(n.identifier))
+      .map((n) => Notifications!.cancelScheduledNotificationAsync(n.identifier)),
   );
 }
 
@@ -252,7 +252,10 @@ export async function cancelMemoryNotifications() {
  * "serin bozulacak" uyarısı kurar. Her çağrıda önceki uyarıyı iptal edip yeniden
  * değerlendirir, böylece bugün kayıt yapılırsa bildirim otomatik düşer.
  */
-export async function scheduleStreakRiskNotification(currentStreak: number, hasLoggedToday: boolean) {
+export async function scheduleStreakRiskNotification(
+  currentStreak: number,
+  hasLoggedToday: boolean,
+) {
   if (!Notifications) return;
   await Notifications.cancelScheduledNotificationAsync(STREAK_RISK_ID).catch(() => {});
 

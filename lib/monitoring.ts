@@ -47,13 +47,61 @@ export function initMonitoring() {
  * yerlerinde eski log'ların yerine güvenle geçebilir.
  */
 export function captureError(error: unknown, context?: Record<string, unknown>) {
+  // Kullanıcının destek ekibine söyleyebileceği rastgele 6 haneli hata referans kodu
+  const refCode = Math.random().toString(36).slice(2, 8).toUpperCase();
+  if (error && typeof error === "object") {
+    (error as any)._refCode = refCode;
+  }
+
   if (enabled) {
     try {
-      Sentry.captureException(error, context ? { extra: context } : undefined);
+      Sentry.captureException(toError(error), {
+        extra: context,
+        tags: { refCode },
+      });
     } catch {
       // Bildirim başarısız olursa yut — bir hatayı raporlarken yeni hata üretmeyelim.
     }
   }
-  if (context) console.error("[monitoring]", error, context);
-  else console.error("[monitoring]", error);
+
+  if (context) console.error(`[monitoring] [Ref: ${refCode}]`, error, context);
+  else console.error(`[monitoring] [Ref: ${refCode}]`, error);
+}
+
+/**
+ * Herhangi bir değeri Sentry'nin düzgün işleyeceği bir `Error` nesnesine çevirir.
+ *
+ * Sorun: Supabase PostgrestError / AuthError / StorageError nesneleri `Error`
+ * sınıfından türemiyor — düz obje. Sentry bunları `captureException`'a verince
+ * "Object captured as exception with keys: code, details, hint, message" uyarısı
+ * gösteriyor ve stack trace oluşturmuyor.
+ *
+ * Çözüm: objenin `message` alanını başlık, JSON temsilini detay olarak kullanan
+ * bir `Error` yarat; Sentry bunu düzgün bir istisna olarak işler.
+ */
+function toError(error: unknown): Error {
+  if (error instanceof Error) return error;
+
+  if (error !== null && typeof error === "object") {
+    const obj = error as Record<string, unknown>;
+    const message =
+      typeof obj["message"] === "string"
+        ? obj["message"]
+        : typeof obj["error_description"] === "string"
+          ? obj["error_description"]
+          : "Unknown error";
+
+    const wrapped = new Error(message);
+    // Orijinal alanları stack'te görmek için cause'a bağla (ES2022+, RN desteği var).
+    wrapped.cause = error;
+    // Ek bağlam: Supabase hata kodu ve ipucu Sentry'de görünsün.
+    if (typeof obj["code"] === "string") {
+      wrapped.name = `SupabaseError [${obj["code"]}]`;
+    }
+    return wrapped;
+  }
+
+  if (typeof error === "string") return new Error(error);
+
+  return new Error(String(error));
 }

@@ -1,3 +1,4 @@
+import { theme } from "@/lib/theme";
 import { useState, useRef } from "react";
 import {
   View,
@@ -86,7 +87,7 @@ export default function NewEntry() {
       await queryClient.cancelQueries({ queryKey: queryKeys.entries.timeline() });
       // Izgara sayfalı olduğu için cache'te düz dizi değil sayfa dizisi var.
       const previous = queryClient.getQueryData<InfiniteData<EntryRow[]>>(
-        queryKeys.entries.timeline()
+        queryKeys.entries.timeline(),
       );
 
       const optimisticEntry: EntryRow = {
@@ -110,7 +111,7 @@ export default function NewEntry() {
         // Aynı günün önceki kaydı HER sayfadan çıkarılıyor: kullanıcı eski bir
         // tarihe kayıt ekliyor olabilir ve o gün ilk sayfada olmayabilir.
         const cleaned = (old?.pages ?? []).map((page) =>
-          page.filter((e) => e.date !== payload.date)
+          page.filter((e) => e.date !== payload.date),
         );
         const pages = cleaned.length > 0 ? cleaned : [[]];
         // Yeni kayıt ilk sayfaya giriyor ve sayfa kendi içinde sıralanıyor.
@@ -230,7 +231,7 @@ export default function NewEntry() {
           className="bg-accent rounded-[12px] px-4 h-11 items-center justify-center"
         >
           {photoProcessing ? (
-            <ActivityIndicator color="#0B0D0A" size="small" />
+            <ActivityIndicator color={theme.colors.bg} size="small" />
           ) : (
             <Text className="text-bg text-base font-semibold">Kaydet</Text>
           )}
@@ -324,7 +325,7 @@ export default function NewEntry() {
                       // yalnızca "metin girişi" diyip geçiyordu. Birim de etikete
                       // giriyor, aksi halde neyin girildiği duyulmuyor.
                       accessibilityLabel={`${t.name}, ${displayUnit(t.unit, unitPref)}`}
-                      placeholderTextColor="#8B8A82"
+                      placeholderTextColor={theme.colors.textFaint}
                       returnKeyType="next"
                       blurOnSubmit={false}
                       // Klavye açıkken odak buraya geçtiğinde kendiliğinden kaydırma
@@ -343,10 +344,7 @@ export default function NewEntry() {
                         sabit 80px olduğu için uzun birimler ("kilogram", "santimetre")
                         placeholder'da da kırpılıyordu. max-w + numberOfLines: aşırı uzun
                         bir birim satırı bozmak yerine kendisi kısalıyor. */}
-                    <Text
-                      className="text-textFaint text-sm max-w-[72px]"
-                      numberOfLines={1}
-                    >
+                    <Text className="text-textFaint text-sm max-w-[72px]" numberOfLines={1}>
                       {displayUnit(t.unit, unitPref)}
                     </Text>
                     <PressableFade
@@ -359,7 +357,7 @@ export default function NewEntry() {
                         else noteRef.current?.focus();
                       }}
                     >
-                      <Feather name="chevron-right" size={16} color="#8B8A82" />
+                      <Feather name="chevron-right" size={16} color={theme.colors.textFaint} />
                     </PressableFade>
                   </View>
                 </View>
@@ -378,7 +376,7 @@ export default function NewEntry() {
             value={note}
             onChangeText={setNote}
             placeholder="birkaç kelime yaz..."
-            placeholderTextColor="#8B8A82"
+            placeholderTextColor={theme.colors.textFaint}
             accessibilityLabel="Not"
             onFocus={() => revealField(noteRef.current)}
             multiline

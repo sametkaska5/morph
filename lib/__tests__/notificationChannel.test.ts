@@ -63,7 +63,7 @@ describe("bildirim kanalı", () => {
 
     expect(mockSetChannel).toHaveBeenCalledWith(
       "reminders",
-      expect.objectContaining({ importance: 6 })
+      expect.objectContaining({ importance: 6 }),
     );
   });
 
@@ -90,8 +90,13 @@ describe("günlük hatırlatma — kanal bağlantısı", () => {
 
     expect(mockSchedule).toHaveBeenCalledWith(
       expect.objectContaining({
-        trigger: expect.objectContaining({ type: "daily", hour: 21, minute: 0, channelId: "reminders" }),
-      })
+        trigger: expect.objectContaining({
+          type: "daily",
+          hour: 21,
+          minute: 0,
+          channelId: "reminders",
+        }),
+      }),
     );
   });
 
@@ -101,7 +106,7 @@ describe("günlük hatırlatma — kanal bağlantısı", () => {
     expect(mockSchedule).toHaveBeenCalledWith(
       expect.objectContaining({
         trigger: expect.objectContaining({ hour: 7, minute: 5 }),
-      })
+      }),
     );
   });
 

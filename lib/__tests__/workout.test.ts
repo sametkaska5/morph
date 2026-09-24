@@ -154,7 +154,7 @@ describe("saveWorkoutDay", () => {
         type: "workout",
         note: null,
         values: { kilo: "80" },
-      })
+      }),
     ).rejects.toEqual({ message: "boom" });
 
     expect(sb.chainsFor("measurement_values")).toHaveLength(0);

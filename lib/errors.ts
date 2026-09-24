@@ -18,6 +18,7 @@ export type FriendlyError = {
   kind: ErrorKind;
   title: string;
   message: string;
+  refCode?: string;
 };
 
 /**
@@ -87,12 +88,18 @@ function isNotFoundError(error: unknown): boolean {
  * getirir. Her sınıf, kullanıcının NE YAPABİLECEĞİNİ söyleyen bir mesaj alır.
  */
 export function describeError(error: unknown): FriendlyError {
+  const refCode =
+    error && typeof error === "object" && "_refCode" in error
+      ? String((error as Record<string, unknown>)._refCode)
+      : undefined;
+
   if (isNetworkError(error)) {
     return {
       kind: "offline",
       title: "Bağlantı kurulamadı",
       message:
         "İnternet bağlantını kontrol edip tekrar dene. Kayıtların cihazında güvende — bağlantı gelince kaldığın yerden devam edersin.",
+      refCode,
     };
   }
 
@@ -101,6 +108,7 @@ export function describeError(error: unknown): FriendlyError {
       kind: "auth",
       title: "Oturumun sona ermiş",
       message: "Güvenlik için oturumun kapandı. Tekrar giriş yaptığında her şey yerinde olacak.",
+      refCode,
     };
   }
 
@@ -109,6 +117,7 @@ export function describeError(error: unknown): FriendlyError {
       kind: "permission",
       title: "Bu içeriğe erişemedik",
       message: "Bu kayda erişim iznin yok gibi görünüyor. Doğru hesapla giriş yaptığından emin ol.",
+      refCode,
     };
   }
 
@@ -117,6 +126,7 @@ export function describeError(error: unknown): FriendlyError {
       kind: "notFound",
       title: "Kayıt bulunamadı",
       message: "Bu kayıt silinmiş ya da taşınmış olabilir.",
+      refCode,
     };
   }
 
@@ -124,6 +134,7 @@ export function describeError(error: unknown): FriendlyError {
     kind: "unknown",
     title: "Bir şeyler ters gitti",
     message: "Beklenmedik bir hata oluştu. Tekrar denemek genellikle sorunu çözer.",
+    refCode,
   };
 }
 
@@ -175,11 +186,11 @@ const AUTH_MESSAGES: { match: string; text: string }[] = [
   { match: "otp_expired", text: "Kodun süresi dolmuş. Yeni bir kod iste." },
   {
     match: "for security purposes",
-    text: "Çok sık denedin. Kısa bir süre bekleyip tekrar dene.",
+    text: "Güvenliğiniz için işlem durduruldu. Lütfen 5 dakika bekleyip tekrar deneyin.",
   },
   {
     match: "email rate limit exceeded",
-    text: "Çok fazla e-posta gönderildi. Kısa bir süre bekleyip tekrar dene.",
+    text: "Çok fazla e-posta gönderildi. Lütfen yaklaşık 1 saat bekleyip tekrar deneyin.",
   },
 ];
 
@@ -200,21 +211,4 @@ export function authErrorMessage(error: unknown): string {
   if (hit) return hit.text;
 
   return "İşlem tamamlanamadı. Lütfen tekrar dene.";
-}
-
-/**
- * Giriş "geçersiz kimlik bilgileri" ile mi reddedildi?
- *
- * DİKKAT — bu hata İKİ ayrı durumu birden kapsıyor: hesap hiç yok, ya da şifre
- * yanlış. Supabase hangisi olduğunu BİLEREK söylemiyor; söyleseydi giriş ekranı
- * "bu e-posta bu uygulamada kayıtlı mı" taraması için kullanılabilirdi
- * (kullanıcı sayımı / user enumeration). Bu yüzden ekranda "böyle bir hesap
- * yok" DEMİYORUZ — bilmiyoruz. Bunun yerine kullanıcıya iki çıkış yolunu da
- * (şifre sıfırlama / kayıt) gösteriyoruz.
- *
- * Ham metin eşleştirmesi bilerek burada, ekranda değil: hata metinleri bu
- * modülün sorumluluğu.
- */
-export function isInvalidCredentials(error: unknown): boolean {
-  return messageOf(error).includes("invalid login credentials");
 }

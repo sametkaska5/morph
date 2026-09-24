@@ -122,7 +122,10 @@ describe("bildirim ayarları — görüntüleme", () => {
 
 describe("bildirim ayarları — anahtarlar tercih ve zamanlamayı birlikte yürütür", () => {
   it("geçmiş anı hatırlatmasını açınca tercihi kaydeder VE bildirimleri kurar", async () => {
-    mockUseSettings.mockReturnValue({ data: settingsWith({ past_memory_enabled: false }), isLoading: false });
+    mockUseSettings.mockReturnValue({
+      data: settingsWith({ past_memory_enabled: false }),
+      isLoading: false,
+    });
     await render(<NotificationSettingsScreen />);
 
     await fireEvent(screen.getByLabelText("Geçmiş anı hatırlatmaları"), "valueChange", true);
@@ -157,7 +160,10 @@ describe("bildirim ayarları — izin akışı", () => {
     // Aksi halde anahtar açık görünür ama hiçbir bildirim gelmez — kullanıcının
     // fark edemeyeceği bir sessiz uyumsuzluk.
     mockRequestPermission.mockResolvedValue(false);
-    mockUseSettings.mockReturnValue({ data: settingsWith({ past_memory_enabled: false }), isLoading: false });
+    mockUseSettings.mockReturnValue({
+      data: settingsWith({ past_memory_enabled: false }),
+      isLoading: false,
+    });
     await render(<NotificationSettingsScreen />);
 
     await fireEvent(screen.getByLabelText("Geçmiş anı hatırlatmaları"), "valueChange", true);
@@ -178,7 +184,10 @@ describe("bildirim ayarları — izin akışı", () => {
    * burada sorulmak zorunda. Kullanıcı zaten o an bir bildirimi açıyor.
    */
   it("seri uyarısı açılırken cihaz izni ister", async () => {
-    mockUseSettings.mockReturnValue({ data: settingsWith({ streak_enabled: false }), isLoading: false });
+    mockUseSettings.mockReturnValue({
+      data: settingsWith({ streak_enabled: false }),
+      isLoading: false,
+    });
     await render(<NotificationSettingsScreen />);
 
     await fireEvent(screen.getByLabelText("Seri risk uyarısı"), "valueChange", true);
@@ -191,7 +200,10 @@ describe("bildirim ayarları — izin akışı", () => {
     // Diğer iki anahtarla aynı kural: izin yoksa anahtarı açık göstermek
     // kullanıcının fark edemeyeceği sessiz bir uyumsuzluk olurdu.
     mockRequestPermission.mockResolvedValue(false);
-    mockUseSettings.mockReturnValue({ data: settingsWith({ streak_enabled: false }), isLoading: false });
+    mockUseSettings.mockReturnValue({
+      data: settingsWith({ streak_enabled: false }),
+      isLoading: false,
+    });
     await render(<NotificationSettingsScreen />);
 
     await fireEvent(screen.getByLabelText("Seri risk uyarısı"), "valueChange", true);
@@ -230,7 +242,10 @@ describe("bildirim ayarları — Expo Go", () => {
     // Tercih kaydedilmezse kullanıcı development build'e geçtiğinde ayarları
     // baştan girmek zorunda kalırdı.
     mockNotificationsAvailable = false;
-    mockUseSettings.mockReturnValue({ data: settingsWith({ past_memory_enabled: false }), isLoading: false });
+    mockUseSettings.mockReturnValue({
+      data: settingsWith({ past_memory_enabled: false }),
+      isLoading: false,
+    });
     await render(<NotificationSettingsScreen />);
 
     expect(screen.getByText(/Expo Go'da yerel bildirimler desteklenmiyor/)).toBeTruthy();

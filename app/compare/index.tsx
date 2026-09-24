@@ -1,3 +1,4 @@
+import { theme } from "@/lib/theme";
 import { useRef, useState } from "react";
 import { View, Image, ScrollView, ActivityIndicator } from "react-native";
 import { showAlert } from "@/lib/appAlert";
@@ -68,7 +69,10 @@ export default function Compare() {
   const { data, isLoading, error, refetch } = useComparison(a, b);
 
   return (
-    <ScrollView className="flex-1 bg-bg" contentContainerStyle={{ paddingTop: screen.top, paddingBottom: screen.bottom }}>
+    <ScrollView
+      className="flex-1 bg-bg"
+      contentContainerStyle={{ paddingTop: screen.top, paddingBottom: screen.bottom }}
+    >
       <View className="flex-row items-center justify-between px-4 mb-1">
         <PressableFade
           onPress={() => router.back()}
@@ -77,7 +81,7 @@ export default function Compare() {
           accessibilityLabel="Geri dön"
           dim={0.7}
         >
-          <Feather name="chevron-left" size={22} color="#F5F3EC" />
+          <Feather name="chevron-left" size={22} color={theme.colors.text} />
         </PressableFade>
         <View className="items-center">
           <Text className="text-text text-xl font-bold">Karşılaştırma</Text>
@@ -87,7 +91,7 @@ export default function Compare() {
       </View>
 
       {isLoading ? (
-        <ActivityIndicator color="#8CE05A" className="mt-10" />
+        <ActivityIndicator color={theme.colors.accent} className="mt-10" />
       ) : error ? (
         <View className="mt-6">
           <ErrorState error={error} onRetry={() => refetch()} />
@@ -127,7 +131,7 @@ function ComparisonBody({ data }: { data: ComparisonData }) {
     if (!MediaLibrary) {
       showAlert(
         "Bu özellik Expo Go'da desteklenmiyor",
-        "Galeriye kaydetmek için development build gerekiyor. Bu arada 'Paylaş' ile görseli doğrudan gönderebilirsin."
+        "Galeriye kaydetmek için development build gerekiyor. Bu arada 'Paylaş' ile görseli doğrudan gönderebilirsin.",
       );
       return;
     }
@@ -181,7 +185,8 @@ function ComparisonBody({ data }: { data: ComparisonData }) {
       if (rawStart == null && rawEnd == null) return null;
       const startVal = rawStart != null ? toDisplayValue(rawStart, t.unit, unitPref) : null;
       const endVal = rawEnd != null ? toDisplayValue(rawEnd, t.unit, unitPref) : null;
-      const delta = startVal != null && endVal != null ? Number((endVal - startVal).toFixed(1)) : null;
+      const delta =
+        startVal != null && endVal != null ? Number((endVal - startVal).toFixed(1)) : null;
       const isGood =
         delta == null ? true : t.targetDirection === "decrease_is_good" ? delta <= 0 : delta >= 0;
       return { ...t, unit: displayUnit(t.unit, unitPref), startVal, endVal, delta, isGood };
@@ -192,7 +197,11 @@ function ComparisonBody({ data }: { data: ComparisonData }) {
 
   return (
     <View className="mt-3">
-      <View ref={photoBlockRef} collapsable={false} className="mx-4 rounded-card overflow-hidden flex-row h-72 mb-4">
+      <View
+        ref={photoBlockRef}
+        collapsable={false}
+        className="mx-4 rounded-card overflow-hidden flex-row h-72 mb-4"
+      >
         <View className="flex-1 bg-surface relative">
           {/* Ekranın ASIL içeriği bu iki fotoğraf; etiketsizken ekran okuyucu
               hiçbir şey duyurmuyordu ve karşılaştırma boş bir kutu gibi geliyordu. */}
@@ -242,10 +251,10 @@ function ComparisonBody({ data }: { data: ComparisonData }) {
           className="flex-1 flex-row items-center justify-center gap-2 border border-border rounded-[12px] py-3 bg-surface"
         >
           {pendingAction === "save" ? (
-            <ActivityIndicator size="small" color="#F5F3EC" />
+            <ActivityIndicator size="small" color={theme.colors.text} />
           ) : (
             <>
-              <Feather name="download" size={16} color="#F5F3EC" />
+              <Feather name="download" size={16} color={theme.colors.text} />
               <Text className="text-text text-sm font-semibold">Kaydet</Text>
             </>
           )}
@@ -260,10 +269,10 @@ function ComparisonBody({ data }: { data: ComparisonData }) {
           className="flex-1 flex-row items-center justify-center gap-2 border border-accent rounded-[12px] py-3 bg-accentSoft"
         >
           {pendingAction === "share" ? (
-            <ActivityIndicator size="small" color="#8CE05A" />
+            <ActivityIndicator size="small" color={theme.colors.accent} />
           ) : (
             <>
-              <Feather name="share-2" size={16} color="#8CE05A" />
+              <Feather name="share-2" size={16} color={theme.colors.accent} />
               <Text className="text-accent text-sm font-semibold">Paylaş</Text>
             </>
           )}
@@ -273,7 +282,7 @@ function ComparisonBody({ data }: { data: ComparisonData }) {
       {rows.length > 0 ? (
         <View className="mx-4 mb-4 bg-surface border border-border rounded-card p-4">
           <View className="flex-row items-center gap-2 mb-3">
-            <Feather name="trending-up" size={15} color="#8CE05A" />
+            <Feather name="trending-up" size={15} color={theme.colors.accent} />
             <Text className="text-text text-sm font-semibold">Değişim Özeti</Text>
           </View>
           {rows.map((r, i) => (
@@ -307,7 +316,7 @@ function ComparisonBody({ data }: { data: ComparisonData }) {
       <View className="mx-4 bg-surface border border-border rounded-card p-4">
         <View className="flex-row items-center justify-between mb-3">
           <View className="flex-row items-center gap-2">
-            <Feather name="calendar" size={15} color="#8CE05A" />
+            <Feather name="calendar" size={15} color={theme.colors.accent} />
             <Text className="text-text text-sm font-semibold">Zaman Aralığı</Text>
           </View>
           <Text className="text-accent text-sm font-bold">{daysBetween} gün</Text>

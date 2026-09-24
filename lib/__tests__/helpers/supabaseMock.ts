@@ -148,7 +148,7 @@ export function createSupabaseMock() {
     // gibi .single()'sız zincirler doğrudan await edilebiliyor.
     builder.then = (
       onFulfilled?: (value: Result) => unknown,
-      onRejected?: (reason: unknown) => unknown
+      onRejected?: (reason: unknown) => unknown,
     ) => {
       recordCall();
       return Promise.resolve(nextResult(table)).then(onFulfilled, onRejected);

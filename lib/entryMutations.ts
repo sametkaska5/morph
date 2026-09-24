@@ -49,7 +49,7 @@ export async function saveEntry(payload: SaveEntryPayload) {
     .from("entries")
     .upsert(
       { user_id: userId, date, type: "log", note: note ?? existingEntry?.note ?? null },
-      { onConflict: "user_id,date" }
+      { onConflict: "user_id,date" },
     )
     .select()
     .single();
@@ -64,7 +64,7 @@ export async function saveEntry(payload: SaveEntryPayload) {
     try {
       thumbPath = await uploadThumb(userId, entry.id, thumbBase64);
     } catch (err) {
-      console.warn("thumbnail yüklenemedi, tam boy kullanılacak:", err);
+      captureError(err, { where: "saveEntry.thumb", userId, entryId: entry.id });
     }
   }
 

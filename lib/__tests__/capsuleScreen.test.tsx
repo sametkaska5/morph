@@ -65,7 +65,7 @@ describe("anı akışı", () => {
   it("kaydı tarihi ve sayfa sayacıyla gösterir", async () => {
     await render(<ZamanKapsulu />);
 
-    expect(screen.getByText("Anı Akışı")).toBeTruthy();
+    expect(screen.getByText("Podyum")).toBeTruthy();
     expect(screen.getByText("1/1")).toBeTruthy();
   });
 

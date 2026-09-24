@@ -83,8 +83,22 @@ jest.mock("@/components/MeasurementChart", () => {
 import Istatistikler from "@/app/(tabs)/istatistikler";
 
 const TYPES: MeasurementType[] = [
-  { id: "kilo", name: "kilo", unit: "kg", target_direction: "decrease_is_good", is_default: true, sort_order: 1 },
-  { id: "bel", name: "bel", unit: "cm", target_direction: "decrease_is_good", is_default: true, sort_order: 2 },
+  {
+    id: "kilo",
+    name: "kilo",
+    unit: "kg",
+    target_direction: "decrease_is_good",
+    is_default: true,
+    sort_order: 1,
+  },
+  {
+    id: "bel",
+    name: "bel",
+    unit: "cm",
+    target_direction: "decrease_is_good",
+    is_default: true,
+    sort_order: 2,
+  },
 ];
 
 const KILO_SERIES: MeasurementSeriesPoint[] = [

@@ -32,7 +32,9 @@ jest.mock("expo-image-manipulator", () => ({
   SaveFormat: { JPEG: "jpeg" },
 }));
 jest.mock("../storage", () => ({ uploadAvatar: jest.fn() }));
-jest.mock("../supabase", () => ({ supabase: { storage: { from: () => ({ remove: jest.fn() }) } } }));
+jest.mock("../supabase", () => ({
+  supabase: { storage: { from: () => ({ remove: jest.fn() }) } },
+}));
 jest.mock("../alerts", () => ({ alertError: jest.fn() }));
 
 import EditProfileScreen from "@/app/profile/edit";
@@ -135,7 +137,7 @@ describe("profil düzenleme — kaydetme", () => {
 
     expect(mockMutate).toHaveBeenCalledWith(
       { name: "Ahmet", avatar_path: "u1/avatar/a.jpg" },
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
@@ -147,7 +149,7 @@ describe("profil düzenleme — kaydetme", () => {
 
     expect(mockMutate).toHaveBeenCalledWith(
       { name: null, avatar_path: "u1/avatar/a.jpg" },
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 });

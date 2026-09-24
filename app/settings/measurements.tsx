@@ -1,10 +1,6 @@
+import { theme } from "@/lib/theme";
 import { useRef, useState } from "react";
-import {
-  View,
-  ActivityIndicator,
-  ScrollView,
-  type TextInput as RNTextInput,
-} from "react-native";
+import { View, ActivityIndicator, ScrollView, type TextInput as RNTextInput } from "react-native";
 import { showAlert } from "@/lib/appAlert";
 import { PressableFade } from "@/components/PressableFade";
 import { Text, TextInput } from "@/components/Typography";
@@ -58,7 +54,7 @@ export default function MeasurementSettingsScreen() {
           setDirection("decrease_is_good");
         },
         onError: (err) => alertError("Eklenemedi", err, "measurements.add"),
-      }
+      },
     );
   }
 
@@ -103,7 +99,7 @@ export default function MeasurementSettingsScreen() {
           accessibilityLabel="Geri dön"
           dim={0.7}
         >
-          <Feather name="chevron-left" size={22} color="#F5F3EC" />
+          <Feather name="chevron-left" size={22} color={theme.colors.text} />
         </PressableFade>
         <Text className="text-text text-xl font-bold">Takip Edilen Ölçümler</Text>
       </View>
@@ -117,7 +113,9 @@ export default function MeasurementSettingsScreen() {
         <ErrorState error={error} onRetry={() => refetch()} />
       ) : (
         <>
-          <Text className="text-textFaint text-sm font-semibold mb-2 tracking-wide">SİSTEM ÖLÇÜMLERİ</Text>
+          <Text className="text-textFaint text-sm font-semibold mb-2 tracking-wide">
+            SİSTEM ÖLÇÜMLERİ
+          </Text>
           <View className="bg-surface border border-border rounded-card overflow-hidden mb-5">
             {defaults.map((t, i) => (
               <View
@@ -143,7 +141,9 @@ export default function MeasurementSettingsScreen() {
             ))}
           </View>
 
-          <Text className="text-textFaint text-sm font-semibold mb-2 tracking-wide">YENİ ÖLÇÜMLERİN</Text>
+          <Text className="text-textFaint text-sm font-semibold mb-2 tracking-wide">
+            YENİ ÖLÇÜMLERİN
+          </Text>
           <View className="bg-surface border border-border rounded-card overflow-hidden mb-5">
             {custom.length === 0 ? (
               <Text className="text-textMuted text-sm px-4 py-3">Henüz yeni ölçüm eklemedin.</Text>
@@ -188,7 +188,7 @@ export default function MeasurementSettingsScreen() {
                       accessibilityLabel={`${t.name} ölçümünü sil`}
                       onPress={() => setPendingDelete({ id: t.id, label: t.name })}
                     >
-                      <Feather name="trash-2" size={16} color="#D9705A" />
+                      <Feather name="trash-2" size={16} color={theme.colors.danger} />
                     </PressableFade>
                   </View>
                 </View>
@@ -196,7 +196,9 @@ export default function MeasurementSettingsScreen() {
             )}
           </View>
 
-          <Text className="text-textFaint text-sm font-semibold mb-2 tracking-wide">YENİ ÖLÇÜM EKLE</Text>
+          <Text className="text-textFaint text-sm font-semibold mb-2 tracking-wide">
+            YENİ ÖLÇÜM EKLE
+          </Text>
           <View className="bg-surface border border-border rounded-card p-4 mb-6">
             {/* Etiket placeholder'a bırakılmıyor: yazmaya başlanınca placeholder
                 kayboluyor ve alanın erişilebilir adı da onunla gidiyor. */}
@@ -205,7 +207,7 @@ export default function MeasurementSettingsScreen() {
               value={name}
               onChangeText={setName}
               placeholder="İsim (örn. Kol Çevresi)"
-              placeholderTextColor="#8B8A82"
+              placeholderTextColor={theme.colors.textFaint}
               accessibilityLabel="Ölçüm ismi"
               onFocus={() => revealField(nameRef.current)}
               className="text-text text-base bg-bg rounded-lg px-3 py-3 mb-3"
@@ -215,7 +217,7 @@ export default function MeasurementSettingsScreen() {
               value={unit}
               onChangeText={setUnit}
               placeholder="Birim (örn. cm)"
-              placeholderTextColor="#8B8A82"
+              placeholderTextColor={theme.colors.textFaint}
               accessibilityLabel="Ölçüm birimi"
               onFocus={() => revealField(unitRef.current)}
               className="text-text text-base bg-bg rounded-lg px-3 py-3 mb-3"
@@ -231,10 +233,14 @@ export default function MeasurementSettingsScreen() {
                 accessibilityState={{ selected: direction === "decrease_is_good" }}
                 dim={0.8}
                 className={`flex-1 py-3 rounded-lg items-center border ${
-                  direction === "decrease_is_good" ? "bg-accent border-accent" : "bg-white/5 border-white/15"
+                  direction === "decrease_is_good"
+                    ? "bg-accent border-accent"
+                    : "bg-white/5 border-white/15"
                 }`}
               >
-                <Text className={`text-sm font-semibold ${direction === "decrease_is_good" ? "text-bg" : "text-text"}`}>
+                <Text
+                  className={`text-sm font-semibold ${direction === "decrease_is_good" ? "text-bg" : "text-text"}`}
+                >
                   Azalması İyi
                 </Text>
               </PressableFade>
@@ -244,10 +250,14 @@ export default function MeasurementSettingsScreen() {
                 accessibilityState={{ selected: direction === "increase_is_good" }}
                 dim={0.8}
                 className={`flex-1 py-3 rounded-lg items-center border ${
-                  direction === "increase_is_good" ? "bg-accent border-accent" : "bg-white/5 border-white/15"
+                  direction === "increase_is_good"
+                    ? "bg-accent border-accent"
+                    : "bg-white/5 border-white/15"
                 }`}
               >
-                <Text className={`text-sm font-semibold ${direction === "increase_is_good" ? "text-bg" : "text-text"}`}>
+                <Text
+                  className={`text-sm font-semibold ${direction === "increase_is_good" ? "text-bg" : "text-text"}`}
+                >
                   Artması İyi
                 </Text>
               </PressableFade>
@@ -266,7 +276,7 @@ export default function MeasurementSettingsScreen() {
               className="bg-accent rounded-lg py-3 items-center"
             >
               {addMutation.isPending ? (
-                <ActivityIndicator color="#0B0D0A" size="small" />
+                <ActivityIndicator color={theme.colors.bg} size="small" />
               ) : (
                 <Text className="text-bg text-sm font-semibold">Ekle</Text>
               )}

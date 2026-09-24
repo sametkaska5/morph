@@ -28,7 +28,11 @@ jest.mock("../storage", () => ({
   uploadThumb: (...args: unknown[]) => mockUploadThumb(...args),
 }));
 
-import { saveEntry, registerEntryMutationDefaults, SAVE_ENTRY_MUTATION_KEY } from "../entryMutations";
+import {
+  saveEntry,
+  registerEntryMutationDefaults,
+  SAVE_ENTRY_MUTATION_KEY,
+} from "../entryMutations";
 
 const BASE_PAYLOAD = {
   userId: "u1",
@@ -47,7 +51,7 @@ const BASE_PAYLOAD = {
  */
 function queueHappyPath(
   existingPhotos: { order_index: number }[] = [],
-  existingEntry: { note: string | null } | null = null
+  existingEntry: { note: string | null } | null = null,
 ) {
   sb.queue("entries", { data: existingEntry }); // mevcut not sorgusu (maybeSingle)
   sb.queue("entries", { data: { id: "e1", date: BASE_PAYLOAD.date } }); // upsert().select().single()

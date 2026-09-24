@@ -1,10 +1,5 @@
-import {
-  View,
-  ScrollView,
-  ActivityIndicator,
-  useWindowDimensions,
-  FlatList,
-} from "react-native";
+import { theme } from "@/lib/theme";
+import { View, ScrollView, ActivityIndicator, useWindowDimensions, FlatList } from "react-native";
 import { PressableFade } from "@/components/PressableFade";
 import { Text } from "@/components/Typography";
 import { Image } from "expo-image";
@@ -85,7 +80,7 @@ const EntryPage = memo(function EntryPage({
     if (uris.length === 0) return;
     addPhotos.mutate(
       { userId: user.id, uris },
-      { onError: (err) => alertError("Fotoğraf eklenemedi", err, "photos.add") }
+      { onError: (err) => alertError("Fotoğraf eklenemedi", err, "photos.add") },
     );
   }
 
@@ -99,7 +94,7 @@ const EntryPage = memo(function EntryPage({
   if (isLoading) {
     return (
       <View style={{ width: screenWidth }} className="bg-bg justify-center items-center">
-        <ActivityIndicator color="#8CE05A" size="large" />
+        <ActivityIndicator color={theme.colors.accent} size="large" />
       </View>
     );
   }
@@ -147,7 +142,7 @@ const EntryPage = memo(function EntryPage({
         onDelete={(photoId, nextCoverId) =>
           deletePhoto.mutate(
             { photoId, nextCoverId },
-            { onError: (err) => alertError("Fotoğraf silinemedi", err, "photos.delete") }
+            { onError: (err) => alertError("Fotoğraf silinemedi", err, "photos.delete") },
           )
         }
         busy={busy}
@@ -172,7 +167,7 @@ const EntryPage = memo(function EntryPage({
           >
             <View className="flex-row items-center justify-between mb-1">
               <Text className="text-textFaint text-sm font-semibold tracking-wide">ÖLÇÜMLER</Text>
-              <Feather name="chevron-right" size={16} color="#8B8A82" />
+              <Feather name="chevron-right" size={16} color={theme.colors.textFaint} />
             </View>
             {data.measurement_values.map((mv, i) => (
               <View key={i} className="flex-row justify-between py-2 gap-3">
@@ -204,17 +199,19 @@ const EntryPage = memo(function EntryPage({
               <Text className="text-textFaint text-sm font-semibold tracking-wide">
                 ANTRENMAN PROGRAMI
               </Text>
-              <Feather name="chevron-right" size={16} color="#8B8A82" />
+              <Feather name="chevron-right" size={16} color={theme.colors.textFaint} />
             </View>
             {[...data.workout_items]
               .sort((a, b) => a.order_index - b.order_index)
               .map((wi, i) => {
                 const sets = [...(wi.workout_sets ?? [])].sort(
-                  (a, b) => a.order_index - b.order_index
+                  (a, b) => a.order_index - b.order_index,
                 );
                 return (
                   <View key={i} className={i > 0 ? "mt-3 pt-3 border-t border-border" : ""}>
-                    <Text className="text-text text-base font-semibold capitalize mb-1">{wi.name}</Text>
+                    <Text className="text-text text-base font-semibold capitalize mb-1">
+                      {wi.name}
+                    </Text>
                     {sets.length > 0 ? (
                       sets.map((s, j) => (
                         <View key={j} className="flex-row justify-between py-0.5">
@@ -241,13 +238,13 @@ const EntryPage = memo(function EntryPage({
             className="bg-surface border border-border rounded-card p-4 mb-4 flex-row items-center gap-3"
           >
             <View className="w-9 h-9 rounded-lg bg-accentSoft items-center justify-center">
-              <Feather name="clipboard" size={18} color="#8CE05A" />
+              <Feather name="clipboard" size={18} color={theme.colors.accent} />
             </View>
             <View className="flex-1">
               <Text className="text-text text-base font-semibold">Antrenman programı</Text>
               <Text className="text-textFaint text-sm">Hareket ve setleri ekle</Text>
             </View>
-            <Feather name="chevron-right" size={18} color="#8B8A82" />
+            <Feather name="chevron-right" size={18} color={theme.colors.textFaint} />
           </PressableFade>
         ) : null}
 
@@ -263,7 +260,7 @@ const EntryPage = memo(function EntryPage({
           >
             <View className="flex-row items-center justify-between mb-1">
               <Text className="text-textFaint text-sm font-semibold tracking-wide">NOT</Text>
-              <Feather name="chevron-right" size={16} color="#8B8A82" />
+              <Feather name="chevron-right" size={16} color={theme.colors.textFaint} />
             </View>
             <Text className="text-text text-base leading-6">{data.note}</Text>
           </PressableFade>
@@ -280,7 +277,7 @@ const EntryPage = memo(function EntryPage({
         <PressableFade
           onPress={() => onRequestDelete(entryId)}
           accessibilityRole="button"
-          accessibilityLabel="Bu anıyı sil"
+          accessibilityLabel="Bu antrenmanı sil"
           dim={0.85}
           className="mt-6 flex-row items-center justify-center gap-2 py-4 rounded-button bg-danger"
         >
@@ -288,8 +285,8 @@ const EntryPage = memo(function EntryPage({
               (bg-danger + koyu metin). İkon ve yazı zeminle kontrast için
               bg rengine (#0B0D0A) çekiliyor — kırmızı üstünde kırmızı metin
               okunmuyor. */}
-          <Feather name="trash-2" size={16} color="#0B0D0A" />
-          <Text className="text-bg text-base font-semibold">Bu anıyı sil</Text>
+          <Feather name="trash-2" size={16} color={theme.colors.bg} />
+          <Text className="text-bg text-base font-semibold">Bu antrenmanı sil</Text>
         </PressableFade>
       </View>
     </ScrollView>
@@ -363,7 +360,7 @@ export default function EntryDetail() {
   if (orderLoading) {
     return (
       <View className="flex-1 bg-bg justify-center items-center">
-        <ActivityIndicator color="#8CE05A" size="large" />
+        <ActivityIndicator color={theme.colors.accent} size="large" />
       </View>
     );
   }
@@ -372,101 +369,101 @@ export default function EntryDetail() {
 
   return (
     <>
-    <View className="flex-1 bg-bg">
-      <FlatList
-        data={ids}
-        keyExtractor={(item) => item}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        initialScrollIndex={initialIndex}
-        getItemLayout={(_, index) => ({
-          length: screenWidth,
-          offset: screenWidth * index,
-          index,
-        })}
-        initialNumToRender={1}
-        maxToRenderPerBatch={2}
-        // windowSize=3 → aynı anda en fazla 3 sayfa bağlı, bellek sınırlı kalıyor.
-        // removeClippedSubviews BİLEREK kapalı: her sayfa kendi içinde bir
-        // ScrollView ve bu kombinasyon Android'de sayfaları boş gösterebiliyor.
-        windowSize={3}
-        onMomentumScrollEnd={(e) =>
-          setActiveIndex(Math.round(e.nativeEvent.contentOffset.x / screenWidth))
-        }
-        renderItem={({ item }) => (
-          <EntryPage entryId={item} screenWidth={screenWidth} onRequestDelete={requestDelete} />
-        )}
-      />
+      <View className="flex-1 bg-bg">
+        <FlatList
+          data={ids}
+          keyExtractor={(item) => item}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          initialScrollIndex={initialIndex}
+          getItemLayout={(_, index) => ({
+            length: screenWidth,
+            offset: screenWidth * index,
+            index,
+          })}
+          initialNumToRender={1}
+          maxToRenderPerBatch={2}
+          // windowSize=3 → aynı anda en fazla 3 sayfa bağlı, bellek sınırlı kalıyor.
+          // removeClippedSubviews BİLEREK kapalı: her sayfa kendi içinde bir
+          // ScrollView ve bu kombinasyon Android'de sayfaları boş gösterebiliyor.
+          windowSize={3}
+          onMomentumScrollEnd={(e) =>
+            setActiveIndex(Math.round(e.nativeEvent.contentOffset.x / screenWidth))
+          }
+          renderItem={({ item }) => (
+            <EntryPage entryId={item} screenWidth={screenWidth} onRequestDelete={requestDelete} />
+          )}
+        />
 
-      {/* Üst kontroller sayfalayıcının DIŞINDA: kaydırırken yerinde kalıyorlar.
+        {/* Üst kontroller sayfalayıcının DIŞINDA: kaydırırken yerinde kalıyorlar.
           Dikey konum güvenli alandan geliyor: burası tam ekran bir sayfa, yani
           durum çubuğunun ARKASINA çiziyor ve sabit 56px, çentiği büyük
           cihazlarda butonları saatin üstüne bindiriyordu. Konum sarmalayıcı
           View'de duruyor çünkü fonksiyon-form style'a konan yerleşim
           özellikleri bu projede güvenilir çalışmıyordu — o kalıp artık
           PressableFade ile tamamen kalktı, konum yine de burada kalıyor. */}
-      <View style={{ position: "absolute", top: screen.top, left: 16, zIndex: 10 }}>
-        <PressableFade
-          onPress={() => router.back()}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityRole="button"
-          accessibilityLabel="Geri dön"
-          dim={0.7}
-          className="w-11 h-11 bg-black/40 rounded-full items-center justify-center"
-        >
-          <Feather name="chevron-left" size={22} color="#fff" />
-        </PressableFade>
+        <View style={{ position: "absolute", top: screen.top, left: 16, zIndex: 10 }}>
+          <PressableFade
+            onPress={() => router.back()}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityRole="button"
+            accessibilityLabel="Geri dön"
+            dim={0.7}
+            className="w-11 h-11 bg-black/40 rounded-full items-center justify-center"
+          >
+            <Feather name="chevron-left" size={22} color="#fff" />
+          </PressableFade>
+        </View>
+
+        {/* Sayaç, yanlarda başka kayıt olduğunu belli ediyor — Anı Akışı'ndaki
+          ile aynı desen. h-11 sayesinde üstteki butonlarla aynı hizada. */}
+        {ids.length > 1 ? (
+          <View
+            pointerEvents="none"
+            style={{ position: "absolute", top: screen.top, zIndex: 10 }}
+            className="left-0 right-0 h-11 items-center justify-center"
+          >
+            <View className="bg-black/50 rounded-pill px-3 py-1">
+              <Text className="text-text text-xs font-medium">
+                {activeIndex + 1}/{ids.length}
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
+        {deleteMutation.isPending && (
+          <View className="absolute inset-0 bg-black/50 items-center justify-center z-20">
+            <ActivityIndicator color="#fff" />
+          </View>
+        )}
       </View>
 
-      {/* Sayaç, yanlarda başka kayıt olduğunu belli ediyor — Anı Akışı'ndaki
-          ile aynı desen. h-11 sayesinde üstteki butonlarla aynı hizada. */}
-      {ids.length > 1 ? (
-        <View
-          pointerEvents="none"
-          style={{ position: "absolute", top: screen.top, zIndex: 10 }}
-          className="left-0 right-0 h-11 items-center justify-center"
-        >
-          <View className="bg-black/50 rounded-pill px-3 py-1">
-            <Text className="text-text text-xs font-medium">
-              {activeIndex + 1}/{ids.length}
-            </Text>
-          </View>
-        </View>
-      ) : null}
-
-      {deleteMutation.isPending && (
-        <View className="absolute inset-0 bg-black/50 items-center justify-center z-20">
-          <ActivityIndicator color="#fff" />
-        </View>
-      )}
-    </View>
-
-    <ConfirmDialog
-      visible={pendingDeleteId !== null}
-      icon="trash-2"
-      danger
-      title="Bu anıyı sil?"
-      message="Bu işlem geri alınamaz, fotoğraf ve ölçümler kalıcı olarak silinir."
-      confirmLabel="Sil"
-      onConfirm={() => {
-        const target = pendingDeleteId;
-        setPendingDeleteId(null);
-        if (!target) return;
-        // Uyarı deseni (başarı değil): geri alınamaz bir işlem başlıyor.
-        // Onay anında veriliyor, silme bitince değil — kullanıcı o an bir karar
-        // verdi ve karşılığını hemen hissetmesi gerekiyor.
-        hapticWarning();
-        // Navigasyon ekranın işi — invalidation'lar hook'un içinde.
-        // onError şart: hata olunca spinner kayboluyor, kayıt yerinde duruyor ve
-        // kullanıcıya HİÇBİR şey söylenmiyordu — silme başarılı sanılıyordu.
-        deleteMutation.mutate(target, {
-          onSuccess: () => router.back(),
-          onError: (err) => alertError("Anı silinemedi", err, "entry.delete"),
-        });
-      }}
-      onClose={() => setPendingDeleteId(null)}
-    />
+      <ConfirmDialog
+        visible={pendingDeleteId !== null}
+        icon="trash-2"
+        danger
+        title="Bu antrenmanı sil?"
+        message="Bu işlem geri alınamaz, fotoğraf ve ölçümler kalıcı olarak silinir."
+        confirmLabel="Sil"
+        onConfirm={() => {
+          const target = pendingDeleteId;
+          setPendingDeleteId(null);
+          if (!target) return;
+          // Uyarı deseni (başarı değil): geri alınamaz bir işlem başlıyor.
+          // Onay anında veriliyor, silme bitince değil — kullanıcı o an bir karar
+          // verdi ve karşılığını hemen hissetmesi gerekiyor.
+          hapticWarning();
+          // Navigasyon ekranın işi — invalidation'lar hook'un içinde.
+          // onError şart: hata olunca spinner kayboluyor, kayıt yerinde duruyor ve
+          // kullanıcıya HİÇBİR şey söylenmiyordu — silme başarılı sanılıyordu.
+          deleteMutation.mutate(target, {
+            onSuccess: () => router.back(),
+            onError: (err) => alertError("Antrenman silinemedi", err, "entry.delete"),
+          });
+        }}
+        onClose={() => setPendingDeleteId(null)}
+      />
     </>
   );
 }

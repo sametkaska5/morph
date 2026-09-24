@@ -44,8 +44,12 @@ describe("computeStreaks", () => {
   it("aradaki boşluk seriyi böler; en uzun geçmişteki uzun seri olabilir", () => {
     // Geçmişte 4'lük seri, sonra boşluk, bugün 2'lik seri.
     const dates = [
-      daysAgo(10), daysAgo(9), daysAgo(8), daysAgo(7), // 4'lük
-      daysAgo(1), daysAgo(0), // bugüne kadar 2'lik
+      daysAgo(10),
+      daysAgo(9),
+      daysAgo(8),
+      daysAgo(7), // 4'lük
+      daysAgo(1),
+      daysAgo(0), // bugüne kadar 2'lik
     ];
     const { current, longest } = computeStreaks(dates);
     expect(current).toBe(2);

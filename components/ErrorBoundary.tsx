@@ -1,3 +1,4 @@
+import { theme } from "@/lib/theme";
 import { Component, useState, type ReactNode } from "react";
 import { Pressable, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -58,7 +59,7 @@ function ErrorFallback({ onRetry }: { onRetry: () => void }) {
     <View className="flex-1 items-center justify-center bg-bg px-5">
       <View className="items-center">
         <View className="mb-6 h-20 w-20 items-center justify-center rounded-full bg-surfaceMuted">
-          <Ionicons name="alert-circle-outline" size={48} color="#8B8A82" />
+          <Ionicons name="alert-circle-outline" size={48} color={theme.colors.textFaint} />
         </View>
         <Text className="mb-2 text-center text-xl font-bold text-text">Bir şeyler ters gitti</Text>
         <Text className="mb-8 text-center text-base text-textMuted">

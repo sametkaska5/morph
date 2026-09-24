@@ -24,12 +24,28 @@ describe("computeWeekStreak", () => {
   });
 
   it("aradaki boş gün seriyi keser — yalnızca son bloğu sayar", () => {
-    const week = [day("log"), day(null), day("log"), day("log"), day(null, true), day(null, true), day(null, true)];
+    const week = [
+      day("log"),
+      day(null),
+      day("log"),
+      day("log"),
+      day(null, true),
+      day(null, true),
+      day(null, true),
+    ];
     expect(computeWeekStreak(week)).toBe(2);
   });
 
   it("bugün boşsa seri 0'dır", () => {
-    const week = [day("log"), day("log"), day(null), day(null, true), day(null, true), day(null, true), day(null, true)];
+    const week = [
+      day("log"),
+      day("log"),
+      day(null),
+      day(null, true),
+      day(null, true),
+      day(null, true),
+      day(null, true),
+    ];
     expect(computeWeekStreak(week)).toBe(0);
   });
 
@@ -40,7 +56,10 @@ describe("computeWeekStreak", () => {
 
 describe("computeTrend", () => {
   it("iki değer de yoksa delta null ve isGood true (nötr) döner", () => {
-    expect(computeTrend(undefined, undefined, "decrease_is_good")).toEqual({ delta: null, isGood: true });
+    expect(computeTrend(undefined, undefined, "decrease_is_good")).toEqual({
+      delta: null,
+      isGood: true,
+    });
     expect(computeTrend(70, undefined, "decrease_is_good")).toEqual({ delta: null, isGood: true });
   });
 

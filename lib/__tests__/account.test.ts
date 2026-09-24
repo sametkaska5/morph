@@ -99,7 +99,7 @@ describe("deleteAllUserPhotos", () => {
     sb.queueStorageList(
       { data: [{ name: "e1" }, { name: "e2" }] }, // kullanıcının klasörleri
       { data: [{ name: "a.jpg" }, { name: "thumb-a.jpg" }] }, // e1 içindekiler
-      { data: [{ name: "b.jpg" }] } // e2 içindekiler
+      { data: [{ name: "b.jpg" }] }, // e2 içindekiler
     );
 
     await deleteAllUserPhotos("u1");

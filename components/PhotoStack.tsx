@@ -71,7 +71,11 @@ function Leaf({
     const rotation =
       RESTING_ROTATION * depth + (PEEK_ROTATION - RESTING_ROTATION) * depth * progress.value;
     return {
-      transform: [{ translateX: offset }, { translateY: -offset * 0.4 }, { rotate: `${rotation}deg` }],
+      transform: [
+        { translateX: offset },
+        { translateY: -offset * 0.4 },
+        { rotate: `${rotation}deg` },
+      ],
     };
   });
 
@@ -126,8 +130,11 @@ export function PhotoStack({
       Math.min(staggerIndex, 5) * STAGGER_MS,
       withSequence(
         withTiming(1, { duration: OPEN_MS, easing: Easing.out(Easing.cubic) }),
-        withDelay(HOLD_MS, withTiming(0, { duration: CLOSE_MS, easing: Easing.inOut(Easing.quad) }))
-      )
+        withDelay(
+          HOLD_MS,
+          withTiming(0, { duration: CLOSE_MS, easing: Easing.inOut(Easing.quad) }),
+        ),
+      ),
     );
   }, [peekToken, reduceMotion, photos.length, staggerIndex, progress]);
 

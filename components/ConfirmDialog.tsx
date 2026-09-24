@@ -1,3 +1,4 @@
+import { theme } from "@/lib/theme";
 import { View, Pressable, Modal, ActivityIndicator } from "react-native";
 import { PressableFade } from "./PressableFade";
 import Feather from "@expo/vector-icons/Feather";
@@ -102,7 +103,7 @@ export function ConfirmDialog({
                   className={`flex-1 py-4 rounded-button items-center ${danger ? "bg-danger" : "bg-accent"}`}
                 >
                   {pending ? (
-                    <ActivityIndicator color="#0B0D0A" />
+                    <ActivityIndicator color={theme.colors.bg} />
                   ) : (
                     <Text className="text-bg text-base font-semibold">{confirmLabel}</Text>
                   )}

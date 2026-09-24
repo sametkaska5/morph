@@ -74,7 +74,9 @@ export async function fetchProfileStats(userId: string) {
       .order("date", { ascending: true }),
     supabase
       .from("measurement_values")
-      .select("value, entries!inner(date, type, user_id), measurement_types!inner(name, is_default)")
+      .select(
+        "value, entries!inner(date, type, user_id), measurement_types!inner(name, is_default)",
+      )
       // Sistem "kilo" ölçümü. is_default filtresi korunuyor: kullanıcı kendi
       // "kilo" adlı özel ölçümünü eklemiş olabilir, o bu sayaca girmemeli.
       .eq("measurement_types.name", "kilo")

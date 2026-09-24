@@ -1,42 +1,41 @@
 {
-  "cli": {
-    "version": ">= 21.0.0",
-    "appVersionSource": "local"
-  },
-  "build": {
-    "development": {
-      "developmentClient": true,
-      "distribution": "internal",
-      "environment": "development",
-      "channel": "development",
-      "android": {
-        "buildType": "apk"
-      }
-    },
-    "preview": {
-      "distribution": "internal",
-      "environment": "preview",
-      "channel": "preview",
-      "android": {
-        "buildType": "apk"
-      }
-    },
-    "production": {
-      "autoIncrement": true,
-      "environment": "production",
-      "channel": "production",
-      "android": {
-        "buildType": "app-bundle"
-      }
-    }
-  },
-  "submit": {
-    "production": {
-      "//": "serviceAccountKeyPath BİLEREK YOK. Play servis hesabı anahtarı bir sırdır, depoya girmemeli; `eas credentials` ile EAS'e yüklenip orada saklanıyor. Ayrıca Google, YENİ bir uygulamanın İLK AAB'sinin Play Console'dan ELLE yüklenmesini şart koşuyor — Play Developer API o ilk yüklemeden önce çalışmıyor. Yani `eas submit` ancak ikinci sürümden itibaren kullanılabilir (bkz. README).",
-      "android": {
-        "track": "internal",
-        "releaseStatus": "draft"
-      }
-    }
-  }
+    "cli":  {
+                "version":  "\u003e= 21.0.0",
+                "appVersionSource":  "local"
+            },
+    "build":  {
+                  "development":  {
+                                      "developmentClient":  true,
+                                      "distribution":  "internal",
+                                      "environment":  "development",
+                                      "channel":  "development",
+                                      "android":  {
+                                                      "buildType":  "apk"
+                                                  }
+                                  },
+                  "preview":  {
+                                  "distribution":  "internal",
+                                  "environment":  "preview",
+                                  "channel":  "preview",
+                                  "android":  {
+                                                  "buildType":  "apk"
+                                              }
+                              },
+                  "production":  {
+                                     "autoIncrement":  true,
+                                     "environment":  "production",
+                                     "channel":  "production",
+                                     "android":  {
+                                                     "buildType":  "app-bundle"
+                                                 }
+                                 }
+              },
+    "submit":  {
+                   "production":  {
+                                      "android":  {
+                                                      "track":  "internal",
+                                                      "releaseStatus":  "draft"
+                                                  }
+                                  }
+               }
 }

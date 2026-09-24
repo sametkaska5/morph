@@ -1,3 +1,4 @@
+import { theme } from "@/lib/theme";
 import { useState } from "react";
 import { View, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
 import { PressableFade } from "@/components/PressableFade";
@@ -97,7 +98,7 @@ export default function ForgotPasswordScreen() {
           accessibilityLabel="Geri dön"
           dim={0.7}
         >
-          <Feather name="chevron-left" size={22} color="#F5F3EC" />
+          <Feather name="chevron-left" size={22} color={theme.colors.text} />
         </PressableFade>
       </View>
 
@@ -117,7 +118,7 @@ export default function ForgotPasswordScreen() {
           autoCapitalize="none"
           keyboardType="email-address"
           placeholder="sen@ornek.com"
-          placeholderTextColor="#8B8A82"
+          placeholderTextColor={theme.colors.textFaint}
           accessibilityLabel="E-posta"
           style={{ height: 52, textAlignVertical: "center" }}
           className={`bg-surface border border-border rounded-button px-4 text-text text-base mb-4 ${
@@ -133,7 +134,7 @@ export default function ForgotPasswordScreen() {
               onChangeText={setCode}
               keyboardType="number-pad"
               placeholder="8 haneli kod"
-              placeholderTextColor="#8B8A82"
+              placeholderTextColor={theme.colors.textFaint}
               accessibilityLabel="Doğrulama kodu"
               style={{ height: 52, textAlignVertical: "center" }}
               className="bg-surface border border-border rounded-button px-4 text-text text-base mb-4"
@@ -145,7 +146,7 @@ export default function ForgotPasswordScreen() {
               onChangeText={setPassword}
               secureTextEntry
               placeholder="••••••••"
-              placeholderTextColor="#8B8A82"
+              placeholderTextColor={theme.colors.textFaint}
               accessibilityLabel="Yeni şifre"
               style={{ height: 52, textAlignVertical: "center" }}
               className="bg-surface border border-border rounded-button px-4 text-text text-base mb-2"
@@ -153,7 +154,9 @@ export default function ForgotPasswordScreen() {
           </>
         ) : null}
 
-        {infoMsg && step === "reset" ? <Text className="text-accent text-sm mb-2">{infoMsg}</Text> : null}
+        {infoMsg && step === "reset" ? (
+          <Text className="text-accent text-sm mb-2">{infoMsg}</Text>
+        ) : null}
         {errorMsg ? <Text className="text-danger text-base mb-2">{errorMsg}</Text> : null}
 
         {/* Etiket sabit: yüklenirken metin ActivityIndicator'a dönüşüyor. */}
@@ -168,7 +171,7 @@ export default function ForgotPasswordScreen() {
           className="bg-accent rounded-button py-4 items-center mt-4"
         >
           {loading ? (
-            <ActivityIndicator color="#0B0D0A" />
+            <ActivityIndicator color={theme.colors.bg} />
           ) : (
             <Text className="text-bg text-base font-semibold">
               {step === "request" ? "Kod gönder" : "Şifreyi güncelle"}

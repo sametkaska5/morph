@@ -1,4 +1,5 @@
-import { memo, useMemo, useState } from "react";
+import { theme } from "@/lib/theme";
+import { memo, useState } from "react";
 import { View, Pressable, FlatList, ActivityIndicator, RefreshControl } from "react-native";
 import { PressableFade } from "@/components/PressableFade";
 import { Text, TextInput } from "@/components/Typography";
@@ -8,7 +9,8 @@ import Feather from "@expo/vector-icons/Feather";
 import { useAuth } from "@/lib/useAuth";
 import { photoCacheKey } from "@/lib/storage";
 import { formatDateKey } from "@/lib/date";
-import { useSearchIndex, type SearchEntry } from "@/lib/entries";
+import { useSearchEntries, type SearchEntry } from "@/lib/entries";
+import { useDebounce } from "@/lib/useDebounce";
 import { ErrorState } from "@/components/ErrorState";
 import { useScreenInsets } from "@/lib/useScreenInsets";
 
@@ -28,7 +30,16 @@ const ResultRow = memo(function ResultRow({ entry }: { entry: SearchEntry }) {
     >
       <View className="w-12 h-12 rounded-[8px] overflow-hidden bg-surface border border-border">
         {entry.photoUrl ? (
-          <Image source={{ uri: entry.photoUrl, cacheKey: entry.photoPath ? photoCacheKey(entry.photoPath, "thumb") : undefined }} style={{ width: "100%", height: "100%" }} contentFit="cover" cachePolicy="memory-disk" recyclingKey={entry.photoPath ?? undefined} />
+          <Image
+            source={{
+              uri: entry.photoUrl,
+              cacheKey: entry.photoPath ? photoCacheKey(entry.photoPath, "thumb") : undefined,
+            }}
+            style={{ width: "100%", height: "100%" }}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            recyclingKey={entry.photoPath ?? undefined}
+          />
         ) : null}
       </View>
       <View className="flex-1">
@@ -39,7 +50,7 @@ const ResultRow = memo(function ResultRow({ entry }: { entry: SearchEntry }) {
           </Text>
         ) : null}
       </View>
-      <Feather name="chevron-right" size={15} color="#8B8A82" />
+      <Feather name="chevron-right" size={15} color={theme.colors.textFaint} />
     </PressableFade>
   );
 });
@@ -47,22 +58,17 @@ const ResultRow = memo(function ResultRow({ entry }: { entry: SearchEntry }) {
 export default function SearchScreen() {
   const screen = useScreenInsets();
   const { user } = useAuth();
-  const { data: entries, isLoading, isRefetching, error, refetch } = useSearchIndex(user?.id);
   const [query, setQuery] = useState("");
+  const debouncedQuery = useDebounce(query, 300);
+  const {
+    data: entries,
+    isLoading,
+    isRefetching,
+    error,
+    refetch,
+  } = useSearchEntries(user?.id, debouncedQuery);
 
-  const results = useMemo(() => {
-    const q = query.trim().toLocaleLowerCase("tr-TR");
-    if (!q || !entries) return [];
-    return entries.filter((e) => {
-      const dateLabel = formatDateKey(e.date, {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      }).toLocaleLowerCase("tr-TR");
-      const note = (e.note ?? "").toLocaleLowerCase("tr-TR");
-      return dateLabel.includes(q) || note.includes(q);
-    });
-  }, [query, entries]);
+  const results = entries ?? [];
 
   return (
     <View className="flex-1 bg-bg px-4" style={{ paddingTop: screen.top }}>
@@ -74,18 +80,21 @@ export default function SearchScreen() {
           accessibilityLabel="Geri dön"
           dim={0.7}
         >
-          <Feather name="chevron-left" size={22} color="#F5F3EC" />
+          <Feather name="chevron-left" size={22} color={theme.colors.text} />
         </PressableFade>
         <Text className="text-text text-xl font-bold">Anılarında ara</Text>
       </View>
 
-      <View className="flex-row items-center gap-2 bg-surface border border-border rounded-button px-4 mb-4" style={{ height: 52 }}>
-        <Feather name="search" size={17} color="#8B8A82" />
+      <View
+        className="flex-row items-center gap-2 bg-surface border border-border rounded-button px-4 mb-4"
+        style={{ height: 52 }}
+      >
+        <Feather name="search" size={17} color={theme.colors.textFaint} />
         <TextInput
           value={query}
           onChangeText={setQuery}
           placeholder="Tarih veya not ara (ör. temmuz, tatil)"
-          placeholderTextColor="#8B8A82"
+          placeholderTextColor={theme.colors.textFaint}
           autoFocus
           accessibilityLabel="Arama kutusu"
           className="flex-1 text-text text-base"
@@ -98,13 +107,13 @@ export default function SearchScreen() {
             accessibilityRole="button"
             accessibilityLabel="Aramayı temizle"
           >
-            <Feather name="x" size={17} color="#8B8A82" />
+            <Feather name="x" size={17} color={theme.colors.textFaint} />
           </Pressable>
         ) : null}
       </View>
 
       {isLoading ? (
-        <ActivityIndicator color="#8CE05A" className="mt-4" />
+        <ActivityIndicator color={theme.colors.accent} className="mt-4" />
       ) : error ? (
         // Arama dizini çekilemediyse her sorgu "sonuç yok" derdi — kullanıcı
         // aradığı anının silindiğini sanırdı.
@@ -113,10 +122,13 @@ export default function SearchScreen() {
         </View>
       ) : !query.trim() ? (
         <Text className="text-textMuted text-base text-center mt-10 px-6">
-          Bir tarih (ör. "mart 2026") ya da notlarında geçen bir kelime yazarak anılarında arama yapabilirsin.
+          Bir tarih (ör. "mart 2026") ya da notlarında geçen bir kelime yazarak anılarında arama
+          yapabilirsin.
         </Text>
       ) : results.length === 0 ? (
-        <Text className="text-textMuted text-base text-center mt-10 px-6">Eşleşen bir anı bulunamadı.</Text>
+        <Text className="text-textMuted text-base text-center mt-10 px-6">
+          Eşleşen bir anı bulunamadı.
+        </Text>
       ) : (
         <FlatList
           data={results}
@@ -130,8 +142,8 @@ export default function SearchScreen() {
             <RefreshControl
               refreshing={isRefetching}
               onRefresh={() => refetch()}
-              tintColor="#8CE05A"
-              colors={["#8CE05A"]}
+              tintColor={theme.colors.accent}
+              colors={[theme.colors.accent]}
             />
           }
         />

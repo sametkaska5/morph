@@ -17,7 +17,9 @@ export function useNotificationSettings(userId: string | undefined) {
     queryFn: async (): Promise<NotificationSettings> => {
       const { data, error } = await supabase
         .from("notification_settings")
-        .select("user_id, past_memory_enabled, streak_enabled, daily_reminder_enabled, reminder_time")
+        .select(
+          "user_id, past_memory_enabled, streak_enabled, daily_reminder_enabled, reminder_time",
+        )
         .eq("user_id", userId!)
         .single();
       if (error) throw error;
@@ -32,7 +34,10 @@ export function useUpdateNotificationSettings(userId: string | undefined) {
   return useMutation({
     mutationFn: async (patch: Partial<Omit<NotificationSettings, "user_id">>) => {
       if (!userId) throw new Error("Giriş yapılmamış");
-      const { error } = await supabase.from("notification_settings").update(patch).eq("user_id", userId);
+      const { error } = await supabase
+        .from("notification_settings")
+        .update(patch)
+        .eq("user_id", userId);
       if (error) throw error;
     },
     onMutate: async (patch) => {
@@ -40,7 +45,9 @@ export function useUpdateNotificationSettings(userId: string | undefined) {
       // aksi halde ağ gecikmesinde toggle "geri sıçrıyor" gibi görünüyordu.
       await queryClient.cancelQueries({ queryKey: key });
       const previous = queryClient.getQueryData<NotificationSettings>(key);
-      queryClient.setQueryData<NotificationSettings>(key, (old) => (old ? { ...old, ...patch } : old));
+      queryClient.setQueryData<NotificationSettings>(key, (old) =>
+        old ? { ...old, ...patch } : old,
+      );
       return { previous };
     },
     onError: (_err, _patch, context) => {

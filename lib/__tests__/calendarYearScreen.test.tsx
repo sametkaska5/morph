@@ -115,7 +115,9 @@ describe("yıllık takvim — gün durumları", () => {
     // tümden gizlerdi.
     await render(<CalendarYear />);
 
-    expect(screen.getByLabelText(/^4 Ocak, kayıt yok, ölçüm veya program eklemek için dokun$/)).toBeTruthy();
+    expect(
+      screen.getByLabelText(/^4 Ocak, kayıt yok, ölçüm veya program eklemek için dokun$/),
+    ).toBeTruthy();
   });
 
   it("gelecek günleri odak dışında bırakır", async () => {

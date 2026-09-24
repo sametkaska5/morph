@@ -1,6 +1,6 @@
 import "../global.css";
 import { useEffect, useRef } from "react";
-import { Stack, router } from "expo-router";
+import { Stack, router, useRootNavigationState } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -21,6 +21,7 @@ import {
 import { AuthProvider, useAuth } from "@/lib/useAuth";
 import { registerAuthAutoRefresh } from "@/lib/supabase";
 import { registerEntryMutationDefaults, QUERY_CACHE_STORAGE_KEY } from "@/lib/entryMutations";
+import { registerWorkoutMutationDefaults } from "@/lib/workout";
 import { maybeSweepOrphans } from "@/lib/orphanSweep";
 import {
   refreshMemoryNotifications,
@@ -55,6 +56,7 @@ const queryClient = new QueryClient({
   },
 });
 registerEntryMutationDefaults(queryClient);
+registerWorkoutMutationDefaults(queryClient);
 
 // Hata izlemeyi uygulama açılışında bir kez başlat (DSN yoksa no-op).
 initMonitoring();
@@ -78,7 +80,10 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 
 // Sert kesme yerine kısa bir çapraz geçiş: splash ile ilk ekran aynı arka plan
 // rengini (#0A0A08) paylaştığı için geçiş neredeyse görünmez oluyor.
-SplashScreen.setOptions({ duration: 300, fade: true });
+// Expo Go'da setOptions desteklenmediği için uyarı atar, bunu engellemek adına try-catch kullanıyoruz.
+try {
+  SplashScreen.setOptions({ duration: 300, fade: true });
+} catch {}
 
 const persister = createAsyncStoragePersister({
   storage: AsyncStorage,
@@ -159,7 +164,8 @@ function MemoryNotificationRefresher() {
  */
 function NotificationRouter() {
   const { session, loading } = useAuth();
-  const ready = !loading && !!session;
+  const rootNavigationState = useRootNavigationState();
+  const ready = !loading && !!session && !!rootNavigationState?.key;
   const handledId = useRef<string | null>(null);
 
   useEffect(() => {

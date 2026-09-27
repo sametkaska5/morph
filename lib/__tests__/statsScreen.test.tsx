@@ -25,6 +25,7 @@ const mockUseMeasurementSeries = jest.fn();
 const mockUseWeek = jest.fn();
 const mockUseShareablePhotos = jest.fn();
 const mockUseNotificationSettings = jest.fn();
+const mockUseProfileStats = jest.fn();
 const mockInvalidateQueries = jest.fn();
 const mockPush = jest.fn();
 const mockScheduleStreakRisk = jest.fn();
@@ -37,13 +38,14 @@ jest.mock("../units", () => ({
   ...jest.requireActual("../units"),
   useUnitPreference: () => mockUseUnitPreference(),
 }));
-// computeWeekStreak / computeTrend GERÇEK kalıyor — ekranın onlarla doğru
-// bütünleştiğini de doğrulamak istiyoruz.
 jest.mock("../stats", () => ({
   ...jest.requireActual("../stats"),
   useMeasurementSeries: () => mockUseMeasurementSeries(),
   useWeek: (userId: string | undefined, weekOffset = 0) => mockUseWeek(userId, weekOffset),
   useShareablePhotoEntries: () => mockUseShareablePhotos(),
+}));
+jest.mock("../profileStats", () => ({
+  useProfileStats: () => mockUseProfileStats(),
 }));
 jest.mock("../notificationSettings", () => ({
   useNotificationSettings: () => mockUseNotificationSettings(),
@@ -145,6 +147,7 @@ beforeEach(() => {
   mockUseWeek.mockReturnValue({ data: WEEK, isLoading: false });
   mockUseShareablePhotos.mockReturnValue({ data: PHOTOS, isLoading: false });
   mockUseNotificationSettings.mockReturnValue({ data: { streak_enabled: false } });
+  mockUseProfileStats.mockReturnValue({ data: { current: 4, longest: 4 } });
 });
 
 describe("istatistikler — ölçüm serisi ve trend", () => {
@@ -217,7 +220,7 @@ describe("istatistikler — ölçüm tipi değişimi", () => {
 });
 
 describe("istatistikler — haftalık seri", () => {
-  it("bu haftanın serisini doğru sayar", async () => {
+  it("mevcut profil serisini gösterir", async () => {
     await render(<Istatistikler />);
 
     expect(screen.getByText("4 gün üst üste")).toBeTruthy();
@@ -236,11 +239,8 @@ describe("istatistikler — haftalık seri", () => {
     expect(screen.getByLabelText("Tekrar dene")).toBeTruthy();
   });
 
-  it("bugün boşsa seri sıfırdır", async () => {
-    mockUseWeek.mockReturnValue({
-      data: WEEK.map((d) => (d.isToday ? { ...d, type: null, id: null } : d)),
-      isLoading: false,
-    });
+  it("profil statlarında seri sıfırsa sıfır gösterir", async () => {
+    mockUseProfileStats.mockReturnValue({ data: { current: 0 } });
     await render(<Istatistikler />);
 
     expect(screen.getByText("0 gün üst üste")).toBeTruthy();

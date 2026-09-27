@@ -2,9 +2,33 @@
 
 [![CI](https://github.com/sametkaska5/remory/actions/workflows/ci.yml/badge.svg)](https://github.com/sametkaska5/remory/actions/workflows/ci.yml)
 
-Fotoğraf tabanlı, offline-öncelikli bir anı/ilerleme günlüğü. Expo Router + Supabase üzerine kurulu, NativeWind ile tasarım sistemine bağlı.
+Fotoğraf tabanlı, bir anı/ilerleme günlüğü. Expo Router + Supabase üzerine kurulu, NativeWind ile tasarım sistemine bağlı.
 
-## Kurulum
+## 📑 İçindekiler
+
+- [Kurulum](#kurulum)
+- [RLS testleri](#rls-testleri)
+- [Teknolojiler](#teknolojiler)
+- [Klasör yapısı](#klasor-yapisi)
+- [Mimari notları](#mimari-notlari)
+- [Test](#test)
+- [Dağıtım](#dagitim)
+  - [Sentry kaynak haritaları](#sentry-kaynak-haritalari)
+    - [⚠️ Kablosuz güncellemeler ayrı bir adım istiyor](#kablosuz-guncellemeler-ayri-bir-adim-istiyor)
+    - [Token'ı bir kez ver, bir daha uğraşma](#tokeni-bir-kez-ver-bir-daha-ugrasma)
+  - [Kablosuz güncelleme (EAS Update)](#kablosuz-guncelleme-eas-update)
+    - [Güncelleme kullanıcıya nasıl ulaşıyor](#guncelleme-kullaniciya-nasil-ulasiyor)
+- [Kalite kontrolleri](#kalite-kontrolleri)
+- [Durum](#durum)
+  - [Android izinleri](#android-izinleri)
+- [Yayına çıkış (Google Play)](#yayina-cikis-google-play)
+  - [Yasal sayfalar — tek kaynak, iki tüketici](#yasal-sayfalar-tek-kaynak-iki-tuketici)
+  - [Veri güvenliği formu](#veri-guvenligi-formu)
+  - [İlk yükleme](#ilk-yukleme)
+  - [Uygulama ikonu](#uygulama-ikonu)
+- [Bilinen açık uçlar](#bilinen-acik-uclar)
+
+## 🚀 Kurulum
 
 ```bash
 npm install
@@ -66,7 +90,7 @@ Yeni bir tablo eklediğinde `00_rls_kapsam.sql` bilerek kırılır: o tablonun R
 npx expo start
 ```
 
-## Teknolojiler
+## 💻 Teknolojiler
 
 - **Expo (~57) + Expo Router** — dosya tabanlı navigasyon
 - **Supabase** — auth, Postgres (RLS'li), storage
@@ -78,7 +102,7 @@ npx expo start
 - **expo-image-picker / -manipulator / -media-library / view-shot / sharing** — fotoğraf çekimi, kırpma, paylaşılabilir kart üretimi
 - **expo-notifications** — "X ay önce bugün" yerel hatırlatmaları
 
-## Klasör yapısı
+## 📁 Klasör yapısı
 
 ```
 app/
@@ -167,7 +191,7 @@ supabase/migrations/   0001–0013 şema + RLS + storage politikaları, antrenma
 supabase/tests/        politikaların pgTAP testleri (npm run test:rls)
 ```
 
-## Mimari notları
+## 🏛️ Mimari notları
 
 - **Veri erişimi ekranlarda değil `lib/` içinde.** Ekranlar `useTimelineEntries()` gibi hook'ları çağırır; `supabase.from(...)` yazmaz. Yeni bir sorgu eklerken hook'u ilgili lib modülüne koy.
 - **Query anahtarları `lib/queryKeys.ts`'ten gelir**, elle dizi yazılmaz. Aile yapısı sayesinde `invalidateQueries({ queryKey: queryKeys.entries.all })` tüm girdi listelerini birden tazeler.
@@ -183,7 +207,7 @@ supabase/tests/        politikaların pgTAP testleri (npm run test:rls)
 - **Şifre değiştirmek yeniden kimlik doğrulaması ister.** Supabase'in `updateUser({ password })` çağrısı eski şifreyi sormuyor — açık oturum yeterli. Yani kilidi açık bir telefonu eline geçiren biri şifreyi değiştirip hesabın sahibini kilitleyebilirdi. `settings/password.tsx` değiştirmeden önce `signInWithPassword` ile mevcut şifreyi doğruluyor (aynı kullanıcı için yeni oturum açar, `SIGNED_OUT` tetiklemez, önbellek temizlenmez). Bu adım kaldırılırsa ekran gözle bakınca aynen çalışmaya devam eder; `passwordScreen` testi o yüzden var.
 - **Oturum yenilemesi AppState'e bağlı.** `autoRefreshToken: true` tek başına yetmiyor: yenileme bir JS zamanlayıcısıyla yapılıyor, işletim sistemi ise arka plandaki uygulamanın zamanlayıcılarını donduruyor. Uygulama uzun süre arka planda kalınca token'ın süresi doluyor ve dönüşteki ilk istekler 401 alıyor — kullanıcı için bu, sebepsiz bir çıkış gibi görünüyor. `registerAuthAutoRefresh()` (bkz. `lib/supabase.ts`, kök layout'ta bir kez çağrılır) önplana geçişte `startAutoRefresh()` çağırıyor; bu yalnızca zamanlayıcıyı kurmakla kalmıyor, kaçırılan yenilemeyi ilk veri isteğinden önce telafi ediyor.
 
-## Test
+## 🧪 Test
 
 ```bash
 npm test
@@ -205,7 +229,7 @@ Native köprü gerektiren kütüphaneler `jest.setup.js`'te merkezî olarak takl
 
 > `helpers/` klasörü `testPathIgnorePatterns` ile hariç tutulmuş; oraya test değil yalnızca yardımcı koy.
 
-## Dağıtım
+## 🌐 Dağıtım
 
 Proje **development build** ile geliştiriliyor (Expo Go değil) — `expo-notifications` ve `expo-media-library` gibi native modüller Expo Go'da yok.
 
@@ -224,10 +248,10 @@ eas env:push preview --path .env
 
 Release build'lerinde kaynak haritaları Sentry'ye yükleniyor, yani yığın izleri küçültülmüş kod yerine gerçek dosya/satır olarak görünüyor. İki parça birlikte çalışıyor:
 
-| Parça | Nerede | Ne işe yarıyor |
-|---|---|---|
+| Parça                      | Nerede                     | Ne işe yarıyor            |
+| -------------------------- | -------------------------- | ------------------------- |
 | `organization` / `project` | `app.json` → Sentry plugin | Hangi projeye yükleneceği |
-| `SENTRY_AUTH_TOKEN` | EAS gizli değişkeni | Yükleme yetkisi |
+| `SENTRY_AUTH_TOKEN`        | EAS gizli değişkeni        | Yükleme yetkisi           |
 
 Plugin bunlardan `android/sentry.properties`'i üretiyor; doğrulamak için `npx expo prebuild --platform android --no-install` çalıştırıp dosyaya bakabilirsin (sonra `android/` klasörünü silmeyi ve `package.json` script'lerini geri almayı unutma).
 
@@ -262,9 +286,9 @@ npx sentry-cli react-native gradle --bundle ./tmp/index.android.bundle --sourcem
 
 Yanıtı okurken ilk bakılacak yer **hatayı kimin döndürdüğü**:
 
-| Görünen | Kaynak | Anlamı |
-|---|---|---|
-| `HTTP/1.1` + JSON gövde | Sentry API | Aşağıdaki durum kodlarına bak |
+| Görünen                                        | Kaynak                 | Anlamı                                                                            |
+| ---------------------------------------------- | ---------------------- | --------------------------------------------------------------------------------- |
+| `HTTP/1.1` + JSON gövde                        | Sentry API             | Aşağıdaki durum kodlarına bak                                                     |
 | `HTTP/1.0` + `Error 400 (Bad Request)!!1` HTML | Google yük dengeleyici | İstek Sentry'ye **hiç ulaşmadı** — büyük olasılıkla bozuk `Authorization` başlığı |
 
 Sentry'den gelen kodlar: **401** token geçersiz, **403** kapsam yetersiz (`www-authenticate` başlığı eksik kapsamı adıyla yazıyor), **404** org bulunamadı, **400** istek gövdesi yanlış.
@@ -343,7 +367,7 @@ Yeniden başlatma **asla kendiliğinden** yapılmıyor, yalnızca kullanıcı do
 
 > `ready` bayrağı bilerek expo-updates'in kendi `isUpdatePending`'inden okunuyor, kendi state'imizden değil. Açılıştaki otomatik indirme bizim kodumuzdan geçmiyor — kendi bayrağımızı tutsaydık o durumda hiç açılmaz ve zaten hazır olan güncelleme duyurulmazdı.
 
-## Kalite kontrolleri
+## ✅ Kalite kontrolleri
 
 Üç komut projenin kalite kapısı — üçü de temiz geçmeden değişiklik gönderme:
 
@@ -357,7 +381,7 @@ Aynı üçü her `push` ve pull request'te GitHub Actions üzerinde de çalış�
 
 Biçimlendirme Prettier'ın işi (`npm run format` yazar, `npm run format:check` sadece denetler); ESLint yalnızca kod kalitesine bakar, ikisi çakışmaz.
 
-## Durum
+## 📊 Durum
 
 Ana akışlar uçtan uca çalışır durumda: auth, kayıt oluşturma/düzenleme/silme, fotoğrafsız gün ve antrenman programı, offline ekleme + geri senkronizasyon, karşılaştırma, istatistikler, paylaşılabilir kart, bildirimler, profil ve ayarlar.
 
@@ -367,11 +391,11 @@ Kalite kapısının üçü de temiz: ESLint sıfır sorun, `tsc --noEmit` temiz,
 
 Manifest'e giren izinlerin tamamı uygulamanın gerçekten kullandığı bir yeteneğe karşılık geliyor. Üç tanesi bunu sağlamak için **bilerek söktürülüyor** (`app.json` → `android.blockedPermissions`):
 
-| İzin | Nereden geliyor | Neden gerekmiyor |
-|---|---|---|
-| `READ_MEDIA_VIDEO` | `expo-image-picker`, `expo-media-library` | Seçici `mediaTypes` verilmeden çağrılıyor → varsayılan `images` |
-| `READ_MEDIA_AUDIO` | aynı eklentiler | Uygulama sesli hiçbir şeye dokunmuyor |
-| `SYSTEM_ALERT_WINDOW` | Expo prebuild şablonu (hem `src/main` hem `src/debug`) | Yalnızca debug'a özel kod kullanıyor — bkz. aşağıdaki not |
+| İzin                  | Nereden geliyor                                        | Neden gerekmiyor                                                |
+| --------------------- | ------------------------------------------------------ | --------------------------------------------------------------- |
+| `READ_MEDIA_VIDEO`    | `expo-image-picker`, `expo-media-library`              | Seçici `mediaTypes` verilmeden çağrılıyor → varsayılan `images` |
+| `READ_MEDIA_AUDIO`    | aynı eklentiler                                        | Uygulama sesli hiçbir şeye dokunmuyor                           |
+| `SYSTEM_ALERT_WINDOW` | Expo prebuild şablonu (hem `src/main` hem `src/debug`) | Yalnızca debug'a özel kod kullanıyor — bkz. aşağıdaki not       |
 
 **Neden `permissions` listesinden çıkarmak yetmiyor:** bu izinler bizim listemizden değil, bağımlılıkların kendi manifest'lerinden geliyor. Manifest merge sırasında yine ekleniyorlar. `blockedPermissions` ise onlara `tools:node="remove"` işareti koyuyor, yani merge sonunda düşüyorlar.
 
@@ -404,7 +428,7 @@ WAKE_LOCK  WRITE_EXTERNAL_STORAGE
 
 `SYSTEM_ALERT_WINDOW`, `READ_MEDIA_VIDEO`, `READ_MEDIA_AUDIO` ve `RECORD_AUDIO` listede yok. **Debug** varyantında ise `SYSTEM_ALERT_WINDOW` duruyor (medya izinleri orada da düşüyor) — yani dev menüsü çalışmaya devam ediyor, tasarlanan ayrım tutuyor.
 
-## Yayına çıkış (Google Play)
+## 📱 Yayına çıkış (Google Play)
 
 ### Yasal sayfalar — tek kaynak, iki tüketici
 
@@ -428,14 +452,14 @@ GitHub Pages'i açmak (bir kereye mahsus): depo ayarlarında **Settings → Page
 
 Beyan, gizlilik metnine değil **kodun davranışına** göre doldurulur. Aşağıdaki tablo şemadan ve `lib/monitoring.ts`'ten türetildi; veri modeli değişirse burası da güncellenmeli.
 
-| Play kategorisi | Veri | Kaynak |
-|---|---|---|
-| Kişisel bilgiler → E-posta | hesap kimliği (zorunlu) | Supabase auth |
-| Kişisel bilgiler → İsim | `profiles.name` (isteğe bağlı) | `0001_init.sql` |
-| Kişisel bilgiler → Diğer | günlük notları | `entries.note` |
-| Fotoğraflar ve videolar | anı fotoğrafları + avatar | `photos` tablosu, `profiles.avatar_path` |
-| **Sağlık ve fitness** | vücut ölçümleri | `measurement_values` |
-| Uygulama bilgisi → **Çökme kayıtları** | Sentry | `lib/monitoring.ts` |
+| Play kategorisi                        | Veri                           | Kaynak                                   |
+| -------------------------------------- | ------------------------------ | ---------------------------------------- |
+| Kişisel bilgiler → E-posta             | hesap kimliği (zorunlu)        | Supabase auth                            |
+| Kişisel bilgiler → İsim                | `profiles.name` (isteğe bağlı) | `0001_init.sql`                          |
+| Kişisel bilgiler → Diğer               | günlük notları                 | `entries.note`                           |
+| Fotoğraflar ve videolar                | anı fotoğrafları + avatar      | `photos` tablosu, `profiles.avatar_path` |
+| **Sağlık ve fitness**                  | vücut ölçümleri                | `measurement_values`                     |
+| Uygulama bilgisi → **Çökme kayıtları** | Sentry                         | `lib/monitoring.ts`                      |
 
 Güvenlik uygulamaları: aktarımda şifreli (HTTPS) ✓, kullanıcı silme talep edebilir ✓ (`delete_own_account` + `deleteAllUserPhotos`), üçüncü tarafla paylaşılmıyor ✓ — Supabase ve Sentry Play'in tanımında "paylaşım" değil hizmet sağlayıcı.
 
@@ -455,11 +479,11 @@ Ayrıca yeni **bireysel** geliştirici hesapları için Google, üretime çıkma
 
 Üç ayrı varlık, üç ayrı kural — birini diğerinin yerine koyamazsın:
 
-| Dosya | Nerede | İçeriğin kanvasa oranı |
-|---|---|---|
-| `icon.png` | iOS + genel | %66.4, opak koyu zemin (köşeler yalnızca hafifçe yuvarlanıyor) |
-| `adaptive-icon.png` | Android launcher | **%58**, saydam zemin |
-| `splash-icon.png` | açılış ekranı | %62.1, saydam zemin (`imageWidth: 200` ile ayrıca ölçekleniyor) |
+| Dosya               | Nerede           | İçeriğin kanvasa oranı                                          |
+| ------------------- | ---------------- | --------------------------------------------------------------- |
+| `icon.png`          | iOS + genel      | %66.4, opak koyu zemin (köşeler yalnızca hafifçe yuvarlanıyor)  |
+| `adaptive-icon.png` | Android launcher | **%58**, saydam zemin                                           |
+| `splash-icon.png`   | açılış ekranı    | %62.1, saydam zemin (`imageWidth: 200` ile ayrıca ölçekleniyor) |
 
 Android'in adaptif ikonu üç halkalı bir ölçü sistemi kullanıyor: katman **108dp**, maskeye giren görüş alanı **72dp** (%66.7), kritik içerik için güvenli daire **66dp** (%61.1). Dış bölge parallax için ayrılmış ve durağan görünümde kırpılıyor.
 
@@ -471,7 +495,7 @@ Zemin **dosyaya gömülmüyor**: ön katman saydam, arka plan `app.json` → `an
 
 İkon **native bir kaynak** (`mipmap/ic_launcher_foreground`), yani kablosuz güncellemeyle gitmiyor — değiştirildiğinde `app.json`'daki `version` elle artırılmalı ve yeni bir build alınmalı.
 
-## Bilinen açık uçlar
+## 📝 Bilinen açık uçlar
 
 - Onboarding tek ekranda (`welcome.tsx`); planlanan ek adımlar henüz yok. Akış bağlı ve testli — adım eklemek istendiğinde `app/index.tsx`'teki karara dokunmadan `(onboarding)` altına yeni ekran koymak yeterli.
 - Statik metinli ekranların (yasal metinler, yardım) testleri metnin KENDİSİNİ doğrulamıyor — öyle bir test değişiklik dedektörü olurdu. Doğrulanan, metnin sağlaması gereken değişmezler: başlık/soru benzersizliği (üç ekran da onları React anahtarı olarak kullanıyor), boş bölüm olmaması, gizlilik politikasında silme yolunun tarif edilmiş olması (Play'in veri güvenliği beyanı şart koşuyor), yardım ekranındaki `mailto` konusunun kodlanmış olması, yasal yolların diskte gerçekten karşılığı bulunması ve geri/yönlendirme düğmeleri. Veri yazan ve geri alınamaz akışların hepsi testli.

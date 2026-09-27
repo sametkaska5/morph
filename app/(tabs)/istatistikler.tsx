@@ -34,6 +34,7 @@ import {
   computeTrend,
   invalidateStatsQueries,
 } from "@/lib/stats";
+import { useProfileStats } from "@/lib/profileStats";
 import { alertError } from "@/lib/alerts";
 import { MeasurementChart, VISIBLE_POINTS } from "@/components/MeasurementChart";
 import { useScreenInsets } from "@/lib/useScreenInsets";
@@ -160,7 +161,8 @@ export default function Istatistikler() {
     activeType?.target_direction,
   );
 
-  const currentStreak = currentWeek ? computeWeekStreak(currentWeek) : 0;
+  const { data: profileStats } = useProfileStats(user?.id);
+  const currentStreak = profileStats?.current ?? 0;
   const weekRangeLabel = week?.length
     ? formatWeekRange(week[0].date, week[week.length - 1].date)
     : "";

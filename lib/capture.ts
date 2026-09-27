@@ -76,7 +76,7 @@ async function pickFromLibrary() {
     warnPermissionDenied("galeri");
     return;
   }
-  return ImagePicker.launchImageLibraryAsync({ allowsEditing: false, quality: 0.9, exif: true });
+  return ImagePicker.launchImageLibraryAsync({ allowsEditing: false, allowsMultipleSelection: true, quality: 0.9, exif: true });
 }
 
 /**
@@ -128,41 +128,37 @@ function parseExifDateTime(exif: Record<string, unknown> | undefined | null): st
 }
 
 async function handleResult(result: ImagePicker.ImagePickerResult | undefined) {
-  if (result && !result.canceled && result.assets?.[0]?.uri) {
-    const asset = result.assets[0];
-    const takenAt = parseExifDateTime(asset.exif);
-
-    // 1) HAM fotoğrafla ANINDA kayıt ekranına geç — önizleme hemen görünsün.
-    //    Eskiden ağır küçültme + base64 üretimi burada await ediliyordu; kamera
-    //    kapandıktan sonra kullanıcı bu iş bitene kadar (birkaç saniye) boş
-    //    bekliyordu. Artık ekran hemen açılıyor, işleme arka planda dönüyor.
-    useCaptureStore.getState().setPhoto({
-      uri: asset.uri,
-      takenAt,
-      processing: true,
-      width: asset.width,
-      height: asset.height,
+  if (result && !result.canceled && result.assets && result.assets.length > 0) {
+    const photos = result.assets.map((asset) => {
+      const takenAt = parseExifDateTime(asset.exif);
+      return {
+        uri: asset.uri,
+        takenAt,
+        processing: true,
+        width: asset.width,
+        height: asset.height,
+      };
     });
+
+    useCaptureStore.getState().setPhotos(photos);
     router.push("/entry/new");
 
-    // 2) Küçültme/base64'ü arka planda üret; bitince store'u güncelle. base64
-    //    hazır olana kadar new.tsx "Kaydet"i bekletiyor (genelde kullanıcı notu/
-    //    ölçüyü yazarken çoktan hazır oluyor). uri'yi DEĞİŞTİRMİYORUZ ki önizleme
-    //    titremesin — kayıt zaten base64 üzerinden yapılıyor.
-    try {
-      const resized = await resizeAndCompress(asset.uri);
-      useCaptureStore.getState().patchPhoto({
-        base64: resized.base64,
-        thumbBase64: resized.thumbBase64,
-        processing: false,
-      });
-    } catch (err) {
-      // Bozuk/desteklenmeyen görsel ya da bellek yetersizliği: kaydetme
-      // yapılamaz. processing'i kapatıyoruz; new.tsx base64 yoksa zaten
-      // kaydetmeyi engelliyor.
-      useCaptureStore.getState().patchPhoto({ processing: false });
-      showAlert("Fotoğraf işlenemedi", (err as Error).message, "danger");
-    }
+    // Process all images in parallel
+    await Promise.all(
+      result.assets.map(async (asset) => {
+        try {
+          const resized = await resizeAndCompress(asset.uri);
+          useCaptureStore.getState().patchPhoto(asset.uri, {
+            base64: resized.base64,
+            thumbBase64: resized.thumbBase64,
+            processing: false,
+          });
+        } catch (err) {
+          useCaptureStore.getState().patchPhoto(asset.uri, { processing: false });
+          showAlert("Fotoğraf işlenemedi", (err as Error).message, "danger");
+        }
+      })
+    );
   }
 }
 

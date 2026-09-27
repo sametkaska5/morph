@@ -20,17 +20,20 @@ export type SaveEntryPayload = {
   date: string;
   note: string | null;
   values: Record<string, string>;
-  photoBase64: string;
-  /**
-   * Izgaralarda kullanılan küçük kopya. Opsiyonel çünkü bu alan eklenmeden ÖNCE
-   * offline kuyruğa alınmış (AsyncStorage'da bekleyen) mutation'lar bunu
-   * taşımıyor — onlar da senkronize olabilmeli, sadece thumbnail'siz kalırlar.
-   */
+  // For single photo backwards compatibility or single photo captures
+  photoBase64?: string;
   thumbBase64?: string;
+  // For multiple photos (gallery selection)
+  photos?: { base64: string; thumbBase64?: string }[];
 };
 
 export async function saveEntry(payload: SaveEntryPayload) {
-  const { userId, date, note, values, photoBase64, thumbBase64 } = payload;
+  const { userId, date, note, values, photoBase64, thumbBase64, photos = [] } = payload;
+
+  const photosToUpload = photos.length > 0 ? photos : [];
+  if (photosToUpload.length === 0 && photoBase64) {
+    photosToUpload.push({ base64: photoBase64, thumbBase64 });
+  }
 
   // O güne ait kayıt ZATEN varsa (aynı güne ikinci fotoğraf) notunu koruyoruz.
   // Aşağıdaki upsert notu koşulsuz yazıyordu ve yeni kayıt ekranı mevcut notu
@@ -55,48 +58,45 @@ export async function saveEntry(payload: SaveEntryPayload) {
     .single();
   if (entryError) throw entryError;
 
-  const storagePath = await uploadPhoto(userId, entry.id, photoBase64);
-
-  // Thumbnail bir optimizasyon — yüklenemezse kaydı düşürmüyoruz, thumb_path
-  // null kalır ve okuyan taraf tam boya geri düşer.
-  let thumbPath: string | null = null;
-  if (thumbBase64) {
-    try {
-      thumbPath = await uploadThumb(userId, entry.id, thumbBase64);
-    } catch (err) {
-      captureError(err, { where: "saveEntry.thumb", userId, entryId: entry.id });
-    }
-  }
-
-  // Entry upsert'ü (user_id, date) çakışmasında MEVCUT kaydı yeniden kullanıyor:
-  // aynı güne ikinci kez fotoğraf çekmek yeni bir gün değil, o güne bir fotoğraf
-  // daha eklemek demek. Bu yüzden order_index'i mevcutların ARDINA koyuyoruz.
-  //
-  // Eskiden burada o entry'nin diğer tüm fotoğrafları satır ve dosya olarak
-  // SİLİNİYORDU (kapak karışıklığını çözmek için). Sonucu şuydu: sabah bir
-  // fotoğraf çekip akşam bir tane daha çeken kullanıcı sabahkini geri dönüşsüz
-  // kaybediyordu — üstelik hiçbir uyarı görmeden. Kapak karışıklığı artık
-  // silerek değil, kapağı açıkça YENİ fotoğrafa vererek çözülüyor.
   const { data: existingPhotos } = await supabase
     .from("photos")
     .select("order_index")
     .eq("entry_id", entry.id);
 
-  const { data: photoRow, error: photoError } = await supabase
-    .from("photos")
-    .insert({
-      entry_id: entry.id,
-      storage_path: storagePath,
-      thumb_path: thumbPath,
-      order_index: nextOrderIndex(existingPhotos ?? []),
-    })
-    .select()
-    .single();
-  if (photoError) throw photoError;
+  let startOrderIndex = nextOrderIndex(existingPhotos ?? []);
+  let lastPhotoId: string | null = null;
+
+  for (const p of photosToUpload) {
+    const storagePath = await uploadPhoto(userId, entry.id, p.base64);
+
+    let thumbPath: string | null = null;
+    if (p.thumbBase64) {
+      try {
+        thumbPath = await uploadThumb(userId, entry.id, p.thumbBase64);
+      } catch (err) {
+        captureError(err, { where: "saveEntry.thumb", userId, entryId: entry.id });
+      }
+    }
+
+    const { data: photoRow, error: photoError } = await supabase
+      .from("photos")
+      .insert({
+        entry_id: entry.id,
+        storage_path: storagePath,
+        thumb_path: thumbPath,
+        order_index: startOrderIndex++,
+      })
+      .select()
+      .single();
+    if (photoError) throw photoError;
+    lastPhotoId = photoRow.id;
+  }
 
   // En son eklenen kapak olur: kullanıcı az önce çektiği fotoğrafı ızgarada
   // görmeyi bekler. Diğerleri duruyor, detay ekranından erişilebiliyor.
-  await supabase.from("entries").update({ cover_photo_id: photoRow.id }).eq("id", entry.id);
+  if (lastPhotoId) {
+    await supabase.from("entries").update({ cover_photo_id: lastPhotoId }).eq("id", entry.id);
+  }
 
   // Değerler buraya new.tsx'ten zaten temizlenmiş (metrik) gelir; yine de
   // parseMeasurementInput ile geçiriyoruz — offline'da kuyruğa alınıp sonra

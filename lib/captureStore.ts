@@ -10,7 +10,7 @@ import { create } from "zustand";
 // sabit yükseklikli bir kutuda `cover` ile doldurmak dikey fotoğrafların
 // üstünü/altını kırpıyordu. Opsiyoneller: eski akışlardan gelen ya da ölçüsü
 // bilinmeyen fotoğraflarda okuyan taraf makul bir orana düşüyor.
-type CapturedPhoto = {
+export type CapturedPhoto = {
   uri: string;
   base64?: string;
   thumbBase64?: string;
@@ -18,20 +18,23 @@ type CapturedPhoto = {
   processing?: boolean;
   width?: number;
   height?: number;
-} | null;
+};
 
 interface CaptureStore {
-  photo: CapturedPhoto;
-  setPhoto: (photo: CapturedPhoto) => void;
+  photos: CapturedPhoto[];
+  setPhotos: (photos: CapturedPhoto[]) => void;
   /** Mevcut fotoğrafın üstüne alanları birleştirir (arka plan işlemesi bitince
-   *  base64'ü doldurmak için). Fotoğraf temizlenmişse hiçbir şey yapmaz. */
-  patchPhoto: (partial: Partial<NonNullable<CapturedPhoto>>) => void;
+   *  base64'ü doldurmak için). */
+  patchPhoto: (uri: string, partial: Partial<CapturedPhoto>) => void;
   clear: () => void;
 }
 
 export const useCaptureStore = create<CaptureStore>((set) => ({
-  photo: null,
-  setPhoto: (photo) => set({ photo }),
-  patchPhoto: (partial) => set((s) => (s.photo ? { photo: { ...s.photo, ...partial } } : s)),
-  clear: () => set({ photo: null }),
+  photos: [],
+  setPhotos: (photos) => set({ photos }),
+  patchPhoto: (uri, partial) =>
+    set((s) => ({
+      photos: s.photos.map((p) => (p.uri === uri ? { ...p, ...partial } : p)),
+    })),
+  clear: () => set({ photos: [] }),
 }));

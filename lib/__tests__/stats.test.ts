@@ -1,8 +1,8 @@
 import { computeWeekStreak, computeTrend, invalidateStatsQueries } from "../stats";
 import type { QueryClient } from "@tanstack/react-query";
 
-type Day = { isFuture: boolean; type: string | null };
-const day = (type: string | null, isFuture = false): Day => ({ type, isFuture });
+type Day = { isFuture: boolean; isToday: boolean; type: string | null };
+const day = (type: string | null, isFuture = false, isToday = false): Day => ({ type, isFuture, isToday });
 
 describe("computeWeekStreak", () => {
   it("boş haftada 0 döner", () => {
@@ -15,7 +15,7 @@ describe("computeWeekStreak", () => {
       day("log"),
       day("workout"),
       day("off_day"),
-      day("log"),
+      day("log", false, true),
       day(null, true),
       day(null, true),
       day(null, true),
@@ -28,7 +28,7 @@ describe("computeWeekStreak", () => {
       day("log"),
       day(null),
       day("log"),
-      day("log"),
+      day("log", false, true),
       day(null, true),
       day(null, true),
       day(null, true),
@@ -36,12 +36,25 @@ describe("computeWeekStreak", () => {
     expect(computeWeekStreak(week)).toBe(2);
   });
 
-  it("bugün boşsa seri 0'dır", () => {
+  it("bugün boşsa düne kadarki seri korunur", () => {
     const week = [
       day("log"),
       day("log"),
-      day(null),
+      day("log"),
+      day(null, false, true), // Bugün boş, ama dünden gelen 3 var
       day(null, true),
+      day(null, true),
+      day(null, true),
+    ];
+    expect(computeWeekStreak(week)).toBe(3);
+  });
+
+  it("bugün ve dün de boşsa seri kırılır", () => {
+    const week = [
+      day("log"),
+      day("log"),
+      day(null), // Dün de boş
+      day(null, false, true), // Bugün boş
       day(null, true),
       day(null, true),
       day(null, true),
@@ -50,7 +63,7 @@ describe("computeWeekStreak", () => {
   });
 
   it("tüm hafta doluysa 7 döner", () => {
-    expect(computeWeekStreak(Array.from({ length: 7 }, () => day("log")))).toBe(7);
+    expect(computeWeekStreak(Array.from({ length: 6 }, () => day("log")).concat(day("log", false, true)))).toBe(7);
   });
 });
 

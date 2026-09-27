@@ -105,7 +105,7 @@ export const WeekTracker = memo(function WeekTracker({
             <Text className="text-white text-base font-bold" numberOfLines={1}>
               {currentStreak} gün üst üste
             </Text>
-            <Text className="text-textFaint text-xs capitalize">bu hafta</Text>
+            <Text className="text-textFaint text-xs capitalize">mevcut seri</Text>
           </View>
         </View>
         <View className="flex-row items-center gap-1 shrink-0">

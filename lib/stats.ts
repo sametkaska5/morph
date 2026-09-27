@@ -169,10 +169,15 @@ export function usePrefetchStatsScreen(userId: string | undefined, typeId: strin
  * atlanarak) geriye doğru, tipi olan her gün seriyi büyütür; ilk boş gün keser.
  * Saf fonksiyon — istatistik ekranındaki IIFE'den test edilebilsin diye çıkarıldı.
  */
-export function computeWeekStreak(week: Pick<WeekDayStatus, "isFuture" | "type">[]): number {
+export function computeWeekStreak(week: Pick<WeekDayStatus, "isFuture" | "isToday" | "type">[]): number {
   let streak = 0;
   for (let i = week.length - 1; i >= 0; i--) {
     if (week[i].isFuture) continue;
+    
+    if (week[i].isToday && !week[i].type) {
+      continue; // Grace period for today
+    }
+
     if (week[i].type) streak++;
     else break;
   }

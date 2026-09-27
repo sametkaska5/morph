@@ -11,14 +11,15 @@ import { queryKeys } from "./queryKeys";
  * (aksi halde seri kopmuştur). Test edilebilmesi için export edildi.
  */
 export function computeStreaks(sortedDates: string[]) {
-  if (sortedDates.length === 0) return { current: 0, longest: 0 };
+  const uniqueDates = Array.from(new Set(sortedDates));
+  if (uniqueDates.length === 0) return { current: 0, longest: 0 };
 
   let longest = 1;
   let run = 1;
 
-  for (let i = 1; i < sortedDates.length; i++) {
-    const prev = new Date(sortedDates[i - 1]);
-    const curr = new Date(sortedDates[i]);
+  for (let i = 1; i < uniqueDates.length; i++) {
+    const prev = new Date(uniqueDates[i - 1]);
+    const curr = new Date(uniqueDates[i]);
     const diffDays = Math.round((curr.getTime() - prev.getTime()) / 86400000);
 
     if (diffDays === 1) {
@@ -30,16 +31,16 @@ export function computeStreaks(sortedDates: string[]) {
   }
 
   // Mevcut seri: son kayıttan geriye doğru, bugün ya da dün ile başlıyorsa say
-  const lastDate = new Date(sortedDates[sortedDates.length - 1]);
+  const lastDate = new Date(uniqueDates[uniqueDates.length - 1]);
   const today = new Date(toLocalDateKey(new Date())); // string üzerinden parse, saat dilimi kaymasın
   const daysSinceLast = Math.round((today.getTime() - lastDate.getTime()) / 86400000);
 
   let current = 0;
   if (daysSinceLast <= 1) {
     current = 1;
-    for (let i = sortedDates.length - 1; i > 0; i--) {
-      const prev = new Date(sortedDates[i - 1]);
-      const curr = new Date(sortedDates[i]);
+    for (let i = uniqueDates.length - 1; i > 0; i--) {
+      const prev = new Date(uniqueDates[i - 1]);
+      const curr = new Date(uniqueDates[i]);
       const diffDays = Math.round((curr.getTime() - prev.getTime()) / 86400000);
       if (diffDays === 1) current += 1;
       else break;

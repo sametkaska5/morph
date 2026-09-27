@@ -35,11 +35,9 @@ const MAX_PREVIEW_HEIGHT = 480;
 
 export default function NewEntry() {
   const screen = useScreenInsets();
-  const photo = useCaptureStore((s) => s.photo);
-  const clearPhoto = useCaptureStore((s) => s.clear);
-  // Fotoğraf var ama base64'ü henüz üretilmedi (arka plan küçültme sürüyor).
-  // Bu sürede önizleme görünüyor ama kaydetme beklemeli.
-  const photoProcessing = !!photo && !photo.base64;
+  const photos = useCaptureStore((s) => s.photos);
+  const clearPhotos = useCaptureStore((s) => s.clear);
+  const photoProcessing = photos.some((p) => p.processing || !p.base64);
   const { user } = useAuth();
   const { data: types } = useMeasurementTypes(user?.id);
   const { data: unitPref = "metric" } = useUnitPreference(user?.id);
@@ -49,7 +47,13 @@ export default function NewEntry() {
   const [values, setValues] = useState<Record<string, string>>({});
   // Galeriden seçilen eski fotoğrafın EXIF çekim tarihi varsa (bkz. (tabs)/_layout.tsx
   // parseExifDateTime) tarihi otomatik ona ayarlıyoruz — kullanıcı tekrar elle seçmesin.
-  const [date, setDate] = useState(() => (photo?.takenAt ? new Date(photo.takenAt) : new Date()));
+  const [date, setDate] = useState(() => {
+    const earliestTakenAt = photos
+      .map((p) => p.takenAt)
+      .filter((t): t is string => !!t)
+      .sort()[0];
+    return earliestTakenAt ? new Date(earliestTakenAt) : new Date();
+  });
   const [showPicker, setShowPicker] = useState(false);
   const inputRefs = useRef<(TextInput | null)[]>([]);
   const noteRef = useRef<TextInput | null>(null);
@@ -59,18 +63,10 @@ export default function NewEntry() {
      Önizleme fotoğrafın KENDİ oranında çiziliyor; eskiden kutu tam genişlik ×
      sabit 288px'ti ve `cover` ile dolduruluyordu, yani dikey fotoğrafların üstü
      ve altı kırpılıyordu — kullanıcı çektiği karenin yarısını göremiyordu.
-
-     Genişlik ELLE hesaplanıyor, `width: "100%"` + `aspectRatio` + `maxHeight`
-     üçlüsü DEĞİL: yükseklik maxHeight'e takılınca oranı korumak için genişlik de
-     küçülüyor ve fotoğrafın sağında boşluk kalıyordu. Genişliği sabitleyip
-     yüksekliği kendimiz sınırlayınca kutu her zaman tam genişlik oluyor; yalnızca
-     aşırı uzun fotoğraflarda `cover` biraz kırpıyor.
-
-     40 = contentContainerStyle'daki padding: 20'nin iki yanı. */
+     Genişliği sabitleyip yüksekliği kendimiz sınırlayınca kutu her zaman tam genişlik
+     oluyor; yalnızca aşırı uzun fotoğraflarda `cover` biraz kırpıyor. */
   const { width: windowWidth } = useWindowDimensions();
   const previewWidth = windowWidth - 40;
-  const previewRatio = photo?.width && photo?.height ? photo.width / photo.height : 4 / 3;
-  const previewHeight = Math.min(previewWidth / previewRatio, MAX_PREVIEW_HEIGHT);
 
   const saveMutation = useMutation<
     Awaited<ReturnType<typeof saveEntry>>,
@@ -135,11 +131,11 @@ export default function NewEntry() {
 
   function handleSave() {
     if (!user) return;
-    if (!photo) {
+    if (photos.length === 0) {
       showAlert("Fotoğraf bulunamadı", "Kaydetmeden önce bir fotoğraf çekmen/seçmen gerekiyor.");
       return;
     }
-    if (!photo.base64) {
+    if (photos.some((p) => !p.base64)) {
       // Arka plan küçültme henüz bitmedi — birkaç saniye içinde hazır olur.
       showAlert("Fotoğraf hazırlanıyor", "Fotoğraf işleniyor, bir saniye sonra tekrar dene.");
       return;
@@ -177,10 +173,9 @@ export default function NewEntry() {
       date: toLocalDateKey(date),
       note: note || null,
       values: metricValues,
-      photoBase64: photo.base64,
-      thumbBase64: photo.thumbBase64,
+      photos: photos.map((p) => ({ base64: p.base64!, thumbBase64: p.thumbBase64 })),
     });
-    clearPhoto();
+    clearPhotos();
     // Dokunsal onay BURADA, mutation'ın onSuccess'inde DEĞİL: bu ekran
     // offline-öncelikli, yani kayıt kuyruğa alınıp ağ gelince tamamlanabiliyor.
     // Titreşimi ağ başarısına bağlamak, kullanıcı saatler sonra bambaşka bir
@@ -249,13 +244,27 @@ export default function NewEntry() {
         }}
         keyboardShouldPersistTaps="handled"
       >
-        {photo?.uri ? (
-          <Image
-            source={{ uri: photo.uri }}
-            style={{ width: previewWidth, height: previewHeight }}
-            className="rounded-card mb-4"
-            resizeMode="cover"
-          />
+        {photos.length > 0 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="mb-4"
+            contentContainerStyle={{ gap: 12 }}
+          >
+            {photos.map((p) => {
+              const ratio = p.width && p.height ? p.width / p.height : 4 / 3;
+              const h = Math.min(previewWidth / ratio, MAX_PREVIEW_HEIGHT);
+              return (
+                <Image
+                  key={p.uri}
+                  source={{ uri: p.uri }}
+                  style={{ width: previewWidth, height: h }}
+                  className="rounded-card"
+                  resizeMode="cover"
+                />
+              );
+            })}
+          </ScrollView>
         ) : null}
 
         {/* Kaydet'in neden kapalı olduğunu söyleyen tek yer burası. Eskiden

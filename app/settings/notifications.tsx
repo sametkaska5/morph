@@ -87,7 +87,7 @@ export default function NotificationSettingsScreen() {
     if (!granted) {
       showAlert(
         "Bildirim izni verilmedi",
-        "Bu özelliği kullanabilmek için cihaz ayarlarından Remory'e bildirim izni vermen gerekiyor.",
+        "Bu özelliği kullanabilmek için cihaz ayarlarından Morph'a bildirim izni vermen gerekiyor.",
       );
     }
     return granted;

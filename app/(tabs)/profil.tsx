@@ -216,7 +216,7 @@ export default function Profil() {
                 month: "long",
                 year: "numeric",
               })}
-              'den beri remory'de
+              'den beri morph'ta
             </Text>
           ) : null}
         </Pressable>

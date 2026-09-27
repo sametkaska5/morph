@@ -281,7 +281,7 @@ export default function AnaEkran() {
             className="text-text text-3xl font-bold tracking-wide uppercase"
             accessibilityRole="header"
           >
-            remory
+            morph
           </Text>
           <Text className="text-textMuted text-sm mt-1 capitalize">{todayLabel}</Text>
         </View>

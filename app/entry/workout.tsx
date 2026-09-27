@@ -20,7 +20,7 @@ import {
   type WorkoutDayType,
   SAVE_WORKOUT_DAY_MUTATION_KEY,
 } from "@/lib/workout";
-import { invalidateAfterDayWrite } from "@/lib/entries";
+import { invalidateAfterDayWrite, useDeleteEntry } from "@/lib/entries";
 import { alertError } from "@/lib/alerts";
 import { ErrorState } from "@/components/ErrorState";
 import { useScreenInsets } from "@/lib/useScreenInsets";
@@ -112,6 +112,8 @@ export default function WorkoutDayScreen() {
     },
     onError: (err) => alertError("Kayıt başarısız", err, "workout.saveWorkoutDay"),
   });
+
+  const deleteMutation = useDeleteEntry();
 
   function handleSave() {
     if (!user) return;
@@ -362,9 +364,9 @@ export default function WorkoutDayScreen() {
 
           <PressableFade
             onPress={handleSave}
-            disabled={saveMutation.isPending}
+            disabled={saveMutation.isPending || deleteMutation.isPending}
             dim={0.85}
-            baseOpacity={saveMutation.isPending ? 0.7 : 1}
+            baseOpacity={saveMutation.isPending || deleteMutation.isPending ? 0.7 : 1}
             accessibilityRole="button"
             accessibilityLabel="Günü kaydet"
             className="bg-accent p-4 rounded-button items-center mt-6 flex-row justify-center gap-2"
@@ -375,6 +377,31 @@ export default function WorkoutDayScreen() {
               <Text className="text-bg text-base font-bold">Kaydet</Text>
             )}
           </PressableFade>
+
+          {existing ? (
+            <PressableFade
+              onPress={() => {
+                deleteMutation.mutate(existing.id, {
+                  onSuccess: () => {
+                    hapticSuccess();
+                    router.back();
+                  },
+                  onError: (err) => alertError("Silme başarısız", err, "workout.deleteWorkoutDay")
+                });
+              }}
+              disabled={deleteMutation.isPending || saveMutation.isPending}
+              dim={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Kaydı kaldır"
+              className="p-4 mt-2 items-center rounded-button bg-danger/10 border border-danger/20"
+            >
+              {deleteMutation.isPending ? (
+                <ActivityIndicator color={theme.colors.danger} />
+              ) : (
+                <Text className="text-danger text-base font-bold">Günü Temizle</Text>
+              )}
+            </PressableFade>
+          ) : null}
         </>
       )}
 

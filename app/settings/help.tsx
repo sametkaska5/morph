@@ -35,7 +35,7 @@ export default function HelpScreen() {
 
   function sendFeedback() {
     Linking.openURL(
-      `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("Remory Geri Bildirim")}`,
+      `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("Morph Geri Bildirim")}`,
     );
   }
 
@@ -108,7 +108,7 @@ export default function HelpScreen() {
         </PressableFade>
       </View>
 
-      <Text className="text-textFaint text-xs text-center">Remory v{version}</Text>
+      <Text className="text-textFaint text-xs text-center">Morph v{version}</Text>
     </ScrollView>
   );
 }

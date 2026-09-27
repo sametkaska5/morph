@@ -274,8 +274,6 @@ export default function Welcome() {
                     <Circle cx="380" cy="60" r="5" fill="#111" stroke={theme.colors.accent} strokeWidth="3" />
                   </Svg>
                   
-                  {/* Vertical dashed line for the last point */}
-                  <View className="absolute w-[1px] bg-accent/40" style={{ height: 110, top: 0, right: '3%', borderStyle: 'dashed', borderWidth: 1, borderColor: 'rgba(200,255,100,0.3)' }} />
 
                   {/* Tooltip */}
                   <View className="absolute right-[5%] top-[20px] bg-[#111] border border-accent/50 rounded-xl px-4 py-2 items-center shadow-lg shadow-accent/10">

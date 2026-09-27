@@ -446,7 +446,7 @@ export default function Istatistikler() {
           <View className="bg-bg rounded-t-[28px] border-t border-border p-4 max-h-[92%]">
             <View className="flex-row items-start justify-between mb-4">
               <View className="flex-1 pr-3">
-                <Text className="text-text text-lg font-semibold">Remory serisini paylaş</Text>
+                <Text className="text-text text-lg font-semibold">Morph serisini paylaş</Text>
                 <Text className="text-textFaint text-sm mt-1">
                   Bir fotoğraf seç — serin karta otomatik eklenir, indirip paylaşabilirsin.
                 </Text>
@@ -548,9 +548,9 @@ export default function Istatistikler() {
                       ) : null}
                       <View className="flex-row items-center gap-2 rounded-full border border-white/20 bg-black/55 px-3 py-2">
                         <View className="w-8 h-8 rounded-full bg-accent/20 items-center justify-center border border-accent/30">
-                          <Text className="text-accent font-bold text-sm">R</Text>
+                          <Text className="text-accent font-bold text-sm">M</Text>
                         </View>
-                        <Text className="text-white text-sm font-semibold">remory</Text>
+                        <Text className="text-white text-sm font-semibold">morph</Text>
                       </View>
                     </View>
                   </View>

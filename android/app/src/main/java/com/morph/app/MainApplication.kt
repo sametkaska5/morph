@@ -1,4 +1,4 @@
-package com.remory.app
+package com.morph.app
 
 import android.app.Application
 import android.content.res.Configuration

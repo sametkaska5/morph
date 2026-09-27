@@ -1,8 +1,8 @@
 {
   "expo": {
     "name": "Morph",
-    "slug": "remory",
-    "scheme": "remory",
+    "slug": "morph",
+    "scheme": "morph",
     "version": "0.5.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
@@ -70,10 +70,10 @@
     ],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.remory.app"
+      "bundleIdentifier": "com.morph.app"
     },
     "android": {
-      "package": "com.remory.app",
+      "package": "com.morph.app",
       "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",

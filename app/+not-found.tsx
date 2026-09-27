@@ -8,8 +8,8 @@ import { Text } from "@/components/Typography";
 /**
  * Var olmayan bir route'a düşüldüğünde gösterilen ekran.
  *
- * Neden gerekiyor: `app.json`'da `scheme: "remory"` tanımlı, yani uygulama
- * `remory://...` derin bağlantılarını karşılıyor. Eşleşmeyen bir yol geldiğinde
+ * Neden gerekiyor: `app.json`'da `scheme: "morph"` tanımlı, yani uygulama
+ * `morph://...` derin bağlantılarını karşılıyor. Eşleşmeyen bir yol geldiğinde
  * (eski bir bildirimden, paylaşılmış bayat bir bağlantıdan, ya da elle yazılmış
  * bir adresten) expo-router bu dosyayı arıyor; yoksa kullanıcı boş bir ekranda
  * hiçbir çıkış yolu olmadan kalıyor.

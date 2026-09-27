@@ -1,4 +1,4 @@
-package com.remory.app
+package com.morph.app
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

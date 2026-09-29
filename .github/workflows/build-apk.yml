@@ -1,0 +1,43 @@
+name: Build Android APK
+
+on:
+  # GitHub sayfasından butona basarak manuel çalıştırabilmeni sağlar
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Kodu çek
+        uses: actions/checkout@v4
+
+      - name: Node.js kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+
+      - name: Java kur
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Bağımlılıkları yükle
+        run: npm ci
+
+      - name: Android klasörünü oluştur (Prebuild)
+        run: npx expo prebuild --platform android --clean
+
+      - name: APK Derle (Release Mode)
+        run: |
+          cd android
+          ./gradlew assembleRelease
+
+      - name: APK'yı yükle (Artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: android/app/build/outputs/apk/release/app-release.apk

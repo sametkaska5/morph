@@ -20,7 +20,7 @@ jobs:
           cache: 'npm'
 
       - name: Java kur
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -32,9 +32,12 @@ jobs:
         run: npx expo prebuild --platform android --clean
 
       - name: APK Derle (Release Mode)
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
         run: |
           cd android
-          ./gradlew assembleRelease
+          chmod +x ./gradlew
+          ./gradlew assembleRelease --no-daemon -x lintVitalRelease -Dorg.gradle.jvmargs="-Xmx4096m -XX:MaxMetaspaceSize=1024m"
 
       - name: APK'yı yükle (Artifact)
         uses: actions/upload-artifact@v4

@@ -19,7 +19,7 @@ import { hasSeenOnboarding } from "@/lib/onboarding";
  * goz kirpmasi yaratirdi.
  */
 export default function Index() {
-  const { loading } = useAuth();
+  const { session, loading } = useAuth();
   const [seenOnboarding, setSeenOnboarding] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -28,13 +28,16 @@ export default function Index() {
 
   if (loading || seenOnboarding === null) return null;
 
-  // TEST ICIN: Her zaman onboarding ekranini goster.
-  // Gosterimi gercek haline dondurmek icin asagidaki satirlari aktif et.
-  
-  // if (!session && !seenOnboarding) {
-  //   return <Redirect href="/(onboarding)/welcome" />;
-  // }
-  // return <Redirect href="/(auth)" />;
-  
-  return <Redirect href="/(onboarding)/welcome" />;
+  // Oturum varsa karsilama/giris atlanir — dogrudan ana ekrana.
+  if (session) {
+    return <Redirect href="/(tabs)" />;
+  }
+
+  // Karsilama gorulmemisse onboarding ekrani.
+  if (!seenOnboarding) {
+    return <Redirect href="/(onboarding)/welcome" />;
+  }
+
+  // Diger her durumda giris ekrani.
+  return <Redirect href="/(auth)" />;
 }

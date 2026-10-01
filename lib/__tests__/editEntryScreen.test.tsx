@@ -298,23 +298,23 @@ describe("düzenleme ekranı — silme", () => {
   it("sayfanın dibinde silme düğmesi var", async () => {
     await render(<EditEntry />);
 
-    expect(screen.getByLabelText("Bu anıyı sil")).toBeTruthy();
+    expect(screen.getByLabelText("Bu antrenmanı sil")).toBeTruthy();
   });
 
   it("onay kutusu onaylanmadan silmez", async () => {
     await render(<EditEntry />);
 
-    await fireEvent.press(screen.getByLabelText("Bu anıyı sil"));
+    await fireEvent.press(screen.getByLabelText("Bu antrenmanı sil"));
 
     // Kutu açıldı ama henüz onaylanmadı: geri alınamaz işlem tek dokunuşla olmaz.
-    expect(screen.getByText("Bu anıyı sil?")).toBeTruthy();
+    expect(screen.getByText("Bu antrenmanı sil?")).toBeTruthy();
     expect(mockDeleteMutate).not.toHaveBeenCalled();
   });
 
   it("onaylayınca bu kaydı siler", async () => {
     await render(<EditEntry />);
 
-    await fireEvent.press(screen.getByLabelText("Bu anıyı sil"));
+    await fireEvent.press(screen.getByLabelText("Bu antrenmanı sil"));
     await fireEvent.press(screen.getByText("Sil"));
 
     expect(mockDeleteMutate).toHaveBeenCalledWith("e1", expect.any(Object));
@@ -331,7 +331,7 @@ describe("düzenleme ekranı — silme", () => {
   it("silme bitince yığını kökene indirir, tek adım geri gitmez", async () => {
     await render(<EditEntry />);
 
-    await fireEvent.press(screen.getByLabelText("Bu anıyı sil"));
+    await fireEvent.press(screen.getByLabelText("Bu antrenmanı sil"));
     await fireEvent.press(screen.getByText("Sil"));
 
     const options = mockDeleteMutate.mock.calls[0][1];

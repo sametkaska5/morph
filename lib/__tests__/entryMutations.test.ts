@@ -287,6 +287,7 @@ describe("registerEntryMutationDefaults", () => {
       "currentWeek",
       "workoutDay",
       "programDay",
+      "workoutsList",
       "profile",
       "measurement_series",
       "shareablePhotos",

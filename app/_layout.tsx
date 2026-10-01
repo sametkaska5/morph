@@ -291,10 +291,10 @@ export default function RootLayout() {
               <Stack.Screen name="compare" options={{ presentation: "modal" }} />
               <Stack.Screen name="calendar-year" />
               <Stack.Screen name="search" options={{ presentation: "modal" }} />
+              <Stack.Screen name="workouts" options={{ presentation: "modal" }} />
               <Stack.Screen name="profile/edit" options={{ presentation: "modal" }} />
               <Stack.Screen name="settings/notifications" options={{ presentation: "modal" }} />
               <Stack.Screen name="settings/measurements" options={{ presentation: "modal" }} />
-              <Stack.Screen name="settings/password" options={{ presentation: "modal" }} />
               <Stack.Screen name="settings/help" options={{ presentation: "modal" }} />
             </Stack>
             <SystemBarScrim />

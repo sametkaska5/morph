@@ -137,6 +137,7 @@ describe("program ekranı — form doldurma", () => {
     const { rerender } = await render(<ProgramScreen />);
 
     await fireEvent.press(screen.getAllByLabelText("Hareketi sil")[0]);
+    await fireEvent.press(screen.getByText("Sil"));
     expect(exerciseNames()).toEqual(["Squat"]);
 
     await rerender(<ProgramScreen />);

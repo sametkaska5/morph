@@ -168,7 +168,7 @@ describe("saveProgram", () => {
     // gibi hissederdi.
     sb.queue("entries", { data: { id: "e1" } }); // mevcut gün sorgusu
     sb.queue("workout_items", {}); // eski hareketlerin silinmesi
-    sb.queue("workout_items", { data: { id: "i1" } }); // yeni hareket insert
+    sb.queue("workout_items", { data: [{ id: "i1", order_index: 0 }] }); // yeni hareket insert
 
     const entryId = await saveProgram({
       userId: "u1",
@@ -187,7 +187,7 @@ describe("saveProgram", () => {
     sb.queue("entries", { data: null }); // gün yok
     sb.queue("entries", { data: { id: "e-new" } }); // insert
     sb.queue("workout_items", {});
-    sb.queue("workout_items", { data: { id: "i1" } });
+    sb.queue("workout_items", { data: [{ id: "i1", order_index: 0 }] });
 
     const entryId = await saveProgram({
       userId: "u1",
@@ -218,7 +218,7 @@ describe("saveProgram", () => {
     sb.queue("entries", { data: null }); // mevcut tip sorgusu (o gün henüz yok)
     sb.queue("entries", { data: { id: "e1" } });
     sb.queue("workout_items", {});
-    sb.queue("workout_items", { data: { id: "i1" } });
+    sb.queue("workout_items", { data: [{ id: "i1", order_index: 0 }] });
 
     await saveProgram({
       userId: "u1",
@@ -235,8 +235,7 @@ describe("saveProgram", () => {
     sb.queue("entries", { data: null }); // mevcut tip sorgusu (o gün henüz yok)
     sb.queue("entries", { data: { id: "e1" } });
     sb.queue("workout_items", {}); // delete
-    sb.queue("workout_items", { data: { id: "i1" } });
-    sb.queue("workout_items", { data: { id: "i2" } });
+    sb.queue("workout_items", { data: [{ id: "i1", order_index: 0 }, { id: "i2", order_index: 2 }] });
 
     await saveProgram({
       userId: "u1",
@@ -248,15 +247,9 @@ describe("saveProgram", () => {
       ],
     });
 
-    const inserts = sb
-      .chainsFor("workout_items")
-      .slice(1)
-      .map((c) => argOf(c, "insert"));
-    // order_index, adsız öğe ELENMEDEN ÖNCEKİ indeksten geliyor; bu yüzden
-    // Row 1 değil 2 alıyor. Boşluk bilinçli olarak sorun değil: okurken tek
-    // kullanımı `sort((a,b) => a.order_index - b.order_index)` ve sıralama
-    // için ardışıklık değil yalnızca büyüklük ilişkisi gerekiyor.
-    expect(inserts).toEqual([
+    // Tek bir bulk insert yapılıyor (slice(1) delete'i atlar).
+    const insertChain = sb.chainsFor("workout_items")[1];
+    expect(argOf(insertChain, "insert")).toEqual([
       { entry_id: "e1", name: "Bench", order_index: 0 },
       { entry_id: "e1", name: "Row", order_index: 2 },
     ]);
@@ -266,7 +259,7 @@ describe("saveProgram", () => {
     sb.queue("entries", { data: null }); // mevcut tip sorgusu (o gün henüz yok)
     sb.queue("entries", { data: { id: "e1" } });
     sb.queue("workout_items", {});
-    sb.queue("workout_items", { data: { id: "i1" } });
+    sb.queue("workout_items", { data: [{ id: "i1", order_index: 0 }] });
 
     await saveProgram({
       userId: "u1",
@@ -296,7 +289,7 @@ describe("saveProgram", () => {
     sb.queue("entries", { data: null }); // mevcut tip sorgusu (o gün henüz yok)
     sb.queue("entries", { data: { id: "e1" } });
     sb.queue("workout_items", {});
-    sb.queue("workout_items", { data: { id: "i1" } });
+    sb.queue("workout_items", { data: [{ id: "i1", order_index: 0 }] });
 
     await saveProgram({
       userId: "u1",

@@ -113,13 +113,13 @@ describe("ana ekran — çoklu fotoğraflı gün", () => {
     mockList({ data: [MULTI_ENTRY] });
     await render(<AnaEkran />);
 
-    expect(screen.getByLabelText(/16 Temmuz 2026 tarihli anı, 3 fotoğraf/)).toBeTruthy();
+    expect(screen.getByLabelText(/16 Temmuz 2026 tarihli antrenman, 3 fotoğraf/)).toBeTruthy();
   });
 
   it("tek fotoğraflı günün etiketine sayı EKLEMEZ", async () => {
     await render(<AnaEkran />);
 
-    expect(screen.getByLabelText(/15 Temmuz 2026 tarihli anı$/)).toBeTruthy();
+    expect(screen.getByLabelText(/15 Temmuz 2026 tarihli antrenman$/)).toBeTruthy();
   });
 
   it("çoklu karta dokunmak yine detaya götürür", async () => {
@@ -128,7 +128,7 @@ describe("ana ekran — çoklu fotoğraflı gün", () => {
     mockList({ data: [MULTI_ENTRY] });
     await render(<AnaEkran />);
 
-    await fireEvent.press(screen.getByLabelText(/16 Temmuz 2026 tarihli anı/));
+    await fireEvent.press(screen.getByLabelText(/16 Temmuz 2026 tarihli antrenman/));
 
     expect(mockPush).toHaveBeenCalledWith("/entry/e2");
   });
@@ -139,7 +139,7 @@ describe("ana ekran — çoklu fotoğraflı gün", () => {
     await render(<AnaEkran />);
 
     expect(screen.getByText("3")).toBeTruthy();
-    expect(screen.getByLabelText(/16 Temmuz 2026 tarihli anı, 3 fotoğraf/)).toBeTruthy();
+    expect(screen.getByLabelText(/16 Temmuz 2026 tarihli antrenman, 3 fotoğraf/)).toBeTruthy();
   });
 
   it("bekleyen kayıtta sayı rozeti yerine 'Bekliyor' gösterir", async () => {
@@ -164,7 +164,7 @@ describe("ana ekran", () => {
   it("bir kayda dokununca detayına gider", async () => {
     await render(<AnaEkran />);
 
-    await fireEvent.press(screen.getByLabelText(/15 Temmuz 2026 tarihli anı/));
+    await fireEvent.press(screen.getByLabelText(/15 Temmuz 2026 tarihli antrenman/));
 
     expect(mockPush).toHaveBeenCalledWith("/entry/e1");
   });
@@ -179,7 +179,7 @@ describe("ana ekran", () => {
   it("kareye parmak değdiği anda detay verisini önden çeker", async () => {
     await render(<AnaEkran />);
 
-    await fireEvent(screen.getByLabelText(/15 Temmuz 2026 tarihli anı/), "pressIn");
+    await fireEvent(screen.getByLabelText(/15 Temmuz 2026 tarihli antrenman/), "pressIn");
 
     expect(mockPrefetchDetail).toHaveBeenCalledWith("e1");
   });
@@ -222,22 +222,22 @@ describe("ana ekran", () => {
     mockList({ hasNextPage: true, isFetchingNextPage: true });
     await render(<AnaEkran />);
 
-    expect(screen.getByLabelText("Daha fazla anı yükleniyor")).toBeTruthy();
+    expect(screen.getByLabelText("Daha fazla antrenman yükleniyor")).toBeTruthy();
   });
 
   it("yükleme bitince gösterge kalkar", async () => {
     mockList({ hasNextPage: true, isFetchingNextPage: false });
     await render(<AnaEkran />);
 
-    expect(screen.queryByLabelText("Daha fazla anı yükleniyor")).toBeNull();
+    expect(screen.queryByLabelText("Daha fazla antrenman yükleniyor")).toBeNull();
   });
 
   it("kayıt yokken boş durum ve ekleme çağrısı gösterir", async () => {
     mockList({ data: [] });
     await render(<AnaEkran />);
 
-    expect(screen.getByText("Henüz bir kaydın yok")).toBeTruthy();
-    await fireEvent.press(screen.getByText("İlk anını ekle"));
+    expect(screen.getByText("Henüz bir antrenmanın yok")).toBeTruthy();
+    await fireEvent.press(screen.getByText("İlk antrenmanını ekle"));
     expect(mockOpenCapturePicker).toHaveBeenCalled();
   });
 

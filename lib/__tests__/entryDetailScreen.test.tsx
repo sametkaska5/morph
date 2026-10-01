@@ -459,10 +459,10 @@ describe("kayıt detayı — işlemler", () => {
   it("silme yolu duruyor ve onay istemeden çalışmaz", async () => {
     await render(<EntryDetail />);
 
-    await fireEvent.press(screen.getByLabelText("Bu anıyı sil"));
+    await fireEvent.press(screen.getByLabelText("Bu antrenmanı sil"));
 
     // Onay ekranı açıldı ama henüz silme yok.
-    expect(screen.getByText("Bu anıyı sil?")).toBeTruthy();
+    expect(screen.getByText("Bu antrenmanı sil?")).toBeTruthy();
     expect(mockDeleteMutate).not.toHaveBeenCalled();
   });
 
@@ -474,7 +474,7 @@ describe("kayıt detayı — işlemler", () => {
   it("onay verilince o kaydı siler ve geri döner", async () => {
     await render(<EntryDetail />);
 
-    await fireEvent.press(screen.getByLabelText("Bu anıyı sil"));
+    await fireEvent.press(screen.getByLabelText("Bu antrenmanı sil"));
     await fireEvent.press(screen.getByText("Sil"));
 
     expect(mockDeleteMutate).toHaveBeenCalledWith("e2", expect.any(Object));
@@ -488,7 +488,7 @@ describe("kayıt detayı — işlemler", () => {
   it("vazgeçilince silmez", async () => {
     await render(<EntryDetail />);
 
-    await fireEvent.press(screen.getByLabelText("Bu anıyı sil"));
+    await fireEvent.press(screen.getByLabelText("Bu antrenmanı sil"));
     await fireEvent.press(screen.getByText("Vazgeç"));
 
     expect(mockDeleteMutate).not.toHaveBeenCalled();

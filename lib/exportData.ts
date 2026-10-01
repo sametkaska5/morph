@@ -37,7 +37,7 @@ export async function exportUserData() {
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
-  <title>Remory Yedeği</title>
+  <title>Morph Yedeği</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #F7F9FC; color: #333; line-height: 1.6; padding: 20px; max-width: 800px; margin: 0 auto; }
     .header { text-align: center; margin-bottom: 40px; padding: 20px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
@@ -63,7 +63,7 @@ export async function exportUserData() {
 <body>
 
 <div class="header">
-  <h1>Remory Yedeği</h1>
+  <h1>Morph Yedeği</h1>
   <p>Dışa Aktarılma Tarihi: ${new Date().toLocaleDateString("tr-TR")} ${new Date().toLocaleTimeString("tr-TR")}</p>
   ${profile?.name ? `<p style="margin-top: 5px; font-weight: 600; color: #4A5568;">Kullanıcı: ${profile.name}</p>` : ""}
 </div>
@@ -126,7 +126,7 @@ export async function exportUserData() {
     htmlContent += `</body>\n</html>`;
 
     const dateStr = new Date().toISOString().split("T")[0];
-    const fileName = `remory-yedek-${dateStr}.html`;
+    const fileName = `Morph-yedek-${dateStr}.html`;
     const fileUri = `${FileSystem.documentDirectory}${fileName}`;
 
     await FileSystem.writeAsStringAsync(fileUri, htmlContent, {
@@ -137,7 +137,7 @@ export async function exportUserData() {
     if (canShare) {
       await Sharing.shareAsync(fileUri, {
         mimeType: "text/html",
-        dialogTitle: "Remory Verilerini Dışa Aktar",
+        dialogTitle: "Morph Verilerini Dışa Aktar",
         UTI: "public.html",
       });
     } else {

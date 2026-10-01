@@ -10,14 +10,15 @@ import type { SearchEntry } from "../entries";
  * kullanılıyor — testler bunu da kapsıyor.
  */
 
-const mockUseSearchIndex = jest.fn();
+const mockUseSearchEntries = jest.fn();
 const mockPush = jest.fn();
 
-jest.mock("../entries", () => ({ useSearchIndex: () => mockUseSearchIndex() }));
+jest.mock("../entries", () => ({ useSearchEntries: (...args: any[]) => mockUseSearchEntries(...args) }));
 jest.mock("../useAuth", () => ({ useAuth: () => ({ user: { id: "u1" } }) }));
 jest.mock("expo-router", () => ({ router: { push: (p: string) => mockPush(p), back: jest.fn() } }));
 jest.mock("expo-image", () => ({ Image: "Image" }));
 jest.mock("../storage", () => ({ photoCacheKey: (p: string) => p }));
+jest.mock("../useDebounce", () => ({ useDebounce: (v: string) => v }));
 
 import SearchScreen from "@/app/search";
 
@@ -31,7 +32,16 @@ const SEARCH_BOX = "Arama kutusu";
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockUseSearchIndex.mockReturnValue({ data: ENTRIES, isLoading: false });
+  mockUseSearchEntries.mockImplementation((userId: string, query: string) => {
+    if (!query || !query.trim()) return { data: [], isLoading: false };
+    const term = query.toLocaleLowerCase("tr-TR");
+    const data = ENTRIES.filter((e) => {
+      const noteMatch = e.note?.toLocaleLowerCase("tr-TR").includes(term);
+      const dateStr = e.date === "2026-03-10" ? "10 mart 2026" : e.date === "2026-07-15" ? "15 temmuz 2026" : "20 temmuz 2026";
+      return noteMatch || dateStr.includes(term);
+    });
+    return { data, isLoading: false };
+  });
 });
 
 describe("arama ekranı", () => {
@@ -82,7 +92,7 @@ describe("arama ekranı", () => {
   it("dizin çekilemediyse 'eşleşme yok' DEMEZ, hata durumu gösterir", async () => {
     // İkisi bambaşka: "böyle bir anın yok" ile "arayamadık". Hata sessizce
     // yutulunca kullanıcı aradığı anının silindiğini düşünürdü.
-    mockUseSearchIndex.mockReturnValue({
+    mockUseSearchEntries.mockReturnValue({
       data: undefined,
       isLoading: false,
       error: new Error("network"),

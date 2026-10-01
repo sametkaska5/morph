@@ -43,7 +43,10 @@ jest.mock("../units", () => ({
 // Zustand seçici deseni: bileşen useCaptureStore((s) => s.photo) diye çağırıyor.
 jest.mock("../captureStore", () => ({
   useCaptureStore: (selector: (s: unknown) => unknown) =>
-    selector({ photo: mockPhoto, clear: mockClearPhoto }),
+    selector({
+      photos: mockPhoto ? [mockPhoto] : [],
+      clear: mockClearPhoto,
+    }),
 }));
 jest.mock("../entryMutations", () => ({
   saveEntry: jest.fn(),
@@ -180,8 +183,7 @@ describe("yeni kayıt — kaydetme", () => {
       expect.objectContaining({
         userId: "u1",
         note: "iyi geçti",
-        photoBase64: "PHOTO",
-        thumbBase64: "THUMB",
+        photos: [{ base64: "PHOTO", thumbBase64: "THUMB" }],
         values: { kilo: "80" },
       }),
     );

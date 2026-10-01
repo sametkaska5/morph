@@ -179,7 +179,7 @@ export default function AuthScreen() {
                 accessibilityLabel="Doğrulama kodu"
                 maxLength={10}
                 className="flex-1 text-white text-lg ml-3 bg-transparent border-0 tracking-[8px]"
-                style={{ height: '100%', outlineStyle: 'none' as any }}
+                style={[{ height: '100%' }, Platform.OS === 'web' && { outlineStyle: 'none' as 'solid' }]}
               />
             </View>
 
@@ -314,7 +314,7 @@ export default function AuthScreen() {
               placeholderTextColor={theme.colors.textFaint}
               accessibilityLabel="E-posta"
               className="flex-1 text-white text-base ml-3 bg-transparent border-0"
-              style={{ height: '100%', outlineStyle: 'none' as any }}
+              style={[{ height: '100%' }, Platform.OS === 'web' && { outlineStyle: 'none' as 'solid' }]}
             />
           </View>
 

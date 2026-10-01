@@ -116,7 +116,7 @@ describe("Geri bildirim düğmesi", () => {
     expect(url).toMatch(/^mailto:[^\s@]+@[^\s@]+\.[^\s@]+\?subject=/);
     // Ham boşluk mailto'yu bozar: encodeURIComponent düşerse burası yakalar.
     expect(url).not.toMatch(/\s/);
-    expect(decodeURIComponent(url.split("subject=")[1])).toBe("Remory Geri Bildirim");
+    expect(decodeURIComponent(url.split("subject=")[1])).toBe("Morph Geri Bildirim");
   });
 
   it("ekran okuyucuya uygulamadan çıkılacağını önceden söyler", async () => {
@@ -134,7 +134,7 @@ describe("Sürüm satırı", () => {
   it("uygulama sürümünü gösterir", async () => {
     await render(<HelpScreen />);
 
-    expect(screen.getByText("Remory v9.9.9")).toBeTruthy();
+    expect(screen.getByText("Morph v9.9.9")).toBeTruthy();
   });
 
   it("sürüm okunamazsa satırı boş bırakmaz", async () => {
@@ -142,6 +142,6 @@ describe("Sürüm satırı", () => {
 
     await render(<HelpScreen />);
 
-    expect(screen.getByText("Remory v—")).toBeTruthy();
+    expect(screen.getByText("Morph v—")).toBeTruthy();
   });
 });

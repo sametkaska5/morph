@@ -30,7 +30,6 @@ import {
   useMeasurementSeries,
   useWeek,
   useShareablePhotoEntries,
-  computeWeekStreak,
   computeTrend,
   invalidateStatsQueries,
 } from "@/lib/stats";

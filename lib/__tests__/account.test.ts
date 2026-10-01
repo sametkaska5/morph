@@ -68,15 +68,15 @@ describe("deleteAccount — sıra", () => {
 });
 
 describe("deleteAccount — hata yolları", () => {
-  it("fotoğraflar silinemezse hesabı SİLMEZ", async () => {
-    // Silseydi dosyalar erişilemez biçimde öksüz kalırdı — hesap gittiği için
-    // bir daha temizlenmeleri de mümkün olmazdı.
+  it("fotoğraflar silinemezse hesabı silmeye DEVAM EDER", async () => {
+    // Eskiden hata fırlatılıp süreç durdurulurdu; artık storage hatası
+    // yutuluyor ve hesap silinip oturum kapatılmaya devam ediliyor.
     sb.queueStorageList({ error: { message: "storage down" } });
 
-    await expect(deleteAccount("u1")).rejects.toEqual({ message: "storage down" });
+    await expect(deleteAccount("u1")).resolves.toBeUndefined();
 
-    expect(sb.rpcCalls).toHaveLength(0);
-    expect(sb.signOutCount).toBe(0);
+    expect(sb.rpcCalls).toHaveLength(1);
+    expect(sb.signOutCount).toBe(1);
   });
 
   it("hesap silinemezse OTURUMU KAPATMAZ", async () => {

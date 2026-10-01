@@ -32,7 +32,7 @@ jest.mock("../useAuth", () => ({
 }));
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react-native";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react-native";
 import Index from "@/app/index";
 import Welcome from "@/app/(onboarding)/welcome";
 import { ONBOARDING_SEEN_KEY } from "../onboarding";
@@ -66,7 +66,7 @@ describe("açılış yönlendirmesi", () => {
 
     await render(<Index />);
 
-    await waitFor(() => expect(mockRedirect).toHaveBeenCalledWith("/(auth)"));
+    await waitFor(() => expect(mockRedirect).toHaveBeenCalledWith("/(tabs)"));
     expect(mockRedirect).not.toHaveBeenCalledWith("/(onboarding)/welcome");
   });
 
@@ -91,20 +91,36 @@ describe("açılış yönlendirmesi", () => {
 });
 
 describe("karşılama ekranı", () => {
-  it("İleri, görüldü bayrağını yazar ve giriş ekranına geçer", async () => {
+  it("Atla, görüldü bayrağını yazar ve giriş ekranına geçer", async () => {
+    jest.useFakeTimers();
     await render(<Welcome />);
 
-    await fireEvent.press(screen.getByLabelText("Devam et"));
+    // Step 0 → Step 1 otomatik geçişi (2.5 saniye)
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(3000);
+    });
+
+    // Step 1'de "Atla" butonu görünür
+    await fireEvent.press(screen.getByText("Atla"));
+
+    jest.useRealTimers();
 
     await waitFor(async () => expect(await AsyncStorage.getItem(ONBOARDING_SEEN_KEY)).toBe("1"));
     expect(mockReplace).toHaveBeenCalledWith("/(auth)");
   });
 
   it("sekmelere DEĞİL giriş ekranına gider", async () => {
-    // Eski hedef `/(tabs)`'tı: oturumsuz kullanıcıyı tab layout anında geri atardı.
+    jest.useFakeTimers();
     await render(<Welcome />);
 
-    await fireEvent.press(screen.getByLabelText("Devam et"));
+    // Step 0 → Step 1 otomatik geçişi
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(3000);
+    });
+
+    await fireEvent.press(screen.getByText("Atla"));
+
+    jest.useRealTimers();
 
     await waitFor(() => expect(mockReplace).toHaveBeenCalled());
     expect(mockReplace).not.toHaveBeenCalledWith("/(tabs)");

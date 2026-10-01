@@ -86,7 +86,7 @@ describe("anı akışı", () => {
     await render(<ZamanKapsulu />);
 
     expect(screen.getByText("Henüz bir kaydın yok")).toBeTruthy();
-    await fireEvent.press(screen.getByText("İlk anını ekle"));
+    await fireEvent.press(screen.getByText("İlk antrenmanını ekle"));
     expect(mockOpenCapturePicker).toHaveBeenCalled();
   });
 
@@ -104,7 +104,7 @@ describe("anı akışı", () => {
 
     expect(mockPrefetchEdit).not.toHaveBeenCalled();
 
-    await fireEvent.press(screen.getByLabelText(/tarihli anı/));
+    await fireEvent.press(screen.getByLabelText(/tarihli antrenman/));
     expect(mockPrefetchEdit).toHaveBeenCalledWith("e1");
     // Ölçüm tipleri de aynı anda: form alanları o listeden üretiliyor, yani
     // kayıt gelse bile liste gelmeden form çizilmiyor.
@@ -114,7 +114,7 @@ describe("anı akışı", () => {
   it("kart geri çevrilince tekrar çekmez", async () => {
     await render(<ZamanKapsulu />);
 
-    const card = screen.getByLabelText(/tarihli anı/);
+    const card = screen.getByLabelText(/tarihli antrenman/);
     await fireEvent.press(card); // ön → arka: çeker
     await fireEvent.press(card); // arka → ön: çekmemeli
 

@@ -127,6 +127,8 @@ describe("profil — genel", () => {
     await render(<Profil />);
 
     await fireEvent.press(screen.getByText("Çıkış yap"));
+    const buttons = screen.getAllByText("Çıkış yap");
+    await fireEvent.press(buttons[buttons.length - 1]);
 
     expect(mockSignOut).toHaveBeenCalled();
     expect(alertError).not.toHaveBeenCalled();
@@ -143,6 +145,8 @@ describe("profil — genel", () => {
 
     await render(<Profil />);
     await fireEvent.press(screen.getByText("Çıkış yap"));
+    const buttons = screen.getAllByText("Çıkış yap");
+    await fireEvent.press(buttons[buttons.length - 1]);
 
     expect(alertError).toHaveBeenCalledWith(
       "Çıkış yapılamadı",

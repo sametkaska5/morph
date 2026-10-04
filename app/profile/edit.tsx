@@ -1,6 +1,7 @@
 import { theme } from "@/lib/theme";
 import { useState } from "react";
-import { View, Pressable, ActivityIndicator, Image } from "react-native";
+import { Image } from "expo-image";
+import { View, Pressable, ActivityIndicator } from "react-native";
 import { Text, TextInput } from "@/components/Typography";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { router } from "expo-router";
@@ -214,3 +215,5 @@ export default function EditProfileScreen() {
     </KeyboardAwareScrollView>
   );
 }
+
+

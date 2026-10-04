@@ -179,7 +179,8 @@ export function MeasurementChart({
               Math.max(contentW - TOOLTIP_W, 0),
             ),
             // Nokta tepedeyse baloncuk yukarı sığmıyor, altına alıyoruz.
-            top: selectedPoint.y > 48 ? selectedPoint.y - 48 : selectedPoint.y + 14,
+            // Grafiği (çizgiyi) kapatmaması için mesafeyi artırdık.
+            top: selectedPoint.y > 60 ? selectedPoint.y - 60 : selectedPoint.y + 20,
           }}
         >
           <View className="bg-bg border border-accent rounded-lg px-2 py-1.5 items-center">

@@ -186,7 +186,7 @@ const AUTH_MESSAGES: { match: string; text: string }[] = [
   { match: "otp_expired", text: "Kodun süresi dolmuş. Yeni bir kod iste." },
   {
     match: "for security purposes",
-    text: "Güvenliğiniz için işlem durduruldu. Lütfen 5 dakika bekleyip tekrar deneyin.",
+    text: "G�venli�iniz i�in i�lem durduruldu. L�tfen 30 saniye bekleyip tekrar deneyin.",
   },
   {
     match: "email rate limit exceeded",
@@ -212,3 +212,5 @@ export function authErrorMessage(error: unknown): string {
 
   return "İşlem tamamlanamadı. Lütfen tekrar dene.";
 }
+
+

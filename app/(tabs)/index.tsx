@@ -7,6 +7,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   useWindowDimensions,
+  ScrollView,
 } from "react-native";
 import { PressableFade } from "@/components/PressableFade";
 import { Text } from "@/components/Typography";
@@ -21,6 +22,9 @@ import { useReduceMotion } from "@/lib/useReduceMotion";
 import { PhotoStack } from "@/components/PhotoStack";
 import { ErrorState } from "@/components/ErrorState";
 import { useScreenInsets } from "@/lib/useScreenInsets";
+import ZamanKapsulu from "./zaman-kapsulu";
+import Istatistikler from "./istatistikler";
+import Profil from "./profil";
 
 const GAP = 8;
 const COLUMNS = 3;
@@ -270,8 +274,12 @@ export default function AnaEkran() {
     month: "long",
   });
 
-  return (
-    <View className="flex-1 bg-bg">
+  // Yatay pager için ekran genişliği
+  const { width: screenWidth } = useWindowDimensions();
+
+  // Ana ekran içeriği (Sayfa 0)
+  const homeContent = (
+    <View style={{ width: screenWidth, flex: 1 }}>
       <View
         className="flex-row justify-between items-center px-4 pb-4"
         style={{ paddingTop: screen.top }}
@@ -286,9 +294,7 @@ export default function AnaEkran() {
           <Text className="text-textMuted text-sm mt-1 capitalize">{todayLabel}</Text>
         </View>
         <View className="flex-row gap-2">
-          {/* Antrenman programı kısayolu — arama/karşılaştır ile aynı yuvarlak
-              boyut ama accent tonlu: antrenmanda hızlı erişilen asıl aksiyon,
-              yer kaplamadan öne çıkıyor. */}
+          {/* Antrenman programı kısayolu */}
           <PressableFade
             onPress={() => router.push("/entry/program")}
             accessibilityRole="button"
@@ -319,12 +325,6 @@ export default function AnaEkran() {
         </View>
       </View>
 
-      {/* Başlık YALNIZCA gerçekten kayıt varken görünmeli.
-          Buradaki eski kontrol `isEmpty === false` idi ve yükleme sırasında da
-          başlığı gösteriyordu: veri gelmeden `entries` undefined, dolayısıyla
-          `entries?.length === 0` ifadesi undefined DEĞİL `false` üretiyor
-          (undefined === 0 → false) ve koşul tutuyordu. Doğrudan uzunluğa
-          bakmak hem niyeti hem davranışı aynı yere getiriyor. */}
       {entries?.length ? (
         <View className="flex-row items-center justify-between px-4 mb-3">
           <Text className="text-textMuted text-sm font-semibold uppercase tracking-wide">
@@ -363,17 +363,12 @@ export default function AnaEkran() {
           contentContainerStyle={{ paddingHorizontal: H_PADDING, paddingBottom: 24 }}
           columnWrapperStyle={{ gap: GAP }}
           renderItem={renderPoster}
-          // Sonsuz kaydırma. Eşik 0.5 = kalan bir ekran boyu; anı akışıyla aynı
-          // değer. hasNextPage kontrolü şart, yoksa liste sonuna her gelişte
-          // boşuna sorgu atılırdı.
           onEndReached={() => {
             if (hasNextPage && !isFetchingNextPage) fetchNextPage();
           }}
           onEndReachedThreshold={0.5}
           ListFooterComponent={
             isFetchingNextPage ? (
-              // Etiket görsel göstergenin karşılığı: ekran okuyucu kullanıcısı
-              // dönenceyi göremiyor, listenin bittiğini sanırdı.
               <View
                 className="py-6 items-center"
                 accessibilityRole="progressbar"
@@ -385,6 +380,39 @@ export default function AnaEkran() {
           }
         />
       )}
+    </View>
+  );
+
+  return (
+    <View className="flex-1 bg-bg">
+
+      <ScrollView
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        scrollEventThrottle={16}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flexDirection: "row" }}
+        directionalLockEnabled
+      >
+        {/* Sayfa 0: Ana Ekran */}
+        {homeContent}
+
+        {/* Sayfa 1: Podyum */}
+        <View style={{ width: screenWidth, flex: 1 }}>
+          <ZamanKapsulu />
+        </View>
+
+        {/* Sayfa 2: İstatistikler */}
+        <View style={{ width: screenWidth, flex: 1 }}>
+          <Istatistikler />
+        </View>
+
+        {/* Sayfa 3: Profil */}
+        <View style={{ width: screenWidth, flex: 1 }}>
+          <Profil />
+        </View>
+      </ScrollView>
     </View>
   );
 }

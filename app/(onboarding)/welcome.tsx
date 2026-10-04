@@ -276,7 +276,7 @@ export default function Welcome() {
                   
 
                   {/* Tooltip */}
-                  <View className="absolute right-[5%] top-[20px] bg-[#111] border border-accent/50 rounded-xl px-4 py-2 items-center shadow-lg shadow-accent/10">
+                  <View className="absolute right-[5%] top-0 bg-[#111] border border-accent/50 rounded-xl px-4 py-2 items-center shadow-lg shadow-accent/10">
                     <Text className="text-textMuted text-[10px] mb-0.5 font-medium">1 Ağu</Text>
                     <Text className="text-white text-sm font-bold">68 kg</Text>
                   </View>

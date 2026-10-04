@@ -5,15 +5,16 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
-  Image,
   Modal,
   RefreshControl,
 } from "react-native";
+import { Image } from "expo-image";
 import { showAlert } from "@/lib/appAlert";
 import { PressableFade } from "@/components/PressableFade";
 import { Text } from "@/components/Typography";
 import { useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
+import { Gesture, GestureDetector, Directions } from "react-native-gesture-handler";
 import Feather from "@expo/vector-icons/Feather";
 import { captureRef } from "react-native-view-shot";
 import * as Sharing from "expo-sharing";
@@ -230,8 +231,15 @@ export default function Istatistikler() {
     scheduleStreakRiskNotification(currentStreak, !!today?.type);
   }, [currentWeek, currentStreak, notifSettings?.streak_enabled]);
 
+  const swipeGestures = useMemo(() => {
+    const swipeRight = Gesture.Fling().direction(Directions.RIGHT).onStart(() => { router.navigate("/(tabs)/zaman-kapsulu"); }).runOnJS(true);
+    const swipeLeft = Gesture.Fling().direction(Directions.LEFT).onStart(() => { router.navigate("/(tabs)/profil"); }).runOnJS(true);
+    return Gesture.Exclusive(swipeRight, swipeLeft);
+  }, []);
+
   return (
-    <ScrollView
+    <GestureDetector gesture={swipeGestures}>
+      <ScrollView
       className="flex-1 bg-bg"
       contentContainerStyle={{ paddingTop: screen.top, paddingBottom: 32 }}
       refreshControl={
@@ -613,5 +621,11 @@ export default function Istatistikler() {
         </View>
       </Modal>
     </ScrollView>
+    </GestureDetector>
   );
 }
+
+
+
+
+

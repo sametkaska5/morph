@@ -1,6 +1,7 @@
 import { theme } from "@/lib/theme";
 import { useRef, useState } from "react";
-import { View, Image, ScrollView, ActivityIndicator } from "react-native";
+import { Image } from "expo-image";
+import { View, ScrollView, ActivityIndicator } from "react-native";
 import { showAlert } from "@/lib/appAlert";
 import { PressableFade } from "@/components/PressableFade";
 import { Text } from "@/components/Typography";
@@ -332,3 +333,4 @@ function ComparisonBody({ data }: { data: ComparisonData }) {
     </View>
   );
 }
+

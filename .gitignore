@@ -34,3 +34,11 @@ dist/
 # o anki bağlantıya özel, üretilebilir — migration'lar (takip EDİLEN kısım)
 # supabase/migrations/ altında.
 supabase/.temp/
+
+# Android build artifacts (Added to root to fix EAS CLI not reading nested gitignores)
+android/build/
+android/app/build/
+android/.gradle/
+android/.cxx/
+android/app/.cxx/
+android/local.properties

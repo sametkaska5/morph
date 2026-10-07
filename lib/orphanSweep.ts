@@ -171,11 +171,7 @@ export async function maybeSweepOrphans(userId: string): Promise<void> {
     await AsyncStorage.setItem(LAST_SWEEP_KEY, String(Date.now()));
 
     if (deleted > 0) {
-      captureError(new Error(`[orphanSweep] ${deleted}/${scanned} yetim dosya temizlendi`), {
-        where: "orphanSweep.cleanup",
-        deleted,
-        scanned,
-      });
+      console.log(`[orphanSweep] ${deleted}/${scanned} yetim dosya temizlendi`);
     }
   } catch (err: any) {
     // Ağ bağlantısı yokken arka planda çalışmaya çalışırsa (fetch failed / UnknownHostException)

@@ -1,5 +1,5 @@
 import { theme } from "@/lib/theme";
-import { memo, useState } from "react";
+import { memo, useState, useMemo } from "react";
 import {
   View,
   FlatList,
@@ -12,6 +12,7 @@ import { PressableFade } from "@/components/PressableFade";
 import { Text } from "@/components/Typography";
 import { Image } from "expo-image";
 import { router } from "expo-router";
+import { Gesture, GestureDetector, Directions } from "react-native-gesture-handler";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Feather from "@expo/vector-icons/Feather";
@@ -342,8 +343,15 @@ export default function ZamanKapsulu() {
     );
   }
 
+  const swipeGestures = useMemo(() => {
+    const swipeRight = Gesture.Fling().direction(Directions.RIGHT).onStart(() => { router.navigate("/(tabs)/"); }).runOnJS(true);
+    const swipeLeft = Gesture.Fling().direction(Directions.LEFT).onStart(() => { router.navigate("/(tabs)/istatistikler"); }).runOnJS(true);
+    return Gesture.Exclusive(swipeRight, swipeLeft);
+  }, []);
+
   return (
-    <View className="flex-1 bg-bg" onLayout={(e) => setMeasuredHeight(e.nativeEvent.layout.height)}>
+    <GestureDetector gesture={swipeGestures}>
+      <View className="flex-1 bg-bg" onLayout={(e) => setMeasuredHeight(e.nativeEvent.layout.height)}>
       <FlatList
         data={entries}
         keyExtractor={(item) => item.id}
@@ -393,5 +401,9 @@ export default function ZamanKapsulu() {
         }
       />
     </View>
+    </GestureDetector>
   );
 }
+
+
+

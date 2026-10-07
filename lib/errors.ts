@@ -183,10 +183,12 @@ const AUTH_MESSAGES: { match: string; text: string }[] = [
   },
   { match: "token has expired", text: "Kodun sÃ¼resi dolmuÅŸ. Yeni bir kod iste." },
   { match: "invalid token", text: "Kod hatalÄ±. Tekrar kontrol edip gir." },
+  { match: "error sending confirmation email", text: "Sistem e-posta gÃ¶nderemiyor (SMTP Limit/Hata). LÃ¼tfen daha sonra tekrar dene." },
+  { match: "error sending email", text: "Sistem e-posta gÃ¶nderemiyor. LÃ¼tfen daha sonra tekrar dene." },
   { match: "otp_expired", text: "Kodun sÃ¼resi dolmuÅŸ. Yeni bir kod iste." },
   {
     match: "for security purposes",
-    text: "Güvenliðiniz için iþlem durduruldu. Lütfen 30 saniye bekleyip tekrar deneyin.",
+    text: "Gï¿½venliï¿½iniz iï¿½in iï¿½lem durduruldu. Lï¿½tfen 30 saniye bekleyip tekrar deneyin.",
   },
   {
     match: "email rate limit exceeded",

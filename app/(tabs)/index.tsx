@@ -13,6 +13,7 @@ import { PressableFade } from "@/components/PressableFade";
 import { Text } from "@/components/Typography";
 import { Image } from "expo-image";
 import { router } from "expo-router";
+import { Gesture, GestureDetector, Directions } from "react-native-gesture-handler";
 import Feather from "@expo/vector-icons/Feather";
 import { photoCacheKey } from "@/lib/storage";
 import { formatDateKey } from "@/lib/date";
@@ -274,12 +275,14 @@ export default function AnaEkran() {
     month: "long",
   });
 
-  // Yatay pager için ekran genişliği
-  const { width: screenWidth } = useWindowDimensions();
+  const swipeGestures = useMemo(() => {
+    const swipeLeft = Gesture.Fling().direction(Directions.LEFT).onStart(() => { router.navigate("/(tabs)/zaman-kapsulu"); }).runOnJS(true);
+    return swipeLeft;
+  }, []);
 
-  // Ana ekran içeriği (Sayfa 0)
-  const homeContent = (
-    <View style={{ width: screenWidth, flex: 1 }}>
+  return (
+    <GestureDetector gesture={swipeGestures}>
+      <View className="flex-1 bg-bg">
       <View
         className="flex-row justify-between items-center px-4 pb-4"
         style={{ paddingTop: screen.top }}
@@ -381,38 +384,6 @@ export default function AnaEkran() {
         />
       )}
     </View>
-  );
-
-  return (
-    <View className="flex-1 bg-bg">
-
-      <ScrollView
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        scrollEventThrottle={16}
-        style={{ flex: 1 }}
-        contentContainerStyle={{ flexDirection: "row" }}
-        directionalLockEnabled
-      >
-        {/* Sayfa 0: Ana Ekran */}
-        {homeContent}
-
-        {/* Sayfa 1: Podyum */}
-        <View style={{ width: screenWidth, flex: 1 }}>
-          <ZamanKapsulu />
-        </View>
-
-        {/* Sayfa 2: İstatistikler */}
-        <View style={{ width: screenWidth, flex: 1 }}>
-          <Istatistikler />
-        </View>
-
-        {/* Sayfa 3: Profil */}
-        <View style={{ width: screenWidth, flex: 1 }}>
-          <Profil />
-        </View>
-      </ScrollView>
-    </View>
+    </GestureDetector>
   );
 }

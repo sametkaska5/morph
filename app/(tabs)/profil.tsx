@@ -1,11 +1,12 @@
 import { theme } from "@/lib/theme";
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo } from "react";
 import { View, ScrollView, Pressable, ActivityIndicator, Modal } from "react-native";
 import { PressableFade } from "@/components/PressableFade";
 import { Text } from "@/components/Typography";
 import { Image } from "expo-image";
 import { useMutation } from "@tanstack/react-query";
 import { router } from "expo-router";
+import { Gesture, GestureDetector, Directions } from "react-native-gesture-handler";
 import Feather from "@expo/vector-icons/Feather";
 import { useAuth } from "@/lib/useAuth";
 import { supabase } from "@/lib/supabase";
@@ -170,8 +171,14 @@ export default function Profil() {
     }
   }
 
+  const swipeGestures = useMemo(() => {
+    const swipeRight = Gesture.Fling().direction(Directions.RIGHT).onStart(() => { router.navigate("/(tabs)/istatistikler"); }).runOnJS(true);
+    return swipeRight;
+  }, []);
+
   return (
     <>
+      <GestureDetector gesture={swipeGestures}>
       <ScrollView
         className="flex-1 bg-bg"
         contentContainerStyle={{ paddingTop: screen.top, paddingBottom: 32 }}
@@ -320,6 +327,7 @@ export default function Profil() {
           </View>
         </View>
       </ScrollView>
+      </GestureDetector>
 
       <DraggableSheet visible={showUnitSheet} onClose={() => setShowUnitSheet(false)}>
         <Text className="text-text text-xl font-bold mb-1">Birimler</Text>
@@ -394,3 +402,4 @@ export default function Profil() {
     </>
   );
 }
+

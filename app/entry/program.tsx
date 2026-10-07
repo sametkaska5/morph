@@ -322,6 +322,7 @@ export default function ProgramScreen() {
                     onFocus={() => revealField(nameRefs.current[exIndex])}
                     keyboardType="decimal-pad"
                     returnKeyType="next"
+                    blurOnSubmit={false}
                     onSubmitEditing={() => repsRefs.current[`${exIndex}-${setIndex}`]?.focus()}
                     placeholder="—"
                     placeholderTextColor={theme.colors.textFaint}
